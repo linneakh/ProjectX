@@ -23,34 +23,28 @@ processes in tropical soil carbon cycling. For more detailed description of proj
 
 **URL of the Wiki Section of Repository:** https://github.com/linneakh/SoilPyruvate/wiki
 
-![Carbon Cycle](soil-carbon-cycle.png?raw=true)
+![Carbon Cycle](soil-carbon-cycling.png?raw=true)
 
 ***
 
-# 
+### Description of Experiment
 
+**Soil C-pyruvate labeling:**
+- C1 or C2 postition-specific 13C-pyruvate was added to soil
+within automatic chambers located at three sites of the Biosphere 2 TRF in
+order to track how carbon was allocated into 13C-CO2 and 13C-VOCs.
+- 13CO2 and C-VOCs were measured using a Licor8100 coupled to Picarro G2201
+and proton-transfer-reaction time-of-flight mass spectrometry (PTR-TOF-MS)
+- Soil samples were collected at time = 0, 6, and 48 hr post pyruvate addition for metabolomics, metagenomics, and metatranscriptomics.
 
+### Description of Datasets
 
-***
+**12/13C-CO2**
+**12/13C-VOCs**
+**MetaT**
+**MetaG**
+**MetaB**
 
-#### Description of Experiment
-***
-
-1. Created a _new Repositoy_ in Gihub or Clone One. I named this Repository: ProjectX
-2. Cloned the Remote Github Repository into a local repository on my computer using Github Desktop (Decide what will be your local repository directory).
-3. On the local repository create some planned directory structure, using the file manager or other:
-   - Datasets
-   - Docs
-   - Images
-   - Notebooks
-   - Reports
-   - Software
-   - Publications
-4.These files and directory structure will be in the \<code\> section of your Github repository.
-5. You can start moving files if you already have them classified.
-6. You can edit your Readme.md file using Atom Editor in your computer. Remember CTRL+SHIFT+M open the Markup Language Viewer.
-7. When you have made important changes **Commit** (update files from local to remote repository) using Github Desktop.
-8. After finishig the commit, you can check the Github remote repository to see published resources.
 
 ***
 Good practice:
