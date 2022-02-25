@@ -1,18 +1,17 @@
 # Soil Pyruvate Experiment 
 ## Effect of drought on microbial metabolic activity and VOC production, assessed using multi-omics and stable isotope probing in the tropical rainforest at Biosphere 2
 
-**Description of Project <br>
-This page describes the goals of the project, hypotheses, and data analysis steps. <br>
+**Description of Project** <br>
+This page briefly describes the goals of the project and hypotheses with a focus on data analysis steps. Please see the wiki link below for more details about project. <br>
 
-**URL of \< \> Code Section of Repository:** https://github.com/linneakh/SoilPyruvate
+**URL of \<Code\>  Section of Repository:** https://github.com/linneakh/SoilPyruvate
 
-**URL of the Wiki Section of Repository:** https://github.com/clizarraga-UAD7/ProjectX/wiki
+**URL of the Wiki Section of Repository:** https://github.com/linneakh/SoilPyruvate/wiki
 
-Do something
 
 ***
 
-# Biodiversity Loss due to Climate Change
+# 
 
 ![Earth System](https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/EEI_and_Excess_Heat_Inventory_2018.png/549px-EEI_and_Excess_Heat_Inventory_2018.png)
 
