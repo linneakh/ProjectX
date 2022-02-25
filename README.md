@@ -1,12 +1,10 @@
-# Title: ProjectX
+# Soil Pyruvate Experiment 
+## Effect of drought on microbial metabolic activity and VOC production, assessed using multi-omics and stable isotope probing in the tropical rainforest at Biosphere 2
 
-***
+**Description of Project <br>
+This page describes the goals of the project, hypotheses, and data analysis steps. <br>
 
-**Project Page Example <br>
-This is a mock Project Page for illustration porposes. <br>
-You are viewing the Readme.md file in the \<code\> section of the Github repository.**
-
-**URL of \< \> Code Section of Repository:** https://github.com/clizarraga-UAD7/ProjectX
+**URL of \< \> Code Section of Repository:** https://github.com/linneakh/SoilPyruvate
 
 **URL of the Wiki Section of Repository:** https://github.com/clizarraga-UAD7/ProjectX/wiki
 
