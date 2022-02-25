@@ -28,7 +28,7 @@ processes in tropical soil carbon cycling. For more detailed description of proj
 
 # 
 
-![Carbon Clycle](https://github.com/linneakh/SoilPyruvate/tree/main/Images/soil-carbon-cycling.png)
+![Carbon Clycle](https://github.com/linneakh/SoilPyruvate/soil-carbon-cycling.png)
 
 Good practices: (Image credit: Linnea Honeker, Copyrighted)
 
