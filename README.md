@@ -1,8 +1,23 @@
 # Soil Pyruvate Experiment 
 ## Effect of drought on microbial metabolic activity and VOC production, assessed using multi-omics and stable isotope probing in the tropical rainforest at Biosphere 2
 
-**Description of Project** <br>
-This page briefly describes the goals of the project and hypotheses with a focus on data analysis steps. Please see the wiki link below for more details about project. <br>
+### **Description of Project** <br>
+Due to climate change, the frequency and duration of droughts in
+tropical rain forests (TRFs) are expected to increase, having a
+significant impact on soil carbon dynamics . The role of microbes as
+drivers of changing carbon flow, particularly in relation to metabolic
+pathways and volatile organic compounds (VOCs), remains largely
+unknown.  
+
+#### **Biosphere 2 drought experiment**<br>
+To examine how microbial activity, particularly in relation to carbon allocation, shifts
+during drought, we utilized the controlable conditions of the glass and steelenclosed
+TRF at Biosphere 2 (Fig 1). Here we created a 66-day drought in order to
+study carbon cycling by plants and microbes before, during, and after drought (Water,
+Atmosphere, and Life Dynamics [WALD]) . As part of this larger study, we perfomed
+multi-omics and traced carbon allocation by soil microbes using position-specific (C1 or
+C2) C-pyruvate labeling before and during drought. Our results will inform key
+processes in tropical soil carbon cycling. For more detailed description of project, see wiki page link below<br>
 
 **URL of \<Code\>  Section of Repository:** https://github.com/linneakh/SoilPyruvate
 
