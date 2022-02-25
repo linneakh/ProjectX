@@ -28,9 +28,9 @@ processes in tropical soil carbon cycling. For more detailed description of proj
 
 # 
 
-![Earth System](https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/EEI_and_Excess_Heat_Inventory_2018.png/549px-EEI_and_Excess_Heat_Inventory_2018.png)
+![Carbon Clycle](https://github.com/linneakh/SoilPyruvate/tree/main/Images/soil-carbon-cycling.png)
 
-Good practices: (Image credit: Wikimedia Commons, Creative Commons License)
+Good practices: (Image credit: Linnea Honeker, Copyrighted)
 
 ***
 
