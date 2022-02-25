@@ -23,29 +23,18 @@ processes in tropical soil carbon cycling. For more detailed description of proj
 
 **URL of the Wiki Section of Repository:** https://github.com/linneakh/SoilPyruvate/wiki
 
+![Carbon Cycle](soil-carbon-cycle.png?raw=true)
 
 ***
 
 # 
 
-![Carbon Clycle](https://github.com/linneakh/SoilPyruvate/soil-carbon-cycling.png)
 
-Good practices: (Image credit: Linnea Honeker, Copyrighted)
 
 ***
 
-#### Some helpful Edition tools:
-
-##### Text generator and Creative Commons Images
-
-*  [Lorem Ipsum Text generator](https://www.lipsum.com)
-*  [Wikimedia Commons](https://commons.wikimedia.org/wiki/Main_Page)
-* [Wikimedia Species](https://species.wikimedia.org/wiki/Main_Page)
-* [More resources](https://www.wikimedia.org)
-
+#### Description of Experiment
 ***
-
-A Little history... of what was done:
 
 1. Created a _new Repositoy_ in Gihub or Clone One. I named this Repository: ProjectX
 2. Cloned the Remote Github Repository into a local repository on my computer using Github Desktop (Decide what will be your local repository directory).
