@@ -37,16 +37,31 @@ order to track how carbon was allocated into 13C-CO2 and 13C-VOCs.
 and proton-transfer-reaction time-of-flight mass spectrometry (PTR-TOF-MS)
 - Soil samples were collected at time = 0, 6, and 48 hr post pyruvate addition for metabolomics, metagenomics, and metatranscriptomics.
 
-### Description of Datasets
+### Description of Overall Datasets
 
 **12/13C-CO2**
-**12/13C-VOCs**
-**MetaT**
-**MetaG**
-**MetaB**
 
+**12/13C-VOCs**
+
+**MetaT**
+- All metatranscriptomic data including raw and processed files are stored on IMG
+- gene expression data analyzed here was downloaded from IMG as gene copies per kegg orthology (KO)
+
+**MetaG**
+- All metagenomic data including raw and processed files are stored on IMG.
+- Gene data analyzed here was downloaded from IMG as gene copies per kegg orthology (KO), unaltered downloaded gene copies are in the raw data folder.
+- Raw gene copy table with control samples removed were input to deseq2 analysis.
+
+**MetaB**
+- FTICR - 
+- NMR
+
+### Description of Data Files Included here
+- ClusterProfiler/modules-gene-long.csv (Table of KO ids and the module [obtained from WGCNA] it belongs to)
+- Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv (Gene copies for metaT, obtained from raw download minus water control samples)
+- Deseq2/metaT-metadata.csv (Metadata information for metaT gene copy table)
+- 
 
 ***
 Good practice:
-Created: 02/23/2022, C. Lizarraga
-Updated: 02/23/2022, C. Lizarraga
+Updated: 04/6/2022, L. Honeker
