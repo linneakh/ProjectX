@@ -264,6 +264,7 @@ with(res.T6, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", x
 with(subset(res.T6, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(res.T6, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
 ```
+
 ### Step 3b
 Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
 
@@ -333,6 +334,7 @@ with(subset(res.t48, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, 
 with(subset(res.t48, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
 
 ```
+
 ### Step 3b
 Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
 
@@ -352,3 +354,7 @@ with(subset(resLFC.t48, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=2
 with(subset(resLFC.t48, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
 ```
 
+# Notes on observations
+## Most DE occurs at T=0, before pyruvate addition. During this time, the stress difference between pre-drought and drought conditions are the greatest.
+## The least DE occurs at T=6, just after pyruvate addition. This must stimulate similar microbial activity, of perhaps those that lost activity during drought, than that of pre-drought.  
+## LFC tends to cause the really low Log2FC values that I have been noticing. I think using the analysis of non-LFC transformed data is best
