@@ -19,10 +19,9 @@ library("pheatmap")
 library("stringr")
 ```
 
-## WGCNA analysis of soil pyruvate metatranscriptomic data. 
+# WGCNA analysis of soil pyruvate metatranscriptomic data. 
 
 ```{r load_data}
-
 #import count data, transform to matrix, import column metadata, check that its a data.frame
 cts.0 <- read.csv("../Data/Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE, sep =",")
 coldata <- read.csv("../Data/Deseq2/metaT-metadata.csv", header = TRUE, sep = ",")
@@ -41,10 +40,11 @@ row.names(coldata) <- coldata$SampleID
 coldata$SampleID <- NULL
 ```
 
-# Step 1
+## Drought vs. Pre-drought across all timepoints post pyruvate addition (0, 6, and 48 hr)
+### Step 1
 Create deseq2 object to compare drought vs pre-drought across all time points
 
-```{r creat_deseq2_object_drought_vs_predrought}
+```{r create_deseq2_object_drought_vs_predrought}
 
 ###create a deseq2 object with Condition, Time, and Site as design###
 coldata$Condition <- factor(coldata$Condition, c("PreDrought", "Drought"))
@@ -57,15 +57,14 @@ dds <- DESeqDataSetFromMatrix(countData = cts,
                               design= ~ Condition + Site)
 ```
 
-# Step 2
+### Step 2
 Explore data using variance stabilization normalization (VST) transformation
 
 ```{r data_exploration}
-
 vstcounts <- vst(dds, blind=TRUE)
 vst.export<- assay(vstcounts)
 vst.export<- as.data.frame(vst.export)
-write.csv(vst.export, "vst-metaT.csv")
+write.csv(vst.export, "../Output/Deseq2/vst-metaT.csv")
 
 plotPCA(vstcounts, intgroup=c("Condition"))
 
@@ -77,11 +76,219 @@ df <- as.data.frame(colData(dds)[,c("Condition","Site")])
 pheatmap(assay(vstcounts)[select,], cluster_rows=TRUE, show_rownames=TRUE,
          cluster_cols=TRUE, annotation_col=df)
 
-#[optional] save heatmap (must run separately)
-filename=paste("../Figures/Deseq2/heatmap-500-vst.png", sep = "")
-png(filename ,width=10, height=10, unit='in', res = 1000)
+```
+
+### Step 3
+Run Deseq2 on object to find differential gene expression. Here we are comparing drought vs. pre-drought across all time points
+
+```{r DE_analysis_drought_vs_predrought}
+dds <- DESeq(dds)
+resultsNames(dds) # lists the coefficients
+
+##drought vs predrought time 0
+res <- results(dds, contrast = c("Condition","Drought","PreDrought"))
+plotMA(res, ylim=c(-40,40))
+
+summary(res)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(res, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-10,30), ylim=c(0,20)))
+
+# Add colored points: blue if padj<0.01, red if log2FC>1 and padj<0.05)
+with(subset(res, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(res, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
+
+```{r}
+#shrink effect size
+resLFC <- lfcShrink(dds, coef="Condition_Drought_vs_PreDrought", type="apeglm")
+resLFC
+plotMA(resLFC, ylim=c(-2,2))
+
+summary(resLFC)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+
+# Make a basic volcano plot
+with(resLFC, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-11,10), ylim=c(0,22)))
+with(subset(resLFC, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(resLFC, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+```{r export_results_drought_vs_predrought, include=FALSE}
+#export results
+write.csv(as.data.frame(res), 
+          file="../Output/Deseq2/drought-vs-predrought.csv")
+write.csv(as.data.frame(resLFC),
+          file="../Output/Deseq2/drought-vs-predrought-lfc.csv")
+```
+
+## Drought vs. Pre-drought across different time points. Here, pre-drought 0hr is set as reference.)
+### Step 1
+Create deseq2 object 
+
+```{r create_deseq2_object_ref_predrought0}
+###create a deseq2 object with Condition, Time, and Site as design###
+coldata$Condition_Time <- factor(coldata$Condition_Time, c("PreDrought_0hr", "PreDrought_6hr", "PreDrought_48hr",
+                                                           "Drought_0hr", "Drought_6hr", "Drought_48hr"))
+
+coldata$Condition_Time <- relevel(coldata$Condition_Time, ref = "PreDrought_0hr")
+
+
+dds <- DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design= ~ Condition_Time + Site)
+
+```
+
+### Step 2
+Explore data using variance stabilization normalization (VST) transformation
+
+```{r data_exploration_drought_vs_predrought}
+
+vstcounts <- vst(dds, blind=TRUE)
+vst.export<- assay(vstcounts)
+vst.export<- as.data.frame(vst.export)
+
+plotPCA(vstcounts, intgroup=c("Condition_Time"))
+
+select <- order(rowMeans(counts(dds)),
+                decreasing=TRUE)[1:500]
+df <- as.data.frame(colData(dds)[,c("Condition_Time","Site")])
+
+
 pheatmap(assay(vstcounts)[select,], cluster_rows=TRUE, show_rownames=TRUE,
          cluster_cols=TRUE, annotation_col=df)
-dev.off()
+
+```
+
+### Step 3a
+Run Deseq2 on object to find differential gene expression. Here we are comparing Drought 0hr vs Pre-drought 0hr
+
+```{r DE_analysis_drought_0hr_vs_predrought_0hr}
+###deifferential expression analysis###
+
+dds <- DESeq(dds)
+resultsNames(dds) # lists the coefficients
+
+##drought vs predrought time 0
+res.T0 <- results(dds, contrast = c("Condition_Time","Drought_0hr","PreDrought_0hr"))
+plotMA(res, ylim=c(-40,40))
+
+summary(res.T0)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(res.T0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-40,40), ylim=c(0,40)))
+
+# Add colored points: blue if padj<0.01, red if log2FC>1 and padj<0.05)
+with(subset(res.T0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(res.T0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+
+
+```
+
+### Step 3b
+Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
+
+```{r}
+#shrink effect size
+resLFC.T0 <- lfcShrink(dds, coef="Condition_Time_Drought_0hr_vs_PreDrought_0hr", type="apeglm")
+resLFC.T0
+plotMA(resLFC.T0, ylim=c(-2,2))
+
+summary(resLFC.T0)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(resLFC.T0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-15,10), ylim=c(0,25)))
+with(subset(resLFC.T0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(resLFC.T0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+```{r export_results_drought_0hr_vs_predrought_0hr, include=FALSE}
+write.csv(as.data.frame(res.T0), 
+          file="../Output/Deseq2/drought-0hr-vs-predrought-0hr.csv")
+write.csv(as.data.frame(resLFC.T0),
+          file="../Output/Deseq2/drought-0hr-vs-predrought-0hr-lfc.csv")
+```
+
+## Drought vs. Pre-drought across different time points. Here, pre-drought 6hr is set as reference.)
+### Step 1
+Create deseq2 object 
+ 
+```{r}
+###create a deseq2 object with Condition, Time, and Site as design###
+coldata$Condition_Time <- factor(coldata$Condition_Time, c("PreDrought_0hr", "PreDrought_6hr", "PreDrought_48hr",
+                                                           "Drought_0hr", "Drought_6hr", "Drought_48hr"))
+
+coldata$Condition_Time <- relevel(coldata$Condition_Time, ref = "PreDrought_6hr")
+
+
+dds <- DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design= ~ Condition_Time + Site)
+```
+
+
+### Step 3a (Skip step 2, data exploration, because already performed above)
+Run Deseq2 on object to find differential gene expression. Here we are comparing Drought 0hr vs Pre-drought 0hr
+
+```{r DE_analysis_of_drought_6hr_vs_predrought_6hr}
+dds <- DESeq(dds)
+resultsNames(dds) # lists the coefficients
+
+res.T6 <- results(dds, contrast = c("Condition_Time","Drought_6hr","PreDrought_6hr"))
+plotMA(res.T6, ylim=c(-40,40))
+
+summary(res.T6)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(res.T6, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-40,40), ylim=c(0,40)))
+
+# Add colored points: blue if padj<0.01, red if log2FC>1 and padj<0.05)
+with(subset(res.T6, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(res.T6, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+### Step 3b
+Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
+
+```{r}
+#shrink effect size
+resLFC.T6 <- lfcShrink(dds, coef="Condition_Time_Drought_6hr_vs_PreDrought_6hr", type="apeglm")
+resLFC.T6
+plotMA(resLFC.T6, ylim=c(-2,2))
+
+summary(resLFC.T6)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(resLFC.T6, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-15,10), ylim=c(0,25)))
+with(subset(resLFC.T6, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(resLFC.T6, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+```{r export_results_drought_6hr_vs_predrought_6hr, include = FALSE}
+#export results
+write.csv(as.data.frame(res.T6), 
+          file="../Output/Deseq2/drought-6hr-vs-predrought-6hr.csv")
+write.csv(as.data.frame(resLFC.T6),
+          file="../Output/Deseq2/drought-6hr-vs-predrought-6hr-lfc.csv")
 ```
 
