@@ -291,4 +291,45 @@ cowplot::plot_grid(p10,p11,p12, p13, p14, p15, p16,p17, p18, ncol=1 ,labels = c(
                    label_size = 12)
 ```
 
+```{r save_figures, echo = FALSE}
+p11 <- cnetplot(k.black, showCategory = c("Starch and sucrose metabolism", "Degradation of aromatic compounds",
+                                          "Sulfur relay system", "Toluene degradation"),
+                cex_label_gene = 1, cex_label_category = 2) +
+  scale_color_manual(values = c("black", "darkgrey")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-black-oeg.png")
+ggsave(filename,width=8,height=8,dpi=1000,p11)
+
+p12 <- cnetplot(k.brown, cex_label_gene = 1, cex_label_category = 2) +
+  scale_color_manual(values = c("brown", "#D98880")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-brown-oeg.png")
+ggsave(filename,width=8,height=8,dpi=1000,p12)
+
+p13 <- cnetplot(k.yellow, cex_label_gene = 1, cex_label_category = 2) +
+  scale_color_manual(values = c("yellow", "#F9E79F")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-yellow-oeg.png")
+ggsave(filename,width=8,height=8,dpi=1000,p13)
+
+p14 <- cnetplot(k.blue, cex_label_gene = 1, cex_label_category = 2) +
+  scale_color_manual(values = c("blue", "#7FB3D5")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-blue-oeg.png")
+ggsave(filename,width=8,height=8,dpi=1000,p14)
+
+p15 <- cnetplot(k.red, showCategory = c("Ribosome", "Oxidative phosphorylation"),
+                cex_label_gene = 1, cex_label_category = 2) +
+  scale_color_manual(values = c("red", "#F3AE9A")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-red-oeg.png")
+ggsave(filename,width=8,height=8,dpi=1000,p15)
+
+p16 <- cnetplot(k.magenta, cex_label_gene = 1, cex_label_category = 2)+
+  scale_color_manual(values = c("magenta", "#EFBFF2")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-magenta-oeg.png")
+ggsave(filename,width=8,height=8,dpi=1000,p16)
+
+```
 
