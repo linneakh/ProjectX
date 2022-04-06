@@ -23,7 +23,7 @@ library(ggplot2)
 
 ```{r import_data}
 #load long-form module list as data frame
-data <- read.csv("Data/ClusterProfiler/modules-gene-long.csv", header = TRUE)
+data <- read.csv("../Data/ClusterProfiler/modules-gene-long.csv", header = TRUE)
 
 #filter to  module
 data.green <- data %>%
