@@ -224,7 +224,7 @@ write.csv(as.data.frame(resLFC.T0),
           file="../Output/Deseq2/drought-0hr-vs-predrought-0hr-lfc.csv")
 ```
 
-## Drought vs. Pre-drought across different time points. Here, pre-drought 6hr is set as reference.)
+## Drought vs. Pre-drought across different time points. (Here, pre-drought 6hr is set as reference.)
 ### Step 1
 Create deseq2 object 
  
@@ -284,11 +284,71 @@ with(subset(resLFC.T6, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20
 with(subset(resLFC.T6, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
 ```
 
+
 ```{r export_results_drought_6hr_vs_predrought_6hr, include = FALSE}
 #export results
 write.csv(as.data.frame(res.T6), 
           file="../Output/Deseq2/drought-6hr-vs-predrought-6hr.csv")
 write.csv(as.data.frame(resLFC.T6),
           file="../Output/Deseq2/drought-6hr-vs-predrought-6hr-lfc.csv")
+```
+
+## Drought vs. Pre-drought across different time points. (Here, pre-drought 48hr is set as reference.)
+### Step 1
+Create deseq2 object 
+
+```{r}
+coldata$Condition_Time <- factor(coldata$Condition_Time, c("PreDrought_0hr", "PreDrought_6hr", "PreDrought_48hr",
+                                                    "Drought_0hr", "Drought_6hr", "Drought_48hr"))
+
+coldata$Condition_Time <- relevel(coldata$Condition_Time, ref = "PreDrought_48hr")
+
+
+dds <- DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design= ~ Condition_Time + Site)
+```
+
+### Step 3a (Skip step 2, data exploration, because already performed above)
+Run Deseq2 on object to find differential gene expression. Here we are comparing Drought 0hr vs Pre-drought 0hr
+
+```{r DE_analysis_of_drought_48hr_vs_predrought_48hr}
+###deifferential expression analysis###
+dds <- DESeq(dds)
+resultsNames(dds) # lists the coefficients
+
+res.t48 <- results(dds, contrast = c("Condition_Time","Drought_48hr","PreDrought_48hr"))
+plotMA(res, ylim=c(-40,40))
+
+summary(res)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(res.t48, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-40,40), ylim=c(0,40)))
+
+# Add colored points: blue if padj<0.01, red if log2FC>1 and padj<0.05)
+with(subset(res.t48, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(res.t48, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+
+```
+### Step 3b
+Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
+
+```{r}
+resLFC.t48 <- lfcShrink(dds, coef="Condition_Time_Drought_48hr_vs_PreDrought_48hr", type="apeglm")
+resLFC.t48
+plotMA(resLFC, ylim=c(-2,2))
+
+summary(resLFC.t48)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(resLFC.t48, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-15,10), ylim=c(0,25)))
+with(subset(resLFC.t48, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(resLFC.t48, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
 ```
 
