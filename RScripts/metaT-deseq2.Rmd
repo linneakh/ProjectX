@@ -1,0 +1,87 @@
+---
+title: "Deseq2"
+author: "Linnea Honeker"
+date: "4/6/2022"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("DESeq2")
+packageVersion("DESeq2")
+library(dplyr)
+library(knitr)
+library(apeglm)
+library("ggplot2")
+library("pheatmap")
+library("stringr")
+```
+
+## WGCNA analysis of soil pyruvate metatranscriptomic data. 
+
+```{r load_data}
+
+#import count data, transform to matrix, import column metadata, check that its a data.frame
+cts.0 <- read.csv("../Data/Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE, sep =",")
+coldata <- read.csv("../Data/Deseq2/metaT-metadata.csv", header = TRUE, sep = ",")
+cts.02 <- as.matrix(cts.0)
+row.names(cts.02) <- cts.02[,1]
+cts.02 <- cts.02[,-1]
+
+cts <- matrix(as.numeric(cts.02),    # Convert to numeric matrix
+                  ncol = ncol(cts.02))
+cts.0$Feature = NULL
+colnames(cts) <- colnames(cts.0)
+
+row.names(cts) <- row.names(cts.02)
+
+row.names(coldata) <- coldata$SampleID
+coldata$SampleID <- NULL
+```
+
+# Step 1
+Create deseq2 object to compare drought vs pre-drought across all time points
+
+```{r creat_deseq2_object_drought_vs_predrought}
+
+###create a deseq2 object with Condition, Time, and Site as design###
+coldata$Condition <- factor(coldata$Condition, c("PreDrought", "Drought"))
+
+coldata$Condition <- relevel(coldata$Condition, ref = "PreDrought")
+
+
+dds <- DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design= ~ Condition + Site)
+```
+
+# Step 2
+Explore data using variance stabilization normalization (VST) transformation
+
+```{r data_exploration}
+
+vstcounts <- vst(dds, blind=TRUE)
+vst.export<- assay(vstcounts)
+vst.export<- as.data.frame(vst.export)
+write.csv(vst.export, "vst-metaT.csv")
+
+plotPCA(vstcounts, intgroup=c("Condition"))
+
+select <- order(rowMeans(counts(dds)),
+                decreasing=TRUE)[1:500]
+
+df <- as.data.frame(colData(dds)[,c("Condition","Site")])
+
+pheatmap(assay(vstcounts)[select,], cluster_rows=TRUE, show_rownames=TRUE,
+         cluster_cols=TRUE, annotation_col=df)
+
+#[optional] save heatmap (must run separately)
+filename=paste("../Figures/Deseq2/heatmap-500-vst.png", sep = "")
+png(filename ,width=10, height=10, unit='in', res = 1000)
+pheatmap(assay(vstcounts)[select,], cluster_rows=TRUE, show_rownames=TRUE,
+         cluster_cols=TRUE, annotation_col=df)
+dev.off()
+```
+
