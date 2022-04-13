@@ -17,7 +17,7 @@ theme_set(theme_custom)
 
 colors = c("#2ECC71" ,"#F39C12")
 
-data <- read.csv("./Data/voc_raw/acetic-acid-for-ggplot.csv") 
+data <- read.csv("./Data/CO2-VOCs/voc_raw/acetic-acid-for-ggplot.csv") 
 
 
 
@@ -33,7 +33,7 @@ data_sub <- data %>%
   filter(Time > -0.3 & Time <2 )
 
 # Isotope Sig acetate
-filename=paste("Figs/acetate.png", sep = "")
+filename=paste("Figures/CO2-VOCs/acetate.png", sep = "")
 png(filename ,width=5, height=3, unit='in', res = 1000)
 
 data_sub %>%
@@ -72,7 +72,7 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C1 pyurvate") +
   theme(legend.position = "bottom")
-ggsave("./Figs/01_Pyruvate_acetate_C1_Plotwise.png")
+ggsave("./Figures/CO2-VOCs/01_Pyruvate_acetate_C1_Plotwise.png")
 
 data_sub %>%
   filter(Type == "sample") %>% 
@@ -88,10 +88,10 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C2 pyurvate") +
   theme(legend.position = "bottom")
-ggsave("./Figs/01_Pyruvate_acetate_C2_Plotwise.png")
+ggsave("./Figures/CO2-VOCs/01_Pyruvate_acetate_C2_Plotwise.png")
 
 # Isotope Sig - boxplots
-filename=paste("Figs/acetate-boxplot.png", sep = "")
+filename=paste("./Figures/CO2-VOCs/acetate-boxplot.png", sep = "")
 png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
