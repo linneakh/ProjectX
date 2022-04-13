@@ -1,0 +1,70 @@
+---
+title: "soil-moisture"
+author: "Linnea Honeker"
+date: "4/13/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("tidyverse")
+library("dplyr")
+library("ggplot2")
+```
+
+## Soil Moisture
+Data was obtained from soil moisture collected along with cartridge sampling during dates that were close to pyruvate labeling. During pre-drought, there is soil moisture from 9/30 and 10/9/19, and for drought, there is soil moisture from 11/10/19 and 11/17/19.
+
+```{r load_data}
+#load soil moisture data
+data <- read.csv("../Data/soil_moisture/soil_moisture.csv", header = TRUE)
+data$Condition <- factor(data$Condition, c("PreDrought", "Drought"))
+
+#add soil moisture means
+data <- data %>%
+  replace(is.na(.), 0) %>%
+   mutate(SM = rowMeans(.[5:7])) %>%
+   filter(SM != 0)
+```
+
+## Plot soil moisture
+
+
+```{r plot_soil_moisture}
+#overall 
+p1 <- ggplot(data, aes(x = Condition, y= SM)) +
+ geom_boxplot() 
+p1
+
+#by site
+p2 <- ggplot(data, aes(x = Condition, y= SM)) +
+ geom_boxplot() +
+  facet_grid(~Site)
+p2
+```
+
+## Plot soil temperature
+```{r plot_soil_temp}
+#overall 
+p1 <- ggplot(data, aes(x = Condition, y= ST)) +
+ geom_boxplot() 
+p1
+
+#by site
+p2 <- ggplot(data, aes(x = Condition, y= ST)) +
+ geom_boxplot() +
+  facet_grid(~Site)
+p2
+```
+
+##statistical test
+
+```{r}
+wilcox.test(SM ~ Condition, data)
+
+wilcox.test(ST ~ Condition, data)
+
+
+```
+
