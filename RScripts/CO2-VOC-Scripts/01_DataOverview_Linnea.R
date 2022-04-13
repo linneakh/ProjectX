@@ -1,8 +1,7 @@
 
-
 # Visualize Pyruvate Co2 Fluxes
 
-# Johannes Ingrisch
+# Johannes Ingrisch, modified by Linnea Honeker
 # 2021-08-26
 
 # load packages
@@ -18,7 +17,7 @@ theme_set(theme_custom)
 colors = c("#2ECC71" ,"#F39C12")
 
 
-data <- read.csv("./Data/01_raw/S3_PyruvateLabeling_qc.csv") %>% 
+data <- read.csv("./Data/CO2-VOCs/01_raw/S3_PyruvateLabeling_qc.csv") %>% 
   select(-X)
 
 
@@ -45,7 +44,7 @@ data$Condition <- factor(data$Condition, c(
   "pre_drought", "drought"))
 
 # Isotope Sig
-filename=paste("Figs/C1_C2_delta_co2-update.png", sep = "")
+filename=paste("Figures/CO2-VOCs/C1_C2_delta_co2-update.png", sep = "")
 png(filename ,width=5, height=3, unit='in', res = 1000)
 
 data_sub %>%
@@ -70,7 +69,7 @@ data_sub %>%
 dev.off()
 
 
-filename=paste("Figs/C1_comb_C2_flux-update.png", sep = "")
+filename=paste("Figures/CO2-VOCs/C1_comb_C2_flux-update.png", sep = "")
 png(filename ,width=9, height=5, unit='in', res = 1000)
 
 data_sub %>% 
@@ -96,10 +95,6 @@ data_sub %>%
 dev.off()
 
 
-p1 / p2 / guide_area() + plot_layout(guides = "collect", heights = c(1,1,0.3))
-ggsave("./Figs/01_Pyruvate_SoilResp_Overview.png",)  
-
-
 # Plotwise
 data_sub %>%
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
@@ -116,12 +111,12 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = bquote(delta^13 *CO[2]), subtitle = "C1-Pyruvate") +
   theme(legend.position = "bottom")
-ggsave("./Figs/01_Pyruvate_SoilResp_C1_Plotwise_update.png")
+ggsave("./Figures/CO2-VOCs/01_Pyruvate_SoilResp_C1_Plotwise_update.png")
 
 data_sub %>% 
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
   mutate(Condition=factor(Condition, levels = c("pre_drought", "drought"))) %>% 
-  filter(Variable == "D13C" & Pyruv =="C122") %>% 
+  filter(Variable == "D13C" & Pyruv =="C2") %>% 
   mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
   ggplot(aes(x = Trel, y = Value, color = Condition)) +
   facet_wrap(. ~ Label) + 
@@ -133,10 +128,10 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = bquote(delta^13 *CO[2]), subtitle = "C2-Pyruvate") +
   theme(legend.position = "bottom")
-ggsave("./Figs/01_Pyruvate_SoilResp_C2_Plotwise_update.png")
+ggsave("./Figures/CO2-VOCs/01_Pyruvate_SoilResp_C2_Plotwise_update.png")
 
 # Isotope Sig - boxplots
-filename=paste("Figs/C1_C2_delta_co2-boxplot.png", sep = "")
+filename=paste("Figures/CO2-VOCs/C1_C2_delta_co2-boxplot.png", sep = "")
 png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
@@ -162,7 +157,7 @@ data_sub %>%
 dev.off()
 
 
-filename=paste("Figs/C1_comb_C2_flux-barplot.png", sep = "")
+filename=paste("Figures/CO2-VOCs/C1_comb_C2_flux-barplot.png", sep = "")
 png(filename ,width=2.5, height=4, unit='in', res = 1000)
 
 data_sub %>% 
@@ -187,10 +182,6 @@ data_sub %>%
         legend.title = element_blank()) +
   ylim(0,6)
 dev.off()
-
-
-p1 / p2 / guide_area() + plot_layout(guides = "collect", heights = c(1,1,0.3))
-ggsave("./Figs/01_Pyruvate_SoilResp_Overview.png",)  
 
 ####statistical analysis
 #Flux - Condition, in C1 and C2 separated
