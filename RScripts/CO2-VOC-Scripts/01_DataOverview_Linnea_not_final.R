@@ -55,14 +55,14 @@ data_sub %>%
     startsWith(Label, "S2") ~ "Site2",
     startsWith(Label, "S3") ~ "Site3"
   )) %>%
-  ggplot(aes(x = Trel, y = Value, color = Condition)) +
-  facet_grid(Site ~ Pyruv) + 
+  ggplot(aes(x = Trel, y = Value, color = Pyruv)) +
+  facet_grid(Site~Condition) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
   geom_point(alpha = 0.3, size = 1.5) +
-  geom_smooth(aes(group = interaction(label_state, Condition)), span = 0.5) +
-  scale_color_manual(values = colors,
-                     breaks = c("pre_drought", "drought"),
-                     labels = c("Pre Drought", "Drought")) + 
+  geom_smooth(aes(group = interaction(label_state, Pyruv)), span = 0.5) +
+  #scale_color_manual(values = colors,
+  #                   breaks = c("pre_drought", "drought"),
+  #                   labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = bquote(delta^13 *CO[2])) +
   theme(text = element_text(size = 12,
                            family = "Arial",
@@ -79,6 +79,7 @@ data_sub %>%
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
   mutate(Condition=factor(Condition, levels = c("pre_drought", "drought"))) %>% 
   filter(Variable == "Flux") %>% 
+  filter(Label != "S2.P1") %>%
   mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
   mutate(Site = case_when(
     startsWith(Label, "S1") ~ "Site1",
@@ -229,9 +230,10 @@ dev.off()
 
 ###C1/C2 ratios
 data_sub %>%
-  mutate(label_state = ifelse(Trel >2 & Trel< 24, "post", "pre")) %>% 
+  mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
   filter(label_state == "post") %>%
   select(-(c(Trel, label_state))) %>%
+  filter(Label != "S2.P1") %>%
   mutate(Site = case_when(
     startsWith(Label, "S1") ~ "Site1",
     startsWith(Label, "S2") ~ "Site2",
@@ -245,7 +247,7 @@ data_sub %>%
   mutate(C1_C2_d13c_ratio = D13C_C1/D13C_C2) %>%
   ggplot(aes(x=Condition, y=C1_C2_d13c_ratio, fill = Condition)) +
   geom_boxplot() +
-  facet_grid(~Site) +
+  #facet_grid(~Site) +
   scale_x_discrete(labels = c("Pre Drought", "Drought")) +
   scale_fill_manual(values = colors,
                     breaks = c("pre_drought", "drought"),
@@ -257,7 +259,42 @@ data_sub %>%
         axis.title.x = element_blank(),
         legend.title = element_blank()) 
  
-
+data_sub %>%
+  mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
+  filter(label_state == "post") %>%
+  select(-label_state) %>%
+  filter(Label != "S2.P1") %>%
+  mutate(Site = case_when(
+    startsWith(Label, "S1") ~ "Site1",
+    startsWith(Label, "S2") ~ "Site2",
+    startsWith(Label, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time = case_when(
+    (Trel < 5) ~ "5hr",
+    (Trel > 5 & Trel < 10) ~ "10hr",
+    (Trel > 10 & Trel < 20) ~ "20hr",
+    (Trel > 20 & Trel < 40) ~ "40hr",
+    (Trel > 40 & Trel < 48) ~ "48hr"
+  )) %>%
+  mutate(Time=factor(Time, levels = c("5hr", "10hr", "20hr", "40hr", "48hr"))) %>% 
+  group_by(Site, Condition, Pyruv, Time) %>%
+  summarise_all(funs(mean)) %>%
+  select(-c(Label, Trel)) %>%
+  pivot_wider(names_from = Pyruv, values_from = c(Flux, D13C)) %>%
+  mutate(C1_C2_ratio = Flux_C1/Flux_C2) %>%
+  mutate(C1_C2_d13c_ratio = D13C_C1/D13C_C2) %>%
+  ggplot(aes(x = Time, y = C1_C2_d13c_ratio, fill = Condition)) +
+  geom_boxplot() +
+  #facet_wrap(. ~ Site) + 
+  scale_fill_manual(values = colors,
+                    breaks = c("pre_drought", "drought"),
+                    labels = c("Pre Drought", "Drought")) + 
+  theme(text = element_text(size = 10,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank()) 
 
 ####statistical analysis
 #Flux - Condition, in C1 and C2 separated
