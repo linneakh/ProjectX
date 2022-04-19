@@ -18,6 +18,7 @@ library("ggplot2")
 library("pheatmap")
 library("stringr")
 library(tidyverse)
+library(cowplot)
 ```
 
 # WGCNA analysis of soil pyruvate metatranscriptomic data. 
@@ -354,17 +355,30 @@ with(resLFC.t48, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot
 with(subset(resLFC.t48, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(resLFC.t48, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
 ```
+```{r export_results_drought_48hr_vs_predrought_48hr, include = FALSE}
+#export results
+write.csv(as.data.frame(res.t48), 
+          file="../Output/Deseq2/drought-48hr-vs-predrought-48hr.csv")
+write.csv(as.data.frame(resLFC.t48),
+          file="../Output/Deseq2/drought-48hr-vs-predrought-48hr-lfc.csv")
+```
 
 # Notes on observations
 ## Most DE occurs at T=0, before pyruvate addition. During this time, the stress difference between pre-drought and drought conditions are the greatest.
 ## The least DE occurs at T=6, just after pyruvate addition. This must stimulate similar microbial activity, of perhaps those that lost activity during drought, than that of pre-drought.  
 ## LFC tends to cause the really low Log2FC values that I have been noticing. I think using the analysis of non-LFC transformed data is best
 
-#Next, find DE of target genes involved in VOC cycling
-##All time points
+# Next, find DE of target genes involved in VOC cycling
+## All time points
 ```{r}
-#Extract acetate, acetone, and diacetyl genes of interest 
+#Extract acetate, acetone, and diacetyl genes of interest. Also, combine interest table with correlations of VOCs and gene expression from WGNCA analysis
 interest <- read.csv("../Data/Deseq2/KO_interest.csv", header = TRUE)
+correlations_acetone <- read.csv("../Data/Deseq2/gene-screening-acetone-spearman.csv", header = TRUE)
+
+int_corr_acetone <- interest %>%
+  merge(correlations_acetone, by = "KO") %>%
+  arrange(VOC)
+  
 
 rownames(as.data.frame(res))
 
@@ -372,7 +386,7 @@ rownames(as.data.frame(res))
 as.data.frame(res) %>%
   rownames_to_column(var = "KO") %>%
   merge(interest , by = "KO") %>%
-  filter(Priority == "yes") %>%
+  #filter(Priority == "yes") %>%
   mutate(Significance =
            case_when(padj < 0.05 & log2FoldChange > 0 ~ "Sig.D", 
                      padj < 0.05 & log2FoldChange < 0 ~ "Sig.PD")) %>%
@@ -411,13 +425,13 @@ ggsave("../Figures/Deseq2/VOC-genes-all-times.png", dpi = 300, width = 3, height
 
 ```{r}
 #time 0
-as.data.frame(res.T0) %>%
+p1 <- as.data.frame(res.T0) %>%
   rownames_to_column(var = "KO") %>%
   merge(.,interest , by = "KO") %>%
-  filter(Priority == "yes") %>%
+  #filter(Priority == "yes") %>%
   mutate(Significance =
-           case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.D", 
-                     padj < 0.1 & log2FoldChange < 0 ~ "Sig.PD")) %>%
+           case_when(padj < 0.05 & log2FoldChange > 0 ~ "Sig.D", 
+                     padj < 0.05 & log2FoldChange < 0 ~ "Sig.PD")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
   mutate(gene_name = fct_reorder(gene_name, log2FoldChange)) %>%
   ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
@@ -441,26 +455,36 @@ as.data.frame(res.T0) %>%
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
 ggsave("../Figures/Deseq2/VOC-genes-T0.png", dpi = 300, width = 3, height = 5)
+
+# return vecor with correct gene order from plot above
+ordered.res.T0 <- as.data.frame(res.T0) %>%
+   rownames_to_column(var = "KO") %>%
+  merge(.,interest , by = "KO") %>%
+  #filter(Priority == "yes") %>%
+  arrange(log2FoldChange)
+
+ordered.VOC.vector <- ordered.res.T0$gene_name
+
 ```
 ###Time 6 hr
 ```{r}
 #time 6
-as.data.frame(res.T6) %>%
+p2 <- as.data.frame(res.T6) %>%
   rownames_to_column(var = "KO") %>%
   merge(.,interest , by = "KO") %>%
-  filter(Priority == "yes") %>%
+  #filter(Priority == "yes") %>%
   mutate(Significance =
            case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.D", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.PD")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
-  mutate(gene_name = fct_reorder(gene_name, log2FoldChange)) %>%
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
   ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
   geom_col() +
   coord_flip() +
   theme_bw() +
   labs(y="Log-2FC") +
-  ylim(-10,10) +
-  facet_wrap(~VOC, scales = "free", ncol = 1) +
+  ylim(-8,8) +
+  facet_wrap(~VOC,  scales = "free", ncol = 1) +
   scale_fill_manual (values = c("lightgray","black"),
                      breaks = c("consume", "produce")) +
   scale_color_manual (values = c("#2ECC71" ,"#F39C12"),
@@ -479,21 +503,21 @@ ggsave("../Figures/Deseq2/VOC-genes-T6.png", dpi = 300, width = 3, height = 5)
 ###Time 48 hr
 ```{r}
 #time 48
-as.data.frame(res.t48) %>%
+p3 <- as.data.frame(res.t48) %>%
   rownames_to_column(var = "KO") %>%
   merge(.,interest , by = "KO") %>%
-  filter(Priority == "yes") %>%
+  #filter(Priority == "yes") %>%
   mutate(Significance =
            case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.D", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.PD")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
-  mutate(gene_name = fct_reorder(gene_name, log2FoldChange)) %>%
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
   ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
   geom_col() +
   coord_flip() +
   theme_bw() +
   labs(y="Log-2FC") +
-  ylim(-10,10) +
+  ylim(-8,8) +
   facet_wrap(~VOC, scales = "free", ncol = 1) +
   scale_fill_manual (values = c("lightgray","black"),
                      breaks = c("consume", "produce")) +
@@ -511,5 +535,12 @@ as.data.frame(res.t48) %>%
 ggsave("../Figures/Deseq2/VOC-genes-T48.png", dpi = 300, width = 3, height = 5)
 ```
 
+```{r fig, fig.height = 6, fig.width = 6}
+plot_grid(p1, p2, p3, 
+          labels = c('A', 'B', 'C'),
+          label_size = 12,
+              ncol = 3)
+
+```
 
 

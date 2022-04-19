@@ -9,6 +9,8 @@ library(tidyverse)
 library(plotly)
 library(ggthemes)
 library(patchwork)
+library(zoo)
+library(dplyr)
 
 theme_custom <- theme_few()
 
@@ -41,9 +43,16 @@ data_sub <- data %>%
   select(-Qc_iso, -Qc_flux) %>% 
   filter(Trel > -10, Trel < 50, Flux > 0, D13C > -100)
 
+
 # Isotope Sig
 filename=paste("Figures/CO2-VOCs/C1_C2_delta_co2-update.png", sep = "")
 png(filename ,width=5, height=3, unit='in', res = 1000)
+
+dataLine <- data_sub %>%
+  group_by(Condition) %>%
+  summarize(max = max(D13C))
+
+x[which()]
 
 data_sub %>%
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
@@ -56,10 +65,11 @@ data_sub %>%
     startsWith(Label, "S3") ~ "Site3"
   )) %>%
   ggplot(aes(x = Trel, y = Value, color = Pyruv)) +
-  facet_grid(Site~Condition) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
   geom_point(alpha = 0.3, size = 1.5) +
   geom_smooth(aes(group = interaction(label_state, Pyruv)), span = 0.5) +
+  geom_vline(aes(xintercept = Meah.flux)) +
+  facet_wrap(~ Condition) +
   #scale_color_manual(values = colors,
   #                   breaks = c("pre_drought", "drought"),
   #                   labels = c("Pre Drought", "Drought")) + 
@@ -72,13 +82,16 @@ data_sub %>%
 dev.off()
 
 
+
+
+
+
 filename=paste("Figures/CO2-VOCs/C1_comb_C2_flux-update.png", sep = "")
 png(filename ,width=9, height=5, unit='in', res = 1000)
 
 data_sub %>% 
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
   mutate(Condition=factor(Condition, levels = c("pre_drought", "drought"))) %>% 
-  filter(Variable == "Flux") %>% 
   filter(Label != "S2.P1") %>%
   mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
   mutate(Site = case_when(
@@ -86,21 +99,18 @@ data_sub %>%
     startsWith(Label, "S2") ~ "Site2",
     startsWith(Label, "S3") ~ "Site3"
   )) %>%
-  ggplot(aes(x = Trel, y = Value, color = Condition)) +
-  facet_grid(Site ~ Pyruv) + 
+  ggplot(aes(x = Trel, y = Value, color = Pyruv)) +
+  facet_grid(Variable~Condition, scales = "free") + 
   geom_point(alpha = 0.3, size = 2) +
   geom_smooth(span = 0.5) +
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
-  scale_color_manual(values = colors,
-                     breaks = c("pre_drought", "drought"),
-                     labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = bquote("Soil" ~ CO[2]~"efflux (" *mu*mol ~m^-2*s^-1*")")) +
   theme(text = element_text(size = 17,
                             family = "Arial",
                             color = "black"),
         legend.position = "bottom",
-        legend.title = element_blank()) +
-  ylim(0,6)
+        legend.title = element_blank())
+  #ylim(0,6)
 dev.off()
 
 
@@ -244,8 +254,9 @@ data_sub %>%
   select(-Label) %>%
   pivot_wider(names_from = Pyruv, values_from = c(Flux, D13C)) %>%
   mutate(C1_C2_ratio = Flux_C1/Flux_C2) %>%
+  mutate(C1_C2_diff = Flux_C1 - Flux_C2) %>%
   mutate(C1_C2_d13c_ratio = D13C_C1/D13C_C2) %>%
-  ggplot(aes(x=Condition, y=C1_C2_d13c_ratio, fill = Condition)) +
+  ggplot(aes(x=Condition, y=C1_C2_diff, fill = Condition)) +
   geom_boxplot() +
   #facet_grid(~Site) +
   scale_x_discrete(labels = c("Pre Drought", "Drought")) +
@@ -270,20 +281,25 @@ data_sub %>%
     startsWith(Label, "S3") ~ "Site3"
   )) %>%
   mutate(Time = case_when(
-    (Trel < 5) ~ "5hr",
-    (Trel > 5 & Trel < 10) ~ "10hr",
-    (Trel > 10 & Trel < 20) ~ "20hr",
-    (Trel > 20 & Trel < 40) ~ "40hr",
-    (Trel > 40 & Trel < 48) ~ "48hr"
+    (Trel < 3) ~ "3hr",
+    (Trel > 3 & Trel < 6) ~ "6hr",
+    (Trel > 6 & Trel < 12) ~ "12hr",
+    (Trel > 12 & Trel < 18) ~ "18hr",
+    (Trel > 18 & Trel < 24) ~ "24hr",
+    (Trel > 24 & Trel < 30) ~ "30hr",
+    (Trel > 30 & Trel < 48) ~ "48hr"
   )) %>%
-  mutate(Time=factor(Time, levels = c("5hr", "10hr", "20hr", "40hr", "48hr"))) %>% 
-  group_by(Site, Condition, Pyruv, Time) %>%
+  mutate(Time=factor(Time, levels = c("3hr", "6hr", "12hr", "24hr", "30hr", "48hr"))) %>% 
+  filter(Time != "3hr" & Time != "48hr") %>%
+  group_by(Condition, Site, Time, Pyruv) %>%
   summarise_all(funs(mean)) %>%
   select(-c(Label, Trel)) %>%
   pivot_wider(names_from = Pyruv, values_from = c(Flux, D13C)) %>%
   mutate(C1_C2_ratio = Flux_C1/Flux_C2) %>%
+  mutate(C1_C2_diff = Flux_C1 - Flux_C2) %>%
   mutate(C1_C2_d13c_ratio = D13C_C1/D13C_C2) %>%
-  ggplot(aes(x = Time, y = C1_C2_d13c_ratio, fill = Condition)) +
+  mutate(C1_C2_d13c_diff = D13C_C1 - D13C_C2) %>%
+  ggplot(aes(x = Time, y = C1_C2_d13c_diff, fill = Condition)) +
   geom_boxplot() +
   #facet_wrap(. ~ Site) + 
   scale_fill_manual(values = colors,
