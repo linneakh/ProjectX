@@ -19,6 +19,7 @@ library("pheatmap")
 library("stringr")
 library(tidyverse)
 library(cowplot)
+library(reshape2)
 ```
 
 # WGCNA analysis of soil pyruvate metatranscriptomic data. 
@@ -374,13 +375,27 @@ write.csv(as.data.frame(resLFC.t48),
 #Extract acetate, acetone, and diacetyl genes of interest. Also, combine interest table with correlations of VOCs and gene expression from WGNCA analysis
 interest <- read.csv("../Data/Deseq2/KO_interest.csv", header = TRUE)
 correlations_acetone <- read.csv("../Data/Deseq2/gene-screening-acetone-spearman.csv", header = TRUE)
+correlations_acetate <- read.csv("../Data/Deseq2/gene-screening-acetatec2-spearman.csv", header = TRUE)
+correlations_diacetyl <- read.csv("../Data/Deseq2/gene-screening-diacetyl-spearman.csv", header = TRUE)
 
-int_corr_acetone <- interest %>%
+#create a correlation matrix between each VOC and genes of interest. Create a separate table for q values
+corr_table <- interest %>%
   merge(correlations_acetone, by = "KO") %>%
-  arrange(VOC)
-  
+  rename(Acetone = cor.Standard) %>%
+  select(c("gene_name", "Acetone", "KO", "VOC")) %>%
+  merge(correlations_acetate, by = "KO") %>%
+  rename(Acetate = cor.Standard) %>%
+  select(c("gene_name", "Acetone", "Acetate", "KO", "VOC")) %>%
+  merge(correlations_diacetyl, by = "KO") %>%
+  rename(Diacetyl = cor.Standard) %>%
+  arrange(VOC) %>%
+  select(c("gene_name", "Acetone", "Acetate", "Diacetyl")) %>%
+  pivot_longer(!gene_name, names_to = "VOC", values_to = "corr")
 
-rownames(as.data.frame(res))
+#q_table <-   
+#heatmap
+ggplot(data = corr_table, aes(x=gene_name, y= VOC, fill = corr)) +
+  geom_tile()
 
 ##all times
 as.data.frame(res) %>%
