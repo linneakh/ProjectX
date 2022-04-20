@@ -27,7 +27,7 @@ size = 10
 ########################################## PCA on all samples############
 
 #NMR
-df.0 = read.csv("./Data/nmr_raw/soil_pyruvate_nmr.csv", header = TRUE)
+df.0 = read.csv("../Data/nmr_raw/soil_pyruvate_nmr.csv", header = TRUE)
 rownames(df.0) <- df.0$X
 df.0$X <- NULL
 
@@ -35,7 +35,7 @@ df <- t(df.0)
 df <- as.data.frame(df)
 
 #FTICR masses
-df.f.0 = read.csv("./Data/FTICR_norm/metabodirect_matrix_features_norm.csv")
+df.f.0 = read.csv("../Data/FTICR_norm/metabodirect_matrix_features_norm.csv")
 rownames(df.f.0) <- df.f.0$Mass
 df.f.0$Mass <- NULL
 
@@ -51,7 +51,7 @@ df.f <- t(df.f.0)
 df.f <- as.data.frame(df.f)
 
 #FTICR classes
-df.c.0 = read.csv("./Data/FTICR_norm/metabodirect_class_composition.csv")
+df.c.0 = read.csv("../Data/FTICR_norm/metabodirect_class_composition.csv")
 rownames(df.c.0) <- df.c.0$SampleID
 df.c.0$SampleID <- NULL
 df.c.0 <- t(df.c.0)
