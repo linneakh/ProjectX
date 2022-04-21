@@ -11,7 +11,7 @@ library(viridis)
 library(vegan)
 
 
-source('./Scripts/extra_functions.R')
+source('./RScripts/extra_functions.R')
 
 colors = c("#2ECC71" ,"#F39C12")
 
@@ -27,7 +27,7 @@ size = 10
 ########################################## PCA on all samples############
 
 #NMR
-df.0 = read.csv("../Data/nmr_raw/soil_pyruvate_nmr.csv", header = TRUE)
+df.0 = read.csv("./Data/nmr_raw/soil_pyruvate_nmr.csv", header = TRUE)
 rownames(df.0) <- df.0$X
 df.0$X <- NULL
 
@@ -35,7 +35,7 @@ df <- t(df.0)
 df <- as.data.frame(df)
 
 #FTICR masses
-df.f.0 = read.csv("../Data/FTICR_norm/metabodirect_matrix_features_norm.csv")
+df.f.0 = read.csv("./Data/FTICR_norm/metabodirect_matrix_features_norm.csv")
 rownames(df.f.0) <- df.f.0$Mass
 df.f.0$Mass <- NULL
 
@@ -51,7 +51,7 @@ df.f <- t(df.f.0)
 df.f <- as.data.frame(df.f)
 
 #FTICR classes
-df.c.0 = read.csv("../Data/FTICR_norm/metabodirect_class_composition.csv")
+df.c.0 = read.csv("./Data/FTICR_norm/metabodirect_class_composition.csv")
 rownames(df.c.0) <- df.c.0$SampleID
 df.c.0$SampleID <- NULL
 df.c.0 <- t(df.c.0)
@@ -77,10 +77,10 @@ eigen <- get_eigenvalue(pca) # this function is from factoextra
 dimensions <- c(1:dim(eigen)[1]) # this is for the plot
 
 scree <- make_screeplot(eigen, dimensions) + ggtitle('Scree plot, PCA Class')
-filename <- paste0("./Figs/PCA/PCA_screeplot.png")
+filename <- paste0("./Figures/PCA_meta/PCA_screeplot.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,scree)
 cumvar <-  make_cumvar(eigen, dimensions) + ggtitle('Cumulative variance plot, PCA Class')
-filename <- paste0("./Figs/PCA/PCA_cumulative_var.png")
+filename <- paste0("./Figures/PCA_meta/PCA_cumulative_var.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,cumvar)
 
 # extract coordinates for PC1 and PC2
@@ -95,7 +95,7 @@ pca_coordinates <- pca_coordinates %>%
 
 pca_coordinates$Condition <- factor(pca_coordinates$Condition, c("pre", "drought"))
 
-write.csv(pca_coordinates,file=paste0("./Output/PCA/PCA_individual_coordinates.csv"),row.names=TRUE)
+write.csv(pca_coordinates,file=paste0("./Output/PCA_meta/PCA_individual_coordinates.csv"),row.names=TRUE)
 
 # prepare label for graph
 pc1 <- paste0('PC1 (',round(eigen$variance.percent[1],digits=1),'%)')
@@ -103,8 +103,9 @@ pc2 <- paste0('PC2 (',round(eigen$variance.percent[2],digits=1),'%)')
 
 # arrows
 arrows <- get_arrows(pca, pca_coordinates)
-write.csv(arrows,file=paste0("./Output/PCA/PCA_vector_coordinates.csv"), row.names=TRUE)
+write.csv(arrows,file=paste0("./Output/PCA_meta/PCA_vector_coordinates.csv"), row.names=TRUE)
 
+### pca with no shape 
 pca_plot <-  ggplot(mapping = aes(x, y)) +
   geom_point(data=pca_coordinates, aes(x=PC1, y=PC2, col=Condition), 
              size=size/2, show.legend = TRUE) +
@@ -123,7 +124,7 @@ pca_plot <-  ggplot(mapping = aes(x, y)) +
          axis.title.y = element_text(size=size+3,face="bold"),
          plot.title = element_text(size=size+3,face="bold")) 
 pca_plot
-filename <- paste0("./Figs/PCA/VOC_PCA_plot.png")
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
 # pca biplot
@@ -136,10 +137,43 @@ pca_biplot <- pca_plot +
 
 pca_biplot 
 
-filename <- paste0("./Figs/PCA/VOC_PCA_biplot.png")
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
+### Pca with site as shapes
+pca_plot <-  ggplot(mapping = aes(x, y)) +
+  geom_point(data=pca_coordinates, aes(x=PC1, y=PC2, col=Condition, shape = Site), 
+             size=size/2, show.legend = TRUE) +
+  theme_linedraw(base_size = size) + labs(x= pc1, y=pc2) +
+  scale_color_manual(values = colors,
+                     breaks = c("pre", "drought"),
+                     labels = c("Pre Drought", "Drought")) +
+  scale_shape_manual(values= list_of_shapes) +
+  
+  theme( legend.text = element_text(size=size+3, face="bold"),
+         legend.title = element_blank(),
+         legend.key.size = unit(0.6, "cm"),
+         legend.key.width = unit(0.6,"cm"),
+         legend.position = "bottom",
+         axis.title.x = element_text(size=size+3,face="bold"),
+         axis.title.y = element_text(size=size+3,face="bold"),
+         plot.title = element_text(size=size+3,face="bold")) 
+pca_plot
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot_site.png")
+ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
+# pca biplot
+pca_biplot <- pca_plot +
+  new_scale_color() +
+  geom_segment(data=arrows, aes(x=0, y=0, xend=xend, yend=yend),
+               arrow=arrow(length = unit(0.1,"cm")), size=0.7, color = "grey") +
+  geom_text_repel(data=arrows, aes(x=xend, y=yend), color = "black",
+                  label=arrows$name, size=size/3, show.legend = FALSE)
+
+pca_biplot 
+
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot_site.png")
+ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 ########################################## PCA on FTICR#####################
 # Calculate PCA with prcomp()
 pca <- prcomp(df.f, scale = TRUE, center = TRUE)
@@ -148,10 +182,10 @@ eigen <- get_eigenvalue(pca) # this function is from factoextra
 dimensions <- c(1:dim(eigen)[1]) # this is for the plot
 
 scree <- make_screeplot(eigen, dimensions) + ggtitle('Scree plot, PCA Class')
-filename <- paste0("./Figs/PCA/PCA_screeplot_FTICR.png")
+filename <- paste0("./Figures/PCA_meta/PCA_screeplot_FTICR.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,scree)
 cumvar <-  make_cumvar(eigen, dimensions) + ggtitle('Cumulative variance plot, PCA Class')
-filename <- paste0("./Figs/PCA/PCA_cumulative_var_FTICR.png")
+filename <- paste0("./Figures/PCA_meta/PCA_cumulative_var_FTICR.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,cumvar)
 
 # extract coordinates for PC1 and PC2
@@ -166,7 +200,7 @@ pca_coordinates <- pca_coordinates %>%
 
 pca_coordinates$Condition <- factor(pca_coordinates$Condition, c("PreDrought", "Drought"))
 
-write.csv(pca_coordinates,file=paste0("./Output/PCA/PCA_individual_coordinates_FTICR.csv"),row.names=TRUE)
+write.csv(pca_coordinates,file=paste0("./Output/PCA_meta/PCA_individual_coordinates_FTICR.csv"),row.names=TRUE)
 
 
 
@@ -176,7 +210,7 @@ pc2 <- paste0('PC2 (',round(eigen$variance.percent[2],digits=1),'%)')
 
 # arrows
 arrows <- get_arrows(pca, pca_coordinates)
-write.csv(arrows,file=paste0("./Output/PCA/PCA_vector_coordinates_FTICR.csv"), row.names=TRUE)
+write.csv(arrows,file=paste0("./Output/PCA_meta/PCA_vector_coordinates_FTICR.csv"), row.names=TRUE)
 
 #filter arrows to top 25% loadings. Can modify "0.75" to "0.85" for 15% top loadings, etc.
 top <- quantile(arrows$coord, 0.99) 
@@ -203,7 +237,7 @@ pca_plot <-  ggplot(mapping = aes(x, y)) +
          axis.title.y = element_text(size=size+3,face="bold"),
          plot.title = element_text(size=size+3,face="bold")) 
 pca_plot
-filename <- paste0("./Figs/PCA/VOC_PCA_plot_FTICR.png")
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot_FTICR.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
 # pca biplot
@@ -216,7 +250,7 @@ pca_biplot <- pca_plot +
 
 pca_biplot 
 
-filename <- paste0("./Figs/PCA/VOC_PCA_biplot_FTICR.png")
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot_FTICR.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
 ########################################## PCA on FTICR classes#####################
@@ -227,10 +261,10 @@ eigen <- get_eigenvalue(pca) # this function is from factoextra
 dimensions <- c(1:dim(eigen)[1]) # this is for the plot
 
 scree <- make_screeplot(eigen, dimensions) + ggtitle('Scree plot, PCA Class')
-filename <- paste0("./Figs/PCA/PCA_screeplot_FTICR_class.png")
+filename <- paste0("./Figures/PCA_meta/PCA_screeplot_FTICR_class.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,scree)
 cumvar <-  make_cumvar(eigen, dimensions) + ggtitle('Cumulative variance plot, PCA Class')
-filename <- paste0("./Figs/PCA/PCA_cumulative_var_FTICR_class.png")
+filename <- paste0("./Figures/PCA_meta/PCA_cumulative_var_FTICR_class.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,cumvar)
 
 # extract coordinates for PC1 and PC2
@@ -246,7 +280,7 @@ pca_coordinates <- pca_coordinates %>%
 pca_coordinates$Condition <- factor(pca_coordinates$Condition, c("PreDrought", "Drought"))
 pca_coordinates$Time <- factor(pca_coordinates$Time, c("0", "6", "48"))
 
-write.csv(pca_coordinates,file=paste0("./Output/PCA/PCA_individual_coordinates_FTICR_class.csv"),row.names=TRUE)
+write.csv(pca_coordinates,file=paste0("./Output/PCA_meta/PCA_individual_coordinates_FTICR_class.csv"),row.names=TRUE)
 
 
 
@@ -256,7 +290,7 @@ pc2 <- paste0('PC2 (',round(eigen$variance.percent[2],digits=1),'%)')
 
 # arrows
 arrows <- get_arrows(pca, pca_coordinates)
-write.csv(arrows,file=paste0("./Output/PCA/PCA_vector_coordinates_FTICR_class.csv"), row.names=TRUE)
+write.csv(arrows,file=paste0("./Output/PCA_meta/PCA_vector_coordinates_FTICR_class.csv"), row.names=TRUE)
 
 #filter arrows to top 25% loadings. Can modify "0.75" to "0.85" for 15% top loadings, etc.
 #top <- quantile(arrows$coord, 0.99) 
@@ -264,7 +298,7 @@ write.csv(arrows,file=paste0("./Output/PCA/PCA_vector_coordinates_FTICR_class.cs
 #  subset(coord > top)
 #length(arrows.f$coord)
 
-#pca
+#pca with shapes as time since pyruvate addition
 pca_plot <-  ggplot(mapping = aes(x, y)) +
   geom_point(data=pca_coordinates, aes(x=PC1, y=PC2, col=Condition, shape = Time), 
              size=size/2, show.legend = TRUE) +
@@ -283,7 +317,7 @@ pca_plot <-  ggplot(mapping = aes(x, y)) +
          axis.title.y = element_text(size=size+3,face="bold"),
          plot.title = element_text(size=size+3,face="bold")) 
 pca_plot
-filename <- paste0("./Figs/PCA/VOC_PCA_plot_FTICR_class.png")
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot_FTICR_class.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
 # pca biplot
@@ -296,9 +330,43 @@ pca_biplot <- pca_plot +
 
 pca_biplot 
 
-filename <- paste0("./Figs/PCA/VOC_PCA_biplot_FTICR_class.png")
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot_FTICR_class.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
+### pca with shapes as sites
+pca_plot <-  ggplot(mapping = aes(x, y)) +
+  geom_point(data=pca_coordinates, aes(x=PC1, y=PC2, col=Condition, shape = Site), 
+             size=size/2, show.legend = TRUE) +
+  theme_linedraw(base_size = size) + labs(x= pc1, y=pc2) +
+  scale_color_manual(values = colors,
+                     breaks = c("PreDrought", "Drought"),
+                     labels = c("Pre Drought", "Drought")) +
+  scale_shape_manual(values= list_of_shapes) +
+  
+  theme( legend.text = element_text(size=size+3, face="bold"),
+         legend.title = element_blank(),
+         legend.key.size = unit(0.6, "cm"),
+         legend.key.width = unit(0.6,"cm"),
+         legend.position = "bottom",
+         axis.title.x = element_text(size=size+3,face="bold"),
+         axis.title.y = element_text(size=size+3,face="bold"),
+         plot.title = element_text(size=size+3,face="bold")) 
+pca_plot
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot_FTICR_class_site.png")
+ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
+
+# pca biplot
+pca_biplot <- pca_plot +
+  new_scale_color() +
+  geom_segment(data=arrows, aes(x=0, y=0, xend=xend, yend=yend),
+               arrow=arrow(length = unit(0.1,"cm")), size=0.7, color = "grey") +
+  geom_text_repel(data=arrows, aes(x=xend, y=yend), color = "black",
+                  label=arrows$name, size=size/3, show.legend = FALSE)
+
+pca_biplot 
+
+filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot_FTICR_class_site.png")
+ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
 ####statistical tests#####
 ##NMR###
@@ -315,7 +383,7 @@ for(i in 6:29) {
 }
 modelList
 
-sink("./Output/PCA/Wilcox-results.txt")
+sink("./Output/PCA_meta_meta/Wilcox-results.txt")
 print(modelList)
 sink()
 
@@ -348,7 +416,7 @@ for(i in 6:14) {
 }
 modelList
 
-sink("./Output/PCA/Wilcox-results-FTICR-class.txt")
+sink("./Output/PCA_meta/Wilcox-results-FTICR-class.txt")
 print(modelList)
 sink()
 

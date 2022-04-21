@@ -37,7 +37,7 @@ filename=paste("Figures/CO2-VOCs/acetate.png", sep = "")
 png(filename ,width=5, height=3, unit='in', res = 1000)
 
 data_sub %>%
-  filter(Type == "sample") %>% 
+  #filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
   mutate(Site = case_when(
     startsWith(Sample, "S1") ~ "Site1",
@@ -45,7 +45,7 @@ data_sub %>%
     startsWith(Sample, "S3") ~ "Site3"
   )) %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
-  facet_grid(Site ~ Pyruv) + 
+  facet_grid( ~ Pyruv) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
   geom_point(alpha = 0.3, size = 1.5) +
   geom_smooth(aes(group = Condition), span = 0.5) +
@@ -64,9 +64,9 @@ dev.off()
 
 # Plotwise
 data_sub %>%
-  filter(Type == "sample") %>% 
+  #filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
-  filter(Pyruv == "C1") %>%
+  filter(Pyruv != "C2") %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
   facet_wrap(. ~ Sample, ncol = 5) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
@@ -77,12 +77,12 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C1 pyurvate") +
   theme(legend.position = "bottom")
-ggsave("./Figures/CO2-VOCs/01_Pyruvate_acetate_C1_Plotwise.png")
+ggsave("./Figures/CO2-VOCs/01_Pyruvate_acetate_C1_and_ctrl_Plotwise.png")
 
 data_sub %>%
-  filter(Type == "sample") %>% 
+  #filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
-  filter(Pyruv == "C2") %>%
+  filter(Pyruv != "C1") %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
   facet_wrap(. ~ Sample, ncol = 5) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
@@ -93,7 +93,7 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C2 pyurvate") +
   theme(legend.position = "bottom")
-ggsave("./Figures/CO2-VOCs/01_Pyruvate_acetate_C2_Plotwise.png")
+ggsave("./Figures/CO2-VOCs/01_Pyruvate_acetate_C2_and_ctrl_Plotwise.png")
 
 # Isotope Sig - boxplots
 filename=paste("./Figures/CO2-VOCs/acetate-boxplot.png", sep = "")
