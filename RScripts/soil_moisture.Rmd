@@ -11,6 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 library("tidyverse")
 library("dplyr")
 library("ggplot2")
+library("sjPlot")
+library("stargazer")
+
+colors = c("#2ECC71" ,"#F39C12")
+
 ```
 
 ## Soil Moisture
@@ -24,7 +29,8 @@ data$Condition <- factor(data$Condition, c("PreDrought", "Drought"))
 #add soil moisture means
 data <- data %>%
   replace(is.na(.), 0) %>%
-   mutate(SM = rowMeans(.[5:7])) %>%
+  rowwise() %>%
+   mutate(SM = (SM.1 + SM.2 + SM.3)/3, SM.sd = sd(c(SM.1, SM.2, SM.3))) %>%
    filter(SM != 0)
 ```
 
@@ -33,14 +39,20 @@ data <- data %>%
 
 ```{r plot_soil_moisture}
 #overall 
-p1 <- ggplot(data, aes(x = Condition, y= SM)) +
- geom_boxplot() 
+p1 <- ggplot(data, aes(x = Condition, y= SM, fill = Condition)) +
+ geom_boxplot() +
+  scale_fill_manual(values = colors) +
+  labs(y = "Soil Moisture %")
+  
 p1
 
+
 #by site
-p2 <- ggplot(data, aes(x = Condition, y= SM)) +
+p2 <- ggplot(data, aes(x = Condition, y= SM, fill = Condition)) +
  geom_boxplot() +
-  facet_grid(~Site)
+  facet_grid(~Site) +
+  scale_fill_manual(values = colors)
+  
 p2
 ```
 
@@ -58,6 +70,44 @@ p2 <- ggplot(data, aes(x = Condition, y= ST)) +
 p2
 ```
 
+## Return summary statistics for PreDrought and Drought
+```{r}
+#soil moisture statistics
+data.PD <- data %>%
+  filter(Condition == "PreDrought") 
+
+data.PD.mean <- mean(data.PD$SM)
+data.PD.sd <- sd(data.PD$SM)
+
+print(c("Predrought mean SM =",data.PD.mean,"±",data.PD.sd))
+
+data.D <- data %>%
+  filter(Condition == "Drought") 
+
+data.D.mean <- mean(data.D$SM)
+data.D.sd <- sd(data.D$SM)
+
+print(c("drought mean SM =",data.D.mean,"±",data.D.sd))
+
+#soil temperature statistics
+data.PD <- data %>%
+  filter(Condition == "PreDrought") 
+
+data.PD.mean <- mean(data.PD$ST)
+data.PD.sd <- sd(data.PD$ST)
+
+print(c("Predrought mean ST =",data.PD.mean,"±",data.PD.sd))
+
+data.D <- data %>%
+  filter(Condition == "Drought") 
+
+data.D.mean <- mean(data.D$ST)
+data.D.sd <- sd(data.D$ST)
+
+print(c("drought mean ST =",data.D.mean,"±",data.D.sd))
+
+```
+
 ##statistical test
 
 ```{r}
@@ -65,6 +115,15 @@ wilcox.test(SM ~ Condition, data)
 
 wilcox.test(ST ~ Condition, data)
 
+
+```
+
+```{r}
+#create table for publication
+data.pub <- data %>%
+  select(-(SM.1, SM.2,SM.3, Date )) %>%
+  pivot_wider(id_cols = Site, names_from = Condition)
+  
 
 ```
 

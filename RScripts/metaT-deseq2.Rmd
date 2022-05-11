@@ -20,6 +20,7 @@ library("stringr")
 library(tidyverse)
 library(cowplot)
 library(reshape2)
+library(heatmaply)
 ```
 
 # WGCNA analysis of soil pyruvate metatranscriptomic data. 
@@ -145,7 +146,7 @@ coldata$Condition_Time <- factor(coldata$Condition_Time, c("PreDrought_0hr", "Pr
 coldata$Condition_Time <- relevel(coldata$Condition_Time, ref = "PreDrought_0hr")
 
 
-dds <- DESeqDataSetFromMatrix(countData = cts,
+dds.pt0 <- DESeqDataSetFromMatrix(countData = cts,
                               colData = coldata,
                               design= ~ Condition_Time + Site)
 
@@ -156,7 +157,7 @@ Explore data using variance stabilization normalization (VST) transformation
 
 ```{r data_exploration_drought_vs_predrought}
 
-vstcounts <- vst(dds, blind=TRUE)
+vstcounts <- vst(dds.pt0, blind=TRUE)
 vst.export<- assay(vstcounts)
 vst.export<- as.data.frame(vst.export)
 
@@ -164,7 +165,7 @@ plotPCA(vstcounts, intgroup=c("Condition_Time"))
 
 select <- order(rowMeans(counts(dds)),
                 decreasing=TRUE)[1:500]
-df <- as.data.frame(colData(dds)[,c("Condition_Time","Site")])
+df <- as.data.frame(colData(dds.pt0)[,c("Condition_Time","Site")])
 
 
 pheatmap(assay(vstcounts)[select,], cluster_rows=TRUE, show_rownames=TRUE,
@@ -178,12 +179,12 @@ Run Deseq2 on object to find differential gene expression. Here we are comparing
 ```{r DE_analysis_drought_0hr_vs_predrought_0hr}
 ###deifferential expression analysis###
 
-dds <- DESeq(dds)
-resultsNames(dds) # lists the coefficients
+dds.pt0.T0 <- DESeq(dds.pt0)
+resultsNames(dds.pt0.T0) # lists the coefficients
 
 ##drought vs predrought time 0
-res.T0 <- results(dds, contrast = c("Condition_Time","Drought_0hr","PreDrought_0hr"))
-plotMA(res, ylim=c(-40,40))
+res.T0 <- results(dds.pt0.T0, contrast = c("Condition_Time","Drought_0hr","PreDrought_0hr"))
+plotMA(res.T0, ylim=c(-40,40))
 
 summary(res.T0)
 
@@ -205,7 +206,7 @@ Shrink effect size using apeglm. Notice spread of log2FC decreases without the e
 
 ```{r}
 #shrink effect size
-resLFC.T0 <- lfcShrink(dds, coef="Condition_Time_Drought_0hr_vs_PreDrought_0hr", type="apeglm")
+resLFC.T0 <- lfcShrink(dds.pt0.T0, coef="Condition_Time_Drought_0hr_vs_PreDrought_0hr", type="apeglm")
 resLFC.T0
 plotMA(resLFC.T0, ylim=c(-2,2))
 
@@ -227,6 +228,108 @@ write.csv(as.data.frame(resLFC.T0),
           file="../Output/Deseq2/drought-0hr-vs-predrought-0hr-lfc.csv")
 ```
 
+
+### Step 3a
+Extract differential gene expression for Pre-drought 6 hr vs Pre-drought 0hr
+```{r}
+res.pd.6.0 <- results(dds.pt0.T0, contrast = c("Condition_Time","PreDrought_6hr","PreDrought_0hr"))
+plotMA(res.pd.6.0, ylim=c(-40,40))
+
+summary(res.pd.6.0)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(res.pd.6.0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-40,40), ylim=c(0,40)))
+
+# Add colored points: blue if padj<0.01, red if log2FC>1 and padj<0.05)
+with(subset(res.pd.6.0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(res.pd.6.0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+### Step 3b
+Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
+
+```{r}
+resLFC.pd.6.0 <- lfcShrink(dds.pt0.T0, coef="Condition_Time_PreDrought_6hr_vs_PreDrought_0hr", type="apeglm")
+resLFC.pd.6.0
+plotMA(resLFC.pd.6.0, ylim=c(-2,2))
+
+summary(resLFC.pd.6.0)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(resLFC.pd.6.0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-15,10), ylim=c(0,25)))
+with(subset(resLFC.pd.6.0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(resLFC.pd.6.0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+```{r}
+#export results
+write.csv(as.data.frame(res.pd.6.0), 
+          file="../Output/Deseq2/predrought-6hr-vs-predrought-0hr.csv")
+write.csv(as.data.frame(resLFC.pd.6.0),
+          file="../Output/Deseq2/predrought-6hr-vs-predrought-0hr-lfc.csv")
+```
+
+## Within predrought, 48 hr compared to 0hr  (Here preDrought 0h is still set as reference, so skip to step 3a)
+### Step 3a
+Extract differential gene expression for comparing Dprerought 48hr vs preDrought 0hr
+
+```{r}
+#dds <- DESeq(dds)
+#resultsNames(dds) # lists the coefficients
+
+res.pd.48.0 <- results(dds.pt0.T0, contrast = c("Condition_Time","PreDrought_48hr","PreDrought_0hr"))
+plotMA(res.pd.48.0, ylim=c(-40,40))
+
+summary(res.pd.48.0)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(res.pd.48.0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-40,40), ylim=c(0,40)))
+
+# Add colored points: blue if padj<0.01, red if log2FC>1 and padj<0.05)
+with(subset(res.pd.48.0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(res.pd.48.0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+### Step 3b
+Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
+
+```{r}
+resLFC.pd.48.0 <- lfcShrink(dds.pt0.T0, coef="Condition_Time_PreDrought_48hr_vs_PreDrought_0hr", type="apeglm")
+resLFC.pd.48.0
+plotMA(resLFC.pd.48.0, ylim=c(-2,2))
+
+summary(resLFC.pd.48.0)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(resLFC.pd.48.0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-15,10), ylim=c(0,25)))
+with(subset(resLFC.pd.48.0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(resLFC.pd.48.0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+
+```{r}
+
+#export results
+write.csv(as.data.frame(res.pd.48.0), 
+          file="../Output/Deseq2/predrought-48hr-vs-predrought-0hr.csv")
+write.csv(as.data.frame(resLFC.pd.48.0),
+          file="../Output/Deseq2/predrought-48hr-vs-predrought-0hr-lfc.csv")
+```
+
+
+
 ## Drought vs. Pre-drought across different time points. (Here, pre-drought 6hr is set as reference.)
 ### Step 1
 Create deseq2 object 
@@ -239,7 +342,7 @@ coldata$Condition_Time <- factor(coldata$Condition_Time, c("PreDrought_0hr", "Pr
 coldata$Condition_Time <- relevel(coldata$Condition_Time, ref = "PreDrought_6hr")
 
 
-dds <- DESeqDataSetFromMatrix(countData = cts,
+dds.pt6 <- DESeqDataSetFromMatrix(countData = cts,
                               colData = coldata,
                               design= ~ Condition_Time + Site)
 ```
@@ -249,10 +352,10 @@ dds <- DESeqDataSetFromMatrix(countData = cts,
 Run Deseq2 on object to find differential gene expression. Here we are comparing Drought 0hr vs Pre-drought 0hr
 
 ```{r DE_analysis_of_drought_6hr_vs_predrought_6hr}
-dds <- DESeq(dds)
-resultsNames(dds) # lists the coefficients
+dds.pt6.T6 <- DESeq(dds.pt6)
+resultsNames(dds.pt6.T6) # lists the coefficients
 
-res.T6 <- results(dds, contrast = c("Condition_Time","Drought_6hr","PreDrought_6hr"))
+res.T6 <- results(dds.pt6.T6, contrast = c("Condition_Time","Drought_6hr","PreDrought_6hr"))
 plotMA(res.T6, ylim=c(-40,40))
 
 summary(res.T6)
@@ -273,7 +376,7 @@ Shrink effect size using apeglm. Notice spread of log2FC decreases without the e
 
 ```{r}
 #shrink effect size
-resLFC.T6 <- lfcShrink(dds, coef="Condition_Time_Drought_6hr_vs_PreDrought_6hr", type="apeglm")
+resLFC.T6 <- lfcShrink(dds.pt6.T6, coef="Condition_Time_Drought_6hr_vs_PreDrought_6hr", type="apeglm")
 resLFC.T6
 plotMA(resLFC.T6, ylim=c(-2,2))
 
@@ -308,7 +411,7 @@ coldata$Condition_Time <- factor(coldata$Condition_Time, c("PreDrought_0hr", "Pr
 coldata$Condition_Time <- relevel(coldata$Condition_Time, ref = "PreDrought_48hr")
 
 
-dds <- DESeqDataSetFromMatrix(countData = cts,
+dds.pt48 <- DESeqDataSetFromMatrix(countData = cts,
                               colData = coldata,
                               design= ~ Condition_Time + Site)
 ```
@@ -318,13 +421,13 @@ Run Deseq2 on object to find differential gene expression. Here we are comparing
 
 ```{r DE_analysis_of_drought_48hr_vs_predrought_48hr}
 ###deifferential expression analysis###
-dds <- DESeq(dds)
-resultsNames(dds) # lists the coefficients
+dds.pt48.T48 <- DESeq(dds.pt48)
+resultsNames(dds.pt48.T48) # lists the coefficients
 
-res.t48 <- results(dds, contrast = c("Condition_Time","Drought_48hr","PreDrought_48hr"))
-plotMA(res, ylim=c(-40,40))
+res.t48 <- results(dds.pt48.T48, contrast = c("Condition_Time","Drought_48hr","PreDrought_48hr"))
+plotMA(res.t48, ylim=c(-40,40))
 
-summary(res)
+summary(res.t48)
 
 #make volcano plot
 #reset par
@@ -342,7 +445,7 @@ with(subset(res.t48, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -
 Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
 
 ```{r}
-resLFC.t48 <- lfcShrink(dds, coef="Condition_Time_Drought_48hr_vs_PreDrought_48hr", type="apeglm")
+resLFC.t48 <- lfcShrink(dds.pt48.T48, coef="Condition_Time_Drought_48hr_vs_PreDrought_48hr", type="apeglm")
 resLFC.t48
 plotMA(resLFC, ylim=c(-2,2))
 
@@ -364,13 +467,131 @@ write.csv(as.data.frame(resLFC.t48),
           file="../Output/Deseq2/drought-48hr-vs-predrought-48hr-lfc.csv")
 ```
 
+## Within drought, 6 hr compared to 0hr  (Here Drought 0h is set as reference)
+### Step 1
+Create deseq2 object 
+
+```{r}
+###create a deseq2 object with Condition, Time, and Site as design###
+coldata$Condition_Time <- factor(coldata$Condition_Time, c("PreDrought_0hr", "PreDrought_6hr", "PreDrought_48hr",
+                                                           "Drought_0hr", "Drought_6hr", "Drought_48hr"))
+
+coldata$Condition_Time <- relevel(coldata$Condition_Time, ref = "Drought_0hr")
+
+
+dds.dt0 <- DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design= ~ Condition_Time + Site)
+```
+
+### Step 3a (Skip step 2, data exploration, because already performed above)
+Run Deseq2 on object to find differential gene expression. Here we are comparing Drought 6hr vs Drought 0hr
+
+```{r}
+###deifferential expression analysis###
+dds.dt0.d <- DESeq(dds.dt0)
+resultsNames(dds.dt9.d.6.0) # lists the coefficients
+
+res.d.6.0 <- results(dds.dt0.d, contrast = c("Condition_Time","Drought_6hr","Drought_0hr"))
+plotMA(res.d.6.0, ylim=c(-40,40))
+
+summary(res.d.6.0)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(res.d.6.0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-40,40), ylim=c(0,40)))
+
+# Add colored points: blue if padj<0.01, red if log2FC>1 and padj<0.05)
+with(subset(res.d.6.0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(res.d.6.0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+### Step 3b
+Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
+
+```{r}
+resLFC.d.6.0 <- lfcShrink(dds.dt0.d, coef="Condition_Time_Drought_6hr_vs_Drought_0hr", type="apeglm")
+resLFC.d.6.0
+plotMA(resLFC.d.6.0, ylim=c(-2,2))
+
+summary(resLFC.d.6.0)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(resLFC.d.6.0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-15,10), ylim=c(0,25)))
+with(subset(resLFC.d.6.0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(resLFC.d.6.0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+```{r}
+#export results
+write.csv(as.data.frame(res.d.6.0), 
+          file="../Output/Deseq2/drought-6hr-vs-drought-0hr.csv")
+write.csv(as.data.frame(resLFC.d.6.0),
+          file="../Output/Deseq2/drought-6hr-vs-drought-0hr-lfc.csv")
+```
+
+## Within drought, 48 hr compared to 0hr  (Here Drought 0h is still set as reference, so skip to step 3a)
+### Step 3a
+Extract differential gene expression for comparing Drought 48hr vs Drought 0hr
+
+```{r}
+res.d.48.0 <- results(dds.dt0.d, contrast = c("Condition_Time","Drought_48hr","Drought_0hr"))
+plotMA(res.d.48.0, ylim=c(-40,40))
+
+summary(res)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(res.d.48.0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-40,40), ylim=c(0,40)))
+
+# Add colored points: blue if padj<0.01, red if log2FC>1 and padj<0.05)
+with(subset(res.d.48.0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(res.d.48.0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+### Step 3b
+Shrink effect size using apeglm. Notice spread of log2FC decreases without the extreme outliers of log2FC > 20. 
+
+```{r}
+resLFC.d.48.0 <- lfcShrink(dds.dt0.d, coef="Condition_Time_Drought_48hr_vs_Drought_0hr", type="apeglm")
+resLFC.d.48.0
+plotMA(resLFC.d.48.0, ylim=c(-2,2))
+
+summary(resLFC.d.48.0)
+
+#make volcano plot
+#reset par
+par(mfrow=c(1,1))
+# Make a basic volcano plot
+with(resLFC.d.48.0, plot(log2FoldChange, -log10(pvalue), pch=20, main="Volcano plot", xlim=c(-15,10), ylim=c(0,25)))
+with(subset(resLFC.d.48.0, padj<.01 ), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(resLFC.d.48.0, padj<.01 & abs(log2FoldChange)>2), points(log2FoldChange, -log10(pvalue), pch=20, col="red"))
+```
+
+```{r}
+#export results
+write.csv(as.data.frame(res.d.48.0), 
+          file="../Output/Deseq2/drought-48hr-vs-drought-0hr.csv")
+write.csv(as.data.frame(resLFC.d.48.0),
+          file="../Output/Deseq2/drought-48hr-vs-drought-0hr-lfc.csv")
+```
+
+
+
+
 # Notes on observations
 ## Most DE occurs at T=0, before pyruvate addition. During this time, the stress difference between pre-drought and drought conditions are the greatest.
 ## The least DE occurs at T=6, just after pyruvate addition. This must stimulate similar microbial activity, of perhaps those that lost activity during drought, than that of pre-drought.  
 ## LFC tends to cause the really low Log2FC values that I have been noticing. I think using the analysis of non-LFC transformed data is best
 
-# Next, find DE of target genes involved in VOC cycling
-## All time points
+# Next, plot heatmap of correlations between 13C/(12C + 13C) VOCs and gene expression (transcript/gene copies)
 ```{r}
 #Extract acetate, acetone, and diacetyl genes of interest. Also, combine interest table with correlations of VOCs and gene expression from WGNCA analysis
 interest <- read.csv("../Data/Deseq2/KO_interest.csv", header = TRUE)
@@ -379,7 +600,8 @@ correlations_acetate <- read.csv("../Data/Deseq2/gene-screening-acetatec2-spearm
 correlations_diacetyl <- read.csv("../Data/Deseq2/gene-screening-diacetyl-spearman.csv", header = TRUE)
 
 #create a correlation matrix between each VOC and genes of interest. Create a separate table for q values
-corr_table <- interest %>%
+corr_table_short <- interest %>%
+  #filter(Priority == "yes") %>%
   merge(correlations_acetone, by = "KO") %>%
   rename(Acetone = cor.Standard) %>%
   select(c("gene_name", "Acetone", "KO", "VOC")) %>%
@@ -389,14 +611,66 @@ corr_table <- interest %>%
   merge(correlations_diacetyl, by = "KO") %>%
   rename(Diacetyl = cor.Standard) %>%
   arrange(VOC) %>%
-  select(c("gene_name", "Acetone", "Acetate", "Diacetyl")) %>%
-  pivot_longer(!gene_name, names_to = "VOC", values_to = "corr")
+  select(c("gene_name", "Acetone", "Acetate", "Diacetyl"))
 
-#q_table <-   
+rownames(corr_table_short) <- corr_table_short$gene_name
+corr_table_short$gene_name <- NULL
+
+corr_table_short <- as.matrix(corr_table_short)
+
 #heatmap
-ggplot(data = corr_table, aes(x=gene_name, y= VOC, fill = corr)) +
+ggplot(data = corr_table_short, aes(x=gene_name, y= VOC, fill = corr)) +
   geom_tile()
 
+heatmaply_cor(x = corr_table_short,
+               colors = viridis)
+ggsave("../Figures/Deseq2/VOC-gene-heatmap.png", dpi = 300, width = 4, height = 3)
+
+
+
+
+
+```
+
+```{r}
+# create a output for table 1 in manuscript of correlations and fdr-corrected p-values
+corr_table <- interest %>%
+  filter(Priority == "yes") %>%
+  merge(correlations_acetate, by = "KO") %>%
+  rename(Acetate = cor.Standard) %>%
+  rename(Acetate.p = p.Standard) %>%
+  select(c("gene_name","Acetate", "Acetate.p", "KO", "VOC")) %>%
+  merge(correlations_acetone, by = "KO") %>%
+  rename(Acetone = cor.Standard) %>%
+  rename(Acetone.p = p.Standard) %>%
+  select(c("gene_name", "Acetone", "Acetone.p","Acetate", "Acetate.p", "KO", "VOC")) %>%
+  merge(correlations_diacetyl, by = "KO") %>%
+  rename(Diacetyl = cor.Standard) %>%
+  rename(Diacetyl.p = p.Standard) %>%
+  arrange(VOC) %>%
+  select(c("gene_name", "Acetate", "Acetate.p", "Acetone", "Acetone.p", "Diacetyl", "Diacetyl.p"))
+
+# Calculate FDR (BH) corretions for p-values per row
+Acetate.pfdr = p.adjust(corr_table$Acetate.p, method = "BH")
+Acetone.pfdr = p.adjust(corr_table$Acetone.p, method = "BH")
+Diacetyl.pfdr = p.adjust(corr_table$Diacetyl.p, method = "BH")
+
+# Add these corrected p-values to the correlation table
+corr_table_fdr <- corr_table %>%
+  mutate(Acetate.pfdr = Acetate.pfdr) %>%
+  mutate(Acetone.pfdr = Acetone.pfdr) %>%
+  mutate(Diacetyl.pfdr = Diacetyl.pfdr)
+
+write.csv(corr_table_fdr, "../Output/corr-table-voc-gene.csv")
+
+
+
+```
+
+
+# Next, find DE of target genes involved in VOC cycling
+## All time points
+```{r}
 ##all times
 as.data.frame(res) %>%
   rownames_to_column(var = "KO") %>%
@@ -428,11 +702,7 @@ as.data.frame(res) %>%
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
 ggsave("../Figures/Deseq2/VOC-genes-all-times.png", dpi = 300, width = 3, height = 5)
-
-
-
 ```
-
 
 
 
@@ -443,7 +713,7 @@ ggsave("../Figures/Deseq2/VOC-genes-all-times.png", dpi = 300, width = 3, height
 p1 <- as.data.frame(res.T0) %>%
   rownames_to_column(var = "KO") %>%
   merge(.,interest , by = "KO") %>%
-  #filter(Priority == "yes") %>%
+  filter(Priority == "yes") %>%
   mutate(Significance =
            case_when(padj < 0.05 & log2FoldChange > 0 ~ "Sig.D", 
                      padj < 0.05 & log2FoldChange < 0 ~ "Sig.PD")) %>%
@@ -487,7 +757,7 @@ ordered.VOC.vector <- ordered.res.T0$gene_name
 p2 <- as.data.frame(res.T6) %>%
   rownames_to_column(var = "KO") %>%
   merge(.,interest , by = "KO") %>%
-  #filter(Priority == "yes") %>%
+  filter(Priority == "yes") %>%
   mutate(Significance =
            case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.D", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.PD")) %>%
@@ -521,7 +791,7 @@ ggsave("../Figures/Deseq2/VOC-genes-T6.png", dpi = 300, width = 3, height = 5)
 p3 <- as.data.frame(res.t48) %>%
   rownames_to_column(var = "KO") %>%
   merge(.,interest , by = "KO") %>%
-  #filter(Priority == "yes") %>%
+  filter(Priority == "yes") %>%
   mutate(Significance =
            case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.D", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.PD")) %>%
@@ -550,12 +820,145 @@ p3 <- as.data.frame(res.t48) %>%
 ggsave("../Figures/Deseq2/VOC-genes-T48.png", dpi = 300, width = 3, height = 5)
 ```
 
-```{r fig, fig.height = 6, fig.width = 6}
-plot_grid(p1, p2, p3, 
-          labels = c('A', 'B', 'C'),
-          label_size = 12,
-              ncol = 3)
 
+```{r fig, fig.height = 6, fig.width = 6}
+plot_grid(
+  p1, p2, p3
+)
 ```
 
+###Drought 6 vs 0hr
+```{r}
+#time 6 vs 0 drought
+p4 <- as.data.frame(res.d.6.0) %>%
+  rownames_to_column(var = "KO") %>%
+  merge(.,interest , by = "KO") %>%
+  filter(Priority == "yes") %>%
+  mutate(Significance =
+        case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.48", 
+                     padj < 0.1 & log2FoldChange < 0 ~ "Sig.0")) %>%
+  mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
+  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  labs(y="Log-2FC") +
+  #ylim(-8,8) +
+  facet_wrap(~VOC, scales = "free", ncol = 1) +
+  scale_fill_manual (values = c("lightgray","black"),
+                     breaks = c("consume", "produce")) +
+   scale_color_manual (values = c("red" ,"blue"),
+                     breaks = c("Sig.0","Sig.48")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.title = element_blank() ,
+        legend.position = "bottom",
+        axis.title.y = element_blank(),
+        axis.title.x = element_text(face= "bold"), 
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+        axis.text.y = element_text(color = "black", size = 10))
+ggsave("../Figures/Deseq2/VOC-genes-dr-6-0.png", dpi = 300, width = 3, height = 5)
+```
+###Drought 48 vs 0hr
+```{r}
+p5 <- as.data.frame(res.d.48.0) %>%
+  rownames_to_column(var = "KO") %>%
+  merge(.,interest , by = "KO") %>%
+  filter(Priority == "yes") %>%
+  mutate(Significance =
+           case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.48", 
+                     padj < 0.1 & log2FoldChange < 0 ~ "Sig.0")) %>%
+  mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
+  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  labs(y="Log-2FC") +
+  #ylim(-8,8) +
+  facet_wrap(~VOC, scales = "free", ncol = 1) +
+  scale_fill_manual (values = c("lightgray","black"),
+                     breaks = c("consume", "produce")) +
+ scale_color_manual (values = c("red" ,"blue"),
+                    breaks = c("Sig.0","Sig.48")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.title = element_blank() ,
+        legend.position = "bottom",
+        axis.title.y = element_blank(),
+        axis.title.x = element_text(face= "bold"), 
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+        axis.text.y = element_text(color = "black", size = 10))
+ggsave("../Figures/Deseq2/VOC-genes-dr-48-0.png", dpi = 300, width = 3, height = 5)
+```
 
+###PreDrought 6 vs 0hr
+```{r}
+#time 6 vs 0 drought
+p6 <- as.data.frame(res.pd.6.0) %>%
+  rownames_to_column(var = "KO") %>%
+  merge(.,interest , by = "KO") %>%
+  filter(Priority == "yes") %>%
+  mutate(Significance =
+           case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.48", 
+                     padj < 0.1 & log2FoldChange < 0 ~ "Sig.0")) %>%
+  mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
+  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  labs(y="Log-2FC") +
+  #ylim(-8,8) +
+  facet_wrap(~VOC, scales = "free", ncol = 1) +
+  scale_fill_manual (values = c("lightgray","black"),
+                     breaks = c("consume", "produce")) +
+ scale_color_manual (values = c("red" ,"blue"),
+                       breaks = c("Sig.0","Sig.48")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.title = element_blank() ,
+        legend.position = "bottom",
+        axis.title.y = element_blank(),
+        axis.title.x = element_text(face= "bold"), 
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+        axis.text.y = element_text(color = "black", size = 10))
+ggsave("../Figures/Deseq2/VOC-genes-pd-6-0.png", dpi = 300, width = 3, height = 5)
+```
+###PreDrought 48 vs 0hr
+```{r}
+p7 <- as.data.frame(res.pd.48.0) %>%
+  rownames_to_column(var = "KO") %>%
+  merge(.,interest , by = "KO") %>%
+  filter(Priority == "yes") %>%
+  mutate(Significance =
+           case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.48", 
+                     padj < 0.1 & log2FoldChange < 0 ~ "Sig.0")) %>%
+  mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
+  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  labs(y="Log-2FC") +
+  #ylim(-8,8) +
+  facet_wrap(~VOC, scales = "free", ncol = 1) +
+  scale_fill_manual (values = c("lightgray","black"),
+                     breaks = c("consume", "produce")) +
+  scale_color_manual (values = c("red" ,"blue"),
+                      breaks = c("Sig.0","Sig.48")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.title = element_blank() ,
+        legend.position = "bottom",
+        axis.title.y = element_blank(),
+        axis.title.x = element_text(face= "bold"), 
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+        axis.text.y = element_text(color = "black", size = 10))
+ggsave("../Figures/Deseq2/VOC-genes-pd-48-0.png", dpi = 300, width = 3, height = 5)
+```
