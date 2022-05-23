@@ -10,36 +10,32 @@ library(plotly)
 library(ggthemes)
 library(patchwork)
 
+#set themes and colors
 theme_custom <- theme_few()
-
 theme_set(theme_custom)
-
 colors = c("#2ECC71" ,"#F39C12")
 
-
+#load data
 data <- read.csv("./Data/CO2-VOCs/01_raw/S3_PyruvateLabeling_qc.csv") %>% 
   select(-X)
 
-
+#add timestanp, however, this hasn't been working and not needed
 data <- data %>% 
   mutate(Timestamp = lubridate::ymd_hms(Timestamp_MST, tz = "America/Phoenix"), 
          Timestamp_Label_MST = lubridate::ymd_hms(Timestamp_Label_MST, tz = "America/Phoenix")) %>% 
   select(-Timestamp_MST)
 
-
 # Quickview
-
-
 data <- data %>% 
   select(Label, Condition, Pyruv, Trel, Flux, D13C, Qc_iso, Qc_flux)
 
-
-
+# quality control filtering
 data_sub <- data %>% 
   filter(Qc_flux == 1, Qc_iso == 1)  %>% 
   select(-Qc_iso, -Qc_flux) %>% 
   filter(Trel > -10, Trel < 50, Flux > 0, D13C > -100)
 
+# factor Condition
 data$Condition <- factor(data$Condition, c(
   "pre_drought", "drought"))
 

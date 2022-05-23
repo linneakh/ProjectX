@@ -1,0 +1,309 @@
+---
+title: "metat-phyloseq"
+author: "Linnea Honeker"
+date: "3/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(data.table)
+library(scales)
+library(grid)
+library(reshape2)
+library(phyloseq)
+library(ggplot2)
+library(ape)
+library(magrittr)
+library(dplyr)
+library(vegan)
+library (DESeq2)
+library(devtools)
+library(RColorBrewer)
+library(microbiome)
+library(knitr)
+library(plyr)
+library(cowplot)
+
+#set colors
+
+colors_very_short <- c("black", "red", "blue", "green")
+
+colors = c("black","gray","coral4","coral",
+"chartreuse3", "darkseagreen1","blue","lightblue",
+"yellow4", "yellow","darkorchid", "plum2",
+"darkred", "darksalmon","green4",
+"greenyellow","orange",
+"moccasin",   "hotpink4", "lightpink", "lightblue4", "lightcyan3",  "lightslateblue", "lightsteelblue1", "navy", "blue4",
+"darkgray", "black","brown", "cornflowerblue","darkgoldenrod",
+"brown3","white","aliceblue","aquamarine","azure",
+"beige","bisque","blue2","blueviolet","cyan","darkblue",
+"chocolate","aquamarine3","darkcyan","deeppink",
+"darkred","darkslateblue", "red", "green", "blue", "purple", "yellow")
+
+```
+
+## MetaT phyloseq
+
+
+```{r import_data}
+#import biom table
+otu=read.table('feature-table.csv',sep = ",", header = TRUE)
+
+rownames(otu) <- otu[,1]
+otu$Tax_ID <- NULL
+
+otu <- as.matrix(otu) 
+is.matrix(otu)
+
+otu <- otu_table(otu, taxa_are_rows = TRUE)
+
+#import sample metadata
+map = read.table('metadata.csv',sep = ",", header = TRUE)
+row.names(map) <- map[,1]
+map$SampleID <- NULL
+map <- as.data.frame(map)
+map <- sample_data(map)
+
+#import taxnomy
+taxa.frame = read.csv(file="metaT-taxonomy.csv", header = TRUE, sep=",", 
+                      blank.lines.skip = TRUE)
+taxmat = as.matrix(taxa.frame)
+rownames(taxmat) <- taxmat[,1]
+taxmat <- taxmat[,-1]
+tax=tax_table(taxmat)
+
+
+#merge otu-table, sample-metadata, taxonomy
+SP= merge_phyloseq(otu, tax,map)
+SP
+
+
+#filter to leave Bacteria Kingdom
+SPb = subset_taxa(SP, Kingdom == "Bacteria" |
+                    Kingdom == "Archaea")
+SPb
+
+#taxonomy--------------------------------------------------------
+SP.rel.abun <- transform_sample_counts(SP, function(x) x/sum(x)) #convert counts to relative abundances
+k.glom <- tax_glom(SP.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
+k.dat <- psmelt(k.glom)
+k.dat$Kingdom <- as.character(k.dat$Kingdom) #convert to character vector from factor
+
+
+#prune out phyla below 2% in each sample for all experiments
+SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
+P.glom <- tax_glom(SPb.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
+P.dat <- psmelt(P.glom)
+P.dat$Phylum <- as.character(P.dat$Phylum) #convert to character vector from factor
+P.dat$Phylum[P.dat$Abundance < 0.02] <- "Phylum < 2%"
+
+SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
+C.glom <- tax_glom(SPb.rel.abun, taxrank = "Class") #agglomerate taxa to Phylum-level
+C.dat <- psmelt(C.glom)
+C.dat$Class <- as.character(C.dat$Class) #convert to character vector from factor
+C.dat$Class[C.dat$Abundance < 0.02] <- "Class < 2%"
+
+SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
+F.glom <- tax_glom(SPb.rel.abun, taxrank = "Family") #agglomerate taxa to Phylum-level
+F.dat <- psmelt(F.glom)
+F.dat$Family <- as.character(F.dat$Family) #convert to character vector from factor
+F.dat$Family[F.dat$Abundance < 0.035] <- "Family < 3.5%"
+```
+
+# Playing around
+```{r}
+#F.dat.short <- F.dat %>%
+#  select(-OTU) %>%
+#  pivot_wider(names_from = Family, values_from = Abundance)
+```
+
+
+# Taxonomic profiles
+
+```{r echo=FALSE, comment=""}
+##########plot kingdom######################################
+k.dat$Condition <- factor(k.dat$Condition, c("PreDrought", "Drought"))
+k.dat$Time <- factor(k.dat$Time, c("0hr", "6hr", "48hr"))
+
+
+p <- ggplot(k.dat, aes(x=Time, y=Abundance, fill=Kingdom)) 
+
+K_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors_very_short) +
+  theme(text = element_text(size = 12),
+        axis.text.x=element_text(size = 12, hjust =0.5, vjust=0.2),
+        legend.text = element_text(size = 12)
+  )
+
+
+
+#######plot Phylum######################################
+P.dat$Condition <- factor(P.dat$Condition, c("PreDrought", "Drought"))
+P.dat$Time <- factor(P.dat$Time, c("0hr", "6hr", "48hr"))
+
+
+p <- ggplot(P.dat, aes(x=Time, y=Abundance, fill=Phylum)) 
+
+p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors) +
+  theme_bw() +
+  theme(text = element_text(size = 12),
+        axis.text.x=element_text(size=12,hjust =0.5, vjust=0.2),
+        legend.text = element_text(size = 10),
+  )
+
+
+
+#######plot Classes######################################
+C.dat$Condition <- factor(C.dat$Condition, c("PreDrought", "Drought"))
+C.dat$Time <- factor(C.dat$Time, c("0hr", "6hr", "48hr"))
+
+
+p <- ggplot(C.dat, aes(x=Time, y=Abundance, fill=Class)) 
+
+c_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors) +
+  theme(text = element_text(size = 12),
+        axis.text.x=element_text(size=12, hjust =0.5, vjust=0.2),
+        legend.text = element_text(size = 10))
+
+
+
+
+#######plot family######################################
+F.dat$Condition <- factor(F.dat$Condition, c("PreDrought", "Drought"))
+
+
+p <- ggplot(F.dat, aes(x=Time, y=Abundance, fill=Family)) 
+
+f_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors) +
+  theme(text = element_text(size = 12),
+        axis.text.x=element_text(size=12,hjust =0.5, vjust=0.2),
+        legend.text = element_text(size = 10),
+  )
+
+```
+
+## Kingdom     
+
+```{r, echo = FALSE}
+K_barplot
+```
+
+## Phylum 
+
+```{r, echo = FALSE}
+p_barplot
+```
+
+## Class    
+
+```{r, echo = FALSE}
+c_barplot
+```
+
+## Family    
+
+```{r fig.height=8, fig.width=10, echo = FALSE}
+f_barplot
+```
+
+## Beta diversity
+PCoA: bray-curtis 
+```{r "beta-diversity", fig.height=8, fig.width=10, echo=FALSE, comment=""}
+SPb.ra = rarefy_even_depth(SPb,(min(sample_sums(SPb))))
+
+sample_data(SPb.ra)$Condition <- factor(sample_data(SPb.ra)$Condition, levels = c("PreDrought","Drought"))
+sample_data(SPb.ra)$Time <- factor(sample_data(SPb.ra)$Time, levels = c("0hr","6hr", "48hr"))
+sample_data(SPb.ra)$Condition_Time <- factor(sample_data(SPb.ra)$Condition_Time, 
+                                             levels = c("PreDrought_0hr","PreDrought_6hr", "PreDrought_48hr",
+                                                        "Drought_0hr", "Drought_6hr", "Drought_48hr"))
+
+my.ord <- ordinate(
+  physeq = SPb.ra,
+  method = "PCoA",
+  distance = "bray")
+  #weighted=TRUE)
+
+#condition and time
+ord.plot.time <- (
+  plot_ordination(
+    physeq = SPb.ra,
+    ordination = my.ord,
+    color = "Condition",
+    #type = "split",
+    shape = "Time",
+  ) +
+    geom_point(aes(color = Condition), size = 4) )#+
+    #geom_point(colour = "grey90", size = 1) +
+    #scale_color_manual(breaks = c("Clitoria", "Piper", "Hibiscus"),
+      #                 values = c("green4", "red", "blue"))
+#)
+
+
+#condition and site
+ord.plot.site <- (
+  plot_ordination(
+    physeq = SPb.ra,
+    ordination = my.ord,
+    color = "Condition",
+    #type = "split",
+    shape = "Site",
+  ) +
+    geom_point(aes(color = Condition), size = 4) )
+
+plot_grid (ord.plot.time, ord.plot.site,
+           labels = c("A", "B"),
+           label_size = 12,
+           ncol = 2)
+```
+
+
+```{r "alpha-diversity", echo=FALSE, comment=""}
+#define and plot alpha diversity measurements on unrarefied samples
+my_colors_st = c("#B6D7A8", "#6AA84F", "#274E13", "#EA9999", "#CC0000", "#660000")
+alpha_meas = c("Observed", "Shannon")
+p <- plot_richness(SPb.ra, "Condition_Time", scales = "free_y", measures="Observed")
+
+#Add ggplot2 layer-boxplots
+p1 <- p + scale_color_manual(values = my_colors_st) +
+  geom_boxplot(data=p$data, aes(x=Condition_Time, y=value, fill=Condition_Time), 
+                      alpha=20, size = 0.5) +
+  scale_fill_manual(values = my_colors_st) +
+  scale_x_discrete(name = element_blank(), labels = c("0hr", "6hr", "48hr", "0hr", "6hr", "48hr")) +
+  theme_bw() +
+  theme(text = element_text(size = 11),
+        legend.position = "none",
+        axis.text.x=element_text(size=11,hjust =0.5, vjust=0.8),)
+
+
+#condition and site
+#define and plot alpha diversity measurements on unrarefied samples
+p <- plot_richness(SPb.ra, "Site", measures="Observed")
+
+#Add ggplot2 layer-boxplots
+p2 <- p + scale_color_manual(values = c("orange", "magenta", "turquoise")) +
+  geom_boxplot(data=p$data, aes(x=Site, y=value, fill=Site), 
+               alpha=20, size = 0.5) +
+  scale_fill_manual(values = c("orange", "magenta", "turquoise")) +
+  scale_x_discrete(name = element_blank()) +
+  theme_bw() +
+  theme(text = element_text(size = 11),
+        legend.position = "none",
+        axis.text.x=element_text(size=11,hjust =0.5, vjust=0.8))
+
+plot_grid (p1, p2,
+           labels = c("A", "B"),
+           label_size = 12,
+           ncol = 2)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

@@ -37,7 +37,7 @@ filename=paste("Figures/CO2-VOCs/acetate.png", sep = "")
 png(filename ,width=5, height=3, unit='in', res = 1000)
 
 data_sub %>%
-  #filter(Type == "sample") %>% 
+  filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
   mutate(Site = case_when(
     startsWith(Sample, "S1") ~ "Site1",
@@ -45,7 +45,7 @@ data_sub %>%
     startsWith(Sample, "S3") ~ "Site3"
   )) %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
-  facet_grid( ~ Pyruv) + 
+  facet_grid(Site ~ Pyruv) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
   geom_point(alpha = 0.3, size = 1.5) +
   geom_smooth(aes(group = Condition), span = 0.5) +
@@ -100,12 +100,16 @@ filename=paste("./Figures/CO2-VOCs/acetate-boxplot.png", sep = "")
 png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
+  mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3")) %>%
   filter(Type == "sample") %>% 
   mutate(label_state = ifelse(Time >0 & Time < 2, "post", "pre")) %>% 
   mutate(Time_hours = Time*24) %>%
   filter(label_state == "post") %>%
   ggplot(aes(x = Condition, y = Flux, fill = Condition)) +
-  facet_grid(. ~ Pyruv) + 
+  facet_grid(Pyruv ~ Site) + 
    geom_boxplot() +
   scale_x_discrete(labels = c("Pre Drought", "Drought")) +
   scale_fill_manual(values = colors,

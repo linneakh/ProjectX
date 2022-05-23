@@ -24,3 +24,4 @@ KO:K18372,consume,Acetone,Acetone,acmB,yes
 KO:K10854,consume,Acetone,Acetone,acxB,yes
 KO:K10855,consume,Acetone,Acetone,acxA,yes
 KO:K10856,consume,Acetone,Acetone,acxC,yes
+KO:K00656,produce,Acetyl.CoA,Acetone,pflD,no

@@ -321,9 +321,9 @@ filename <- paste0("../Figures/ClusterProfiler/net-plot-green-oeg-retry.png")
 ggsave(filename,width=10,height=5,dpi=1000,p16)
 
 p16 <- cnetplot(k.pink, showCategory = c("Alanine, aspartate and glutamate metabolism", "Starch and sucrose metabolism",
-                                         "Ribosome", "Histodine metabolism"),
+                                         "Ribosome", "Histidine metabolism"),
                 cex_label_gene = 0.75, cex_label_category = 1.5) +
-  scale_color_manual(values = c("pink4", "pink")) +
+  scale_color_manual(values = c("pink3", "pink")) +
   guides(color = FALSE)
 filename <- paste0("../Figures/ClusterProfiler/net-plot-pink-oeg-retry.png")
 ggsave(filename,width=10,height=5,dpi=1000,p16)

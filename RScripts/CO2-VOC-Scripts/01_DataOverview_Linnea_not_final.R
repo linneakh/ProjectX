@@ -124,6 +124,33 @@ data_sub %>%
         legend.title = element_blank())
 ggsave("Figures/CO2-VOCs/C1_C2_delta_co2-update-cond.png", width = 4, height = 3, dpi = 1000)
 
+###plot just 13C-CO2 from pyruvate over time
+data_sub_13C_flux %>%
+  mutate(Condition=factor(Condition, levels = c("pre_drought", "drought"))) %>%
+  mutate(Site = case_when(
+    startsWith(Label, "S1") ~ "Site1",
+    startsWith(Label, "S2") ~ "Site2",
+    startsWith(Label, "S3") ~ "Site3"
+  )) %>%
+  filter(fCO2_13_py < 1) %>%
+  ggplot(aes(x = Trel, y = fCO2_13_py, color = Condition)) +
+  scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
+  geom_point(alpha = 0.3, size = 1.5) +
+  geom_smooth(aes(group = interaction(Condition)), span = 0.5) +
+  facet_wrap(~ Pyruv) +
+  #ylim(0, 0.5) +
+  scale_color_manual(values = colors,
+                     breaks = c("pre_drought", "drought"),
+                     labels = c("Pre Drought", "Drought")) + 
+  labs(x = "Time post pyruvate (hr)", y= bquote("Soil 13C-" ~ CO[2]~"efflux (" *mu*mol ~m^-2*s^-1*")")) +
+  theme(text = element_text(size = 10,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        legend.title = element_blank())
+ggsave("Figures/CO2-VOCs/C1_C2_13C_CO2_f_py.png", width = 4, height = 3, dpi = 1000)
+
+
 # plot pre-drought vs drought faceted by site label
 data_sub %>%
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
@@ -363,6 +390,120 @@ ratios_per_set %>%
         legend.title = element_blank())
 ggsave("Figures/CO2-VOCs/C1-C2-difference-all-sites.png", width = 5, height = 3, dpi = 1000)
 
+###C1/C2 ratios, separate by site and divide C1:C2 ratios of nearby locations (paired locations)
+# modify data_sub table to add time intervals and calculate C1 and C2 ratios per site 
+ratios_per_set <- data_sub_13C_flux %>%
+  mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
+  filter(label_state == "post") %>%
+  filter(Pyruv != "water") %>%
+  filter(fCO2_13_py < 1) %>%
+  select(-label_state) %>%
+  #filter(Label != "S2.P1") %>%
+  mutate(Site = case_when(
+    startsWith(Label, "S1") ~ "Site1",
+    startsWith(Label, "S2") ~ "Site2",
+    startsWith(Label, "S3") ~ "Site3"
+  )) %>%
+  mutate(Set = case_when(
+    endsWith(Label, "P1") ~ "Set1",
+    endsWith(Label, "P2") ~ "Set1",
+    endsWith(Label, "P3") ~ "Set2",
+    endsWith(Label, "P4") ~ "Set2",
+    endsWith(Label, "P5") ~ "Set3",
+    endsWith(Label, "P6") ~ "Set3",
+    endsWith(Label, "P7") ~ "Set4",
+    endsWith(Label, "P8") ~ "Set4"
+  )) %>%
+  mutate(Time = case_when(
+    (Trel <= 3) ~ "3",
+    (Trel > 3 & Trel <= 6) ~ "6",
+    (Trel > 6 & Trel <= 12) ~ "12",
+    (Trel > 12 & Trel <= 18) ~ "18",
+    (Trel > 18 & Trel <= 24) ~ "24",
+    (Trel > 24 & Trel <= 30) ~ "30",
+    (Trel > 30 & Trel <= 36) ~ "36",
+    (Trel > 36 & Trel <= 42) ~ "42",
+    (Trel > 42 & Trel <= 100) ~ "48"
+  )) %>%
+  mutate(Time=factor(Time, levels = c("3", "6", "12", "18", "24", "30", "36", "42", "48"))) %>%
+  select(-c(Trel, D13C, Flux, AtF, AtFe, R)) %>%
+  group_by(Condition, Site, Set, Pyruv, Time) %>%
+  summarise_all(funs(mean)) %>%
+  pivot_wider(names_from = Pyruv, values_from = c(fCO2_13, fCO2_13_py)) %>%
+  mutate(C1_C2_ratio_fCO2_13 = fCO2_13_C1/fCO2_13_C2) %>%
+  mutate(C1_C2_diff_fCO2_13 = fCO2_13_C1 - fCO2_13_C2) %>%
+  mutate(C1_C2_ratio_fCO2_13_py = fCO2_13_py_C1/fCO2_13_py_C2) %>%
+  mutate(C1_C2_diff_fCO2_13_py = fCO2_13_py_C1 - fCO2_13_py_C2)
+
+# graph of all differences (flux13)
+ratios_per_set %>%
+  filter(Set != "Set4") %>%
+  ggplot(aes(x = Time, y = C1_C2_diff_fCO2_13, fill = Condition)) +
+  geom_boxplot() +
+  labs(x = "Time post pyruvate (hr)", y= bquote("Soil 13C-" ~ CO[2]~"efflux (C1 - C2)")) +
+  #facet_wrap(. ~ Site) + 
+  scale_fill_manual(values = colors,
+                    breaks = c("pre_drought", "drought"),
+                    labels = c("Pre Drought", "Drought")) + 
+  theme(text = element_text(size = 10,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        legend.title = element_blank())
+ggsave("Figures/CO2-VOCs/C1-C2-difference-13C-CO2.png", width = 5, height = 3, dpi = 1000)
+
+# graph of all ratios (flux13)
+ratios_per_set %>%
+  filter(Set != "Set4") %>%
+  ggplot(aes(x = Time, y = C1_C2_ratio_fCO2_13, fill = Condition)) +
+  geom_boxplot() +
+  labs(x = "Time post pyruvate (hr)", y= bquote("Soil 13C-" ~ CO[2]~"efflux (C1/C2)")) +
+  #facet_wrap( Site~ Set) + 
+  scale_fill_manual(values = colors,
+                    breaks = c("pre_drought", "drought"),
+                    labels = c("Pre Drought", "Drought")) + 
+  theme(text = element_text(size = 10,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        legend.title = element_blank())
+ggsave("Figures/CO2-VOCs/C1-C2-ratio-13C-CO2.png", width = 5, height = 3, dpi = 1000)
+
+# graph of all differences (flux13Conly)
+ratios_per_set %>%
+  filter(Set != "Set4") %>%
+  ggplot(aes(x = Time, y = C1_C2_diff_fCO2_13_py, fill = Condition)) +
+  geom_boxplot() +
+  labs(x = "Time post pyruvate (hr)", y= bquote("Soil 13C-" ~ CO[2]~"efflux (C1 - C2)")) +
+  #facet_wrap(. ~ Site) + 
+  scale_fill_manual(values = colors,
+                    breaks = c("pre_drought", "drought"),
+                    labels = c("Pre Drought", "Drought")) + 
+  theme(text = element_text(size = 10,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        legend.title = element_blank())
+ggsave("Figures/CO2-VOCs/C1-C2-difference-13C-CO2-py.png", width = 5, height = 3, dpi = 1000)
+
+# graph of all ratios (flux13Conly)
+ratios_per_set %>%
+  filter(Set != "Set4") %>%
+  filter(Site != "Site2" |
+           Set != "Set1", .preserve = TRUE) %>%
+  ggplot(aes(x = Time, y = C1_C2_ratio_fCO2_13_py, fill = Condition)) +
+  geom_boxplot() +
+  labs(x = "Time post pyruvate (hr)", y= bquote("Soil 13C-" ~ CO[2]~"efflux (C1/C2)")) +
+  #facet_wrap(~ Site) + 
+  scale_fill_manual(values = colors,
+                    breaks = c("pre_drought", "drought"),
+                    labels = c("Pre Drought", "Drought")) + 
+  theme(text = element_text(size = 10,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        legend.title = element_blank())
+ggsave("Figures/CO2-VOCs/C1-C2-ratio-13C-CO2-py.png", width = 5, height = 3, dpi = 1000)
 
 
 ####statistical analysis
@@ -372,6 +513,12 @@ data_sub_c1 <- data_sub %>%
 
 data_sub_c2 <- data_sub %>%
   filter(Pyruv == "C2")
+
+data_sub_pre_drought <- data_sub %>%
+  filter(Condition == "pre_drought")
+
+data_sub_drought <- data_sub %>%
+  filter(Condition == "drought")
 
 
 wilcox.test(Flux ~ Condition, data = data_sub_c1)
@@ -424,6 +571,39 @@ t.test(D13C ~ Condition, data = data_sub)
 #sample estimates:
 #  mean in group pre_drought     mean in group drought 
 #3176.336                  1796.062 
+
+# d13C in predrought between C1 and c2
+t.test(D13C ~ Pyruv, data = data_sub_pre_drought)
+#data:  D13C by Pyruv
+#t = 16.112, df = 746.32, p-value < 2.2e-16
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+#  2764.003 3531.028
+#sample estimates:
+#  mean in group C1 mean in group C2 
+#4740.906         1593.390 
+
+wilcox.test(D13C ~ Pyruv, data = data_sub_pre_drought)
+#data:  D13C by Pyruv
+#W = 245832, p-value < 2.2e-16
+#alternative hypothesis: true location shift is not equal to 0
+
+# d13C in drought between C1 and c2
+t.test(D13C ~ Pyruv, data = data_sub_drought)
+#data:  D13C by Pyruv
+#t = 11.077, df = 811.59, p-value < 2.2e-16
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+#  1017.691 1456.069
+#sample estimates:
+#  mean in group C1 mean in group C2 
+#2418.629         1181.749 
+
+wilcox.test(D13C ~ Pyruv, data = data_sub_drought)
+#data:  D13C by Pyruv
+#W = 190837, p-value < 2.2e-16
+#alternative hypothesis: true location shift is not equal to 0
+
 
 # ratios for differences in C1 - C2 deltaC-CO2r
 #t-test
@@ -499,3 +679,231 @@ wilcox.test(C1_C2_d13c_diff ~ Condition, data = ratios_per_set_42hr )
 ratios_per_set_48hr<- ratios_per_set %>%
   filter(Time == "48" )
 wilcox.test(C1_C2_d13c_diff ~ Condition, data = ratios_per_set_48hr )
+
+# ratios for differences in C1 - C2 deltaC-CO2r - new calculations
+#t-test
+ratios_per_set_3hr<- ratios_per_set %>%
+  filter(Time == "3" )
+t.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_3hr )
+
+ratios_per_set_6hr<- ratios_per_set %>%
+  filter(Time == "6" )
+t.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_6hr ) #p = 0.02934
+
+ratios_per_set_12hr<- ratios_per_set %>%
+  filter(Time == "12" )
+t.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_12hr ) #p=0.00742
+
+ratios_per_set_18hr<- ratios_per_set %>%
+  filter(Time == "18" )
+t.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_18hr ) #p=0.003106
+
+ratios_per_set_24hr<- ratios_per_set %>%
+  filter(Time == "24" )
+t.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_24hr )
+
+ratios_per_set_30hr<- ratios_per_set %>%
+  filter(Time == "30" )
+t.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_30hr )
+
+ratios_per_set_36hr<- ratios_per_set %>%
+  filter(Time == "36" )
+t.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_36hr )
+
+ratios_per_set_42hr<- ratios_per_set %>%
+  filter(Time == "42" )
+t.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_42hr )
+
+ratios_per_set_48hr<- ratios_per_set %>%
+  filter(Time == "48" )
+t.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_48hr )
+
+#wilcoxan test
+ratios_per_set_3hr<- ratios_per_set %>%
+  filter(Time == "3" )
+wilcox.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_3hr )
+
+ratios_per_set_6hr<- ratios_per_set %>%
+  filter(Time == "6" )
+wilcox.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_6hr ) 
+
+ratios_per_set_12hr<- ratios_per_set %>%
+  filter(Time == "12" )
+wilcox.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_12hr ) #p=0.003702
+
+ratios_per_set_18hr<- ratios_per_set %>%
+  filter(Time == "18" )
+wilcox.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_18hr ) #p=0.007898
+
+ratios_per_set_24hr<- ratios_per_set %>%
+  filter(Time == "24" )
+wilcox.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_24hr ) 
+
+ratios_per_set_30hr<- ratios_per_set %>%
+  filter(Time == "30" )
+wilcox.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_30hr )
+
+ratios_per_set_36hr<- ratios_per_set %>%
+  filter(Time == "36" )
+wilcox.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_36hr )
+
+ratios_per_set_42hr<- ratios_per_set %>%
+  filter(Time == "42" )
+wilcox.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_42hr )
+
+ratios_per_set_48hr<- ratios_per_set %>%
+  filter(Time == "48" )
+wilcox.test(C1_C2_diff_fCO2_13 ~ Condition, data = ratios_per_set_48hr )
+
+# ratios for differences in C1 - C2 deltaC-CO2r - new calculations for 13C-CO2 from pyruvate
+#t-test
+ratios_per_set_3hr<- ratios_per_set %>%
+  filter(Time == "3" )
+t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_3hr )
+
+ratios_per_set_6hr<- ratios_per_set %>%
+  filter(Time == "6" )
+t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_6hr ) #p = 0.004931
+
+ratios_per_set_12hr<- ratios_per_set %>%
+  filter(Time == "12" )
+t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_12hr ) #p=0.001838
+
+ratios_per_set_18hr<- ratios_per_set %>%
+  filter(Time == "18" )
+t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_18hr ) #p=0.0004503
+
+ratios_per_set_24hr<- ratios_per_set %>%
+  filter(Time == "24" )
+t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_24hr ) #0.03411
+
+ratios_per_set_30hr<- ratios_per_set %>%
+  filter(Time == "30" )
+t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_30hr )
+
+ratios_per_set_36hr<- ratios_per_set %>%
+  filter(Time == "36" )
+t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_36hr )
+
+ratios_per_set_42hr<- ratios_per_set %>%
+  filter(Time == "42" )
+t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_42hr )
+
+ratios_per_set_48hr<- ratios_per_set %>%
+  filter(Time == "48" )
+t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_48hr )
+
+#wilcoxan test
+ratios_per_set_3hr<- ratios_per_set %>%
+  filter(Time == "3" )
+wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_3hr ) # 0.03595
+
+ratios_per_set_6hr<- ratios_per_set %>%
+  filter(Time == "6" )
+wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_6hr ) # 0.007898
+
+ratios_per_set_12hr<- ratios_per_set %>%
+  filter(Time == "12" )
+wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_12hr ) #p=0.001563
+
+ratios_per_set_18hr<- ratios_per_set %>%
+  filter(Time == "18" )
+wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_18hr ) #p=0.002468
+
+ratios_per_set_24hr<- ratios_per_set %>%
+  filter(Time == "24" )
+wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_24hr ) #0.02065
+
+ratios_per_set_30hr<- ratios_per_set %>%
+  filter(Time == "30" )
+wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_30hr )
+
+ratios_per_set_36hr<- ratios_per_set %>%
+  filter(Time == "36" )
+wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_36hr )
+
+ratios_per_set_42hr<- ratios_per_set %>%
+  filter(Time == "42" )
+wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_42hr )
+
+ratios_per_set_48hr<- ratios_per_set %>%
+  filter(Time == "48" )
+wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_48hr )
+
+# C1/C2 ratios of 13C-CO2-from-pyruvate- statistical tests
+#t-test
+ratios_per_set_3hr<- ratios_per_set %>%
+  filter(Time == "3" )
+t.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_3hr )
+
+ratios_per_set_6hr<- ratios_per_set %>%
+  filter(Time == "6" )
+t.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_6hr ) #p = 0.004931
+
+ratios_per_set_12hr<- ratios_per_set %>%
+  filter(Time == "12" )
+t.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_12hr ) #p=0.001838
+
+ratios_per_set_18hr<- ratios_per_set %>%
+  filter(Time == "18" )
+t.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_18hr ) #p=0.0004503
+
+ratios_per_set_24hr<- ratios_per_set %>%
+  filter(Time == "24" )
+t.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_24hr ) #0.03411
+
+ratios_per_set_30hr<- ratios_per_set %>%
+  filter(Time == "30" )
+t.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_30hr )
+
+ratios_per_set_36hr<- ratios_per_set %>%
+  filter(Time == "36" )
+t.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_36hr )
+
+ratios_per_set_42hr<- ratios_per_set %>%
+  filter(Time == "42" )
+t.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_42hr )
+
+ratios_per_set_48hr<- ratios_per_set %>%
+  filter(Time == "48" )
+t.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_48hr )
+
+#wilcoxan test
+ratios_per_set_3hr<- ratios_per_set %>%
+  filter(Time == "3" )
+wilcox.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_3hr ) # 0.03595
+
+ratios_per_set_6hr<- ratios_per_set %>%
+  filter(Time == "6" )
+wilcox.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_6hr ) # 0.007898
+
+ratios_per_set_12hr<- ratios_per_set %>%
+  filter(Time == "12" )
+wilcox.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_12hr ) #p=0.001563
+
+ratios_per_set_18hr<- ratios_per_set %>%
+  filter(Time == "18" )
+wilcox.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_18hr ) #p=0.002468
+
+ratios_per_set_24hr<- ratios_per_set %>%
+  filter(Time == "24" )
+wilcox.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_24hr ) #0.02065
+
+ratios_per_set_30hr<- ratios_per_set %>%
+  filter(Time == "30" )
+wilcox.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_30hr )
+
+ratios_per_set_36hr<- ratios_per_set %>%
+  filter(Time == "36" )
+wilcox.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_36hr )
+
+ratios_per_set_42hr<- ratios_per_set %>%
+  filter(Time == "42" )
+wilcox.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_42hr )
+
+ratios_per_set_48hr<- ratios_per_set %>%
+  filter(Time == "48" )
+wilcox.test(C1_C2_ratio_fCO2_13_py ~ Condition, data = ratios_per_set_48hr )
+
+
+

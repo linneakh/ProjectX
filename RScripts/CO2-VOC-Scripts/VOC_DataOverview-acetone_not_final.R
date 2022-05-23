@@ -32,7 +32,7 @@ data$Condition <- factor(data$Condition, c(
 data_sub <- data %>%
   filter(Time > -0.3 & Time <2 )
 
-# Isotope Sig acetate
+# Isotope Sig acetone
 filename=paste("./Figures/CO2-VOCs/acetone.png", sep = "")
 png(filename ,width=3, height=4, unit='in', res = 1000)
 
@@ -98,16 +98,21 @@ data_sub %>%
 ggsave("./Figures/CO2-VOCs/01_Pyruvate_acetone_C2_Plotwise.png")
 
 # Isotope Sig - boxplots
-filename=paste("./Figures/CO2-VOCs/aacetone-boxplot.png", sep = "")
+filename=paste("./Figures/CO2-VOCs/aacetone-boxplot-site.png", sep = "")
 png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
-  filter(Type == "sample") %>% 
+  mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3")) %>%
+  #filter(Type == "sample") %>% 
   mutate(label_state = ifelse(Time >0 & Time < 2, "post", "pre")) %>% 
   mutate(Time_hours = Time*24) %>%
   filter(label_state == "post") %>%
   ggplot(aes(x = Condition, y = Flux, fill = Condition)) +
-  facet_grid(. ~ Pyruv) + 
+  facet_grid(Pyruv ~ Site) + 
+  #facet_grid(~ Pyruv) +
    geom_boxplot() +
   scale_x_discrete(labels = c("Pre Drought", "Drought")) +
   scale_fill_manual(values = colors,
