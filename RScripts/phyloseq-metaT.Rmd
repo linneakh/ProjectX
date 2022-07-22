@@ -28,7 +28,7 @@ library(cowplot)
 
 #set colors
 
-colors_very_short <- c("black", "red", "blue", "green")
+colors_very_short <- c("black", "red", "blue", "green", "orange")
 
 colors = c("black","gray","coral4","coral",
 "chartreuse3", "darkseagreen1","blue","lightblue",
@@ -49,7 +49,7 @@ colors = c("black","gray","coral4","coral",
 
 ```{r import_data}
 #import biom table
-otu=read.table('feature-table.csv',sep = ",", header = TRUE)
+otu=read.table('../Data/Taxonomy/MetaT/feature-table.csv',sep = ",", header = TRUE)
 
 rownames(otu) <- otu[,1]
 otu$Tax_ID <- NULL
@@ -60,14 +60,14 @@ is.matrix(otu)
 otu <- otu_table(otu, taxa_are_rows = TRUE)
 
 #import sample metadata
-map = read.table('metadata.csv',sep = ",", header = TRUE)
+map = read.table('../Data/Taxonomy/MetaT/metadata.csv',sep = ",", header = TRUE)
 row.names(map) <- map[,1]
 map$SampleID <- NULL
 map <- as.data.frame(map)
 map <- sample_data(map)
 
 #import taxnomy
-taxa.frame = read.csv(file="metaT-taxonomy.csv", header = TRUE, sep=",", 
+taxa.frame = read.csv(file="../Data/Taxonomy/MetaT/metaT-taxonomy.csv", header = TRUE, sep=",", 
                       blank.lines.skip = TRUE)
 taxmat = as.matrix(taxa.frame)
 rownames(taxmat) <- taxmat[,1]
@@ -128,10 +128,10 @@ k.dat$Condition <- factor(k.dat$Condition, c("PreDrought", "Drought"))
 k.dat$Time <- factor(k.dat$Time, c("0hr", "6hr", "48hr"))
 
 
-p <- ggplot(k.dat, aes(x=Time, y=Abundance, fill=Kingdom)) 
+p <- ggplot(k.dat, aes(x=Condition, y=Abundance, fill=Kingdom)) 
 
 K_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
-  facet_wrap(~ Condition, scales="free") +
+  facet_wrap(~Site, scales="free") +
   scale_fill_manual(values=colors_very_short) +
   theme(text = element_text(size = 12),
         axis.text.x=element_text(size = 12, hjust =0.5, vjust=0.2),

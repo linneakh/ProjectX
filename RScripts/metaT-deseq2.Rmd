@@ -21,6 +21,8 @@ library(tidyverse)
 library(cowplot)
 library(reshape2)
 library(heatmaply)
+
+col_list2 = c("#2ECC71" ,"#F39C12")
 ```
 
 # WGCNA analysis of soil pyruvate metatranscriptomic data. 
@@ -490,7 +492,7 @@ Run Deseq2 on object to find differential gene expression. Here we are comparing
 ```{r}
 ###deifferential expression analysis###
 dds.dt0.d <- DESeq(dds.dt0)
-resultsNames(dds.dt9.d.6.0) # lists the coefficients
+resultsNames(dds.dt0.d) # lists the coefficients
 
 res.d.6.0 <- results(dds.dt0.d, contrast = c("Condition_Time","Drought_6hr","Drought_0hr"))
 plotMA(res.d.6.0, ylim=c(-40,40))
@@ -601,7 +603,7 @@ correlations_diacetyl <- read.csv("../Data/Deseq2/gene-screening-diacetyl-spearm
 
 #create a correlation matrix between each VOC and genes of interest. Create a separate table for q values
 corr_table_short <- interest %>%
-  #filter(Priority == "yes") %>%
+  filter(Priority == "yes") %>%
   merge(correlations_acetone, by = "KO") %>%
   rename(Acetone = cor.Standard) %>%
   select(c("gene_name", "Acetone", "KO", "VOC")) %>%
@@ -835,7 +837,7 @@ p4 <- as.data.frame(res.d.6.0) %>%
   merge(.,interest , by = "KO") %>%
   filter(Priority == "yes") %>%
   mutate(Significance =
-        case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.48", 
+        case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.6", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.0")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
   mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
@@ -962,3 +964,309 @@ p7 <- as.data.frame(res.pd.48.0) %>%
         axis.text.y = element_text(color = "black", size = 10))
 ggsave("../Figures/Deseq2/VOC-genes-pd-48-0.png", dpi = 300, width = 3, height = 5)
 ```
+# Plot gene expression across time points
+```{r}
+#for figures
+d <- plotCounts(dds, gene="KO:K00156", intgroup=c("Condition", "Time"),
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K00156.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  labs(title = "K00156:poxB") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black",face = "bold"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K00158", intgroup=c("Condition", "Time"),
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K00158.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  labs(title = "K00158:poxL") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black",face = "bold"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K01067", intgroup=c("Condition", "Time"),
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K01067.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  labs(title = "K01067:ACH1") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black",face = "bold"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K01026", intgroup=c("Condition", "Time"),
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K01026.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  labs(title = "K01026:pct") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black",face = "bold"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K18118", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K18118.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  labs(title = "K18118:aarC") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black",face = "bold"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K01895", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K01895.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  labs(title = "K01895:acs") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black",face = "bold"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+
+d <- plotCounts(dds, gene="KO:K00925", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K00925.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  labs(title = "K00925:ackA") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black",face = "bold"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K01512", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K01512.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  labs(title = "K01512:acyP") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black",face = "bold"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+##acetone 
+d <- plotCounts(dds, gene="KO:K01574", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K01574.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  #scale_x_discrete(labels = c("0", "6", "48")) +
+  labs(title = "K01574:adc") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K18382", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K18382.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  #scale_x_discrete(labels = c("0", "6", "48")) +
+  labs(title = "K18382:adh1") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K18371", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K18371.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  #scale_x_discrete(labels = c("0", "6", "48")) +
+  labs(title = "K18371:acmA") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K10854", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K10854.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  #scale_x_discrete(labels = c("0", "6", "48")) +
+  labs(title = "K10854:acxB") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K10855", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K10855.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  #scale_x_discrete(labels = c("0", "6", "48")) +
+  labs(title = "K10855:acxA") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+d <- plotCounts(dds, gene="KO:K10856", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Deseq2/K10856.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  #scale_x_discrete(labels = c("0", "6", "48")) +
+  labs(title = "K10856:acxC") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+```
+

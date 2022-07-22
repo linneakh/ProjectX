@@ -34,7 +34,7 @@ data_sub <- data %>%
 
 # Isotope Sig acetate
 filename=paste("Figures/CO2-VOCs/acetate.png", sep = "")
-png(filename ,width=5, height=3, unit='in', res = 1000)
+png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
   filter(Type == "sample") %>% 
@@ -42,12 +42,12 @@ data_sub %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
   facet_grid(. ~ Pyruv) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
-  geom_point(alpha = 0.3, size = 1.5) +
+  geom_point(alpha = 0.3, size = 1) +
   geom_smooth(aes(group = Condition), span = 0.5) +
   scale_color_manual(values = colors,
                      breaks = c("pre-drought", "drought"),
                      labels = c("Pre Drought", "Drought")) + 
-  labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux") +
+  labs(x = "Time post pyruvate (h)", y = expression(""^13*"C/("^12*"C + "^13*"C) flux (m"^-2*" h"^-1*")")) +
   theme(text = element_text(size = 12,
                            family = "Arial",
                            color = "black"),

@@ -12,17 +12,17 @@ library(pasilla)
 library(qvalue)
 library(dun.test)
 library(DescTools)
-
-setwd("~/Documents/R/soil-pyruvate-metagenomics/deseq2/more_samples/only-missing-one-sample/WGCNA/power8-min30/only-black-red-brown")
+library(ggplot2)
+library(tidyverse)
 
 options(stringsAsFactors = FALSE)
 
 #load metaT gene copy data and column metadata
-datExpr0 <-read.csv("../Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE)
+datExpr0 <-read.csv("./Data/Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE)
 rownames(datExpr0) <- datExpr0$Feature
 datExpr0$Feature <- NULL
 
-coldata <- read.csv("../metaT-metadata.csv", header = TRUE)
+coldata <- read.csv("./Data/Deseq2/metaT-metadata.csv", header = TRUE)
 rownames(coldata) <- coldata$SampleID
 coldata$SampleID <- NULL
 row.names(coldata) [7] <- "X3300045460_Site1_Drought_48hr"
@@ -42,7 +42,7 @@ dds <- DESeqDataSetFromMatrix(countData = datExpr.f,
 vstcounts <- vst(dds, blind=TRUE)
 vst.export<- assay(vstcounts)
 vst.export<- as.data.frame(vst.export)
-write.csv(vst.export, "vst-metaT.csv")
+write.csv(vst.export, "./Output/WGCNA/vst-metaT.csv")
 
 
 datExpr <- t(vst.export)
@@ -90,26 +90,14 @@ nGenes = ncol(datExpr)
 nSamples = nrow(datExpr)
 
 
-traitData = read.csv("../metaT-metadata-for-WGCNA.csv", header = TRUE)
+traitData = read.csv("./Data/WGCNA/metaT-metadata-for-WGCNA.csv", header = TRUE)
 traitData$Acetone.C2 <- as.numeric(traitData$Acetone.C2)
-traitData$Acetate.C1 <- NULL
 traitData$Acetate.C2 <- as.numeric(traitData$Acetate.C2)
-traitData$Diacetyl.C2 <- as.numeric(traitData$Diacetyl.C2)
-traitData$Time <- NULL
-traitData$NOSC <- NULL
-traitData$Amino.sugar <- NULL
-traitData$Condensed.hydrocarbon <- NULL
-traitData$Lignin <- NULL
-traitData$Protein <- NULL
-traitData$Tannin <- NULL
-traitData$Unsaturated.hydrocarbon <- NULL
-traitData$Carbohydrate <- NULL
-traitData$Lipid <- NULL
 
 
 dim(traitData)
 names(traitData)
-#traitData[24:46] <- NULL
+
 
 # Form a data frame analogous to expression data that will hold the clinical traits.
 Samples = rownames(datExpr)
@@ -139,7 +127,7 @@ plotDendroAndColors(sampleTree2, traitColors,
                     main = "Sample dendrogram and trait heatmap")
 
 
-save(datExpr, datTraits, file = "germ-free-input.RData")
+save(datExpr, datTraits, file = "./Output/WGCNA/soil-pyruvate-input.RData")
 
 #s2
 
@@ -150,7 +138,7 @@ options(stringsAsFactors = FALSE);
 # Any error here may be ignored but you may want to update WGCNA if you see one.
 allowWGCNAThreads()
 # Load the data saved in the first part
-lnames = load(file = "germ-free-input.RData");
+lnames = load(file = "./Output/WGCNA/soil-pyruvate-input.RData");
 #The variable lnames contains the names of loaded variables.
 lnames
 ## Automatic network construction and module detection
@@ -184,7 +172,7 @@ class(datExpr)
 #standard "gene" screening based on marginal correlation
 #GS1 = as.numeric(cor(y, datExpr, use="p"))
 
-#datExpr = as.numeric(datExpr)
+
 net = blockwiseModules(datExpr, checkMissingData = TRUE, power = 6, minModuleSize = 80 ,
                        numericLabels = TRUE,
                        pamRespectsDendro = FALSE,
@@ -194,7 +182,7 @@ net = blockwiseModules(datExpr, checkMissingData = TRUE, power = 6, minModuleSiz
                        #loadTOM = TRUE,
                        TOMType = "signed",
                        saveTOMs = TRUE,
-                       saveTOMFileBase = "SoilPyruvateTOM", 
+                       saveTOMFileBase = "./Output/WGCNA/SoilPyruvateTOM", 
                        minKMEtoStay = 0.35,
                        verbose = 3)
 table(net$colors)
@@ -204,17 +192,20 @@ sizeGrWindow(12, 9)
 # Convert labels to colors for plotting
 mergedColors = labels2colors(net$colors)
 # Plot the dendrogram and the module colors underneath
+filename=paste("./Figures/WGCNA/modules-trait-relationships_all.png",sep="")
+png(filename ,width=7, height=6,unit = "in", res = 1000)
 plotDendroAndColors(net$dendrograms[[1]], mergedColors[net$blockGenes[[1]]],
                     "Module colors",
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05)
+dev.off()
 
 moduleLabels = net$colors
 moduleColors = labels2colors(net$colors)
 MEs = net$MEs;
 geneTree = net$dendrograms[[1]];
 save(MEs, moduleLabels, moduleColors, geneTree,
-     file = "germfree-02-networkConstruction-auto.RData")
+     file = "./Output/WGCNA/networkConstruction-auto.RData")
 
 ##Relating modules to external information and identifying important genes
 
@@ -247,7 +238,7 @@ ncol(MEs_order)
 nrow(MEs_order)
 
 moduleTraitQvalues = matrix(moduleTraitQvector,
-                            nrow=9, ncol=4, byrow=FALSE, 
+                            nrow=9, ncol=3, byrow=FALSE, 
                             dimnames=list(names(MEs_order),
                                           names(datTraits)))
 
@@ -268,10 +259,10 @@ par(mar = c(6, 8.5, 3, 3));
 
 
 #Display the correlation values within a heatmap plot
-filename=paste("modules-trait-relationships_all.png",sep="")
+filename=paste("./Figures/WGCNA/modules-trait-relationships_all.png",sep="")
 png(filename ,width=12, height=20,unit = "in", res = 1000)
 labeledHeatmap(Matrix = moduleTraitCor,
-               xLabels = c("Condition", "Acetate-c2", "Acetone-c2", "Diacetyl-c2"),
+               xLabels = c("Condition", "Acetate-c2", "Acetone-c2"),
                #yLabels = c("BLL", "GRN", "RED", "BLU", "BRN", "YLW"),
                yLabels = names(MEs_order),
                ySymbols = names(MEs_order),
@@ -330,7 +321,7 @@ par(mar = c(6, 8.5, 3, 3));
 
 
 #Display the correlation values within a heatmap plot
-filename=paste("modules-trait-relationships_subset.png",sep="")
+filename=paste("./Figures/WGCNA/modules-trait-relationships_subset.png",sep="")
 png(filename ,width=6, height=6,unit = "in", res = 1000)
 labeledHeatmap(Matrix = moduleTraitCor,
                xLabels = c("Condition", "Acetate-C2", "Acetone-C2"),
@@ -351,7 +342,7 @@ labeledHeatmap(Matrix = moduleTraitCor,
 dev.off()
 
 # Plot the relationships among the eigengenes 
-filename=paste("modules_eigengene3-no-pink-turq.pdf",sep="")
+filename=paste("./Figures/modules_eigengene3-subset.pdf",sep="")
 pdf(filename, width=8, height=6)
 plotEigengeneNetworks(MEs_order,"",marDendro=c(0,4,1,6), 
                       marHeatmap=c(3,4,1,2), cex.lab=0.8,xLabelsAngle=90)
@@ -772,7 +763,7 @@ coldata$Time <- factor(coldata$Time, c("0hr", "6hr", "48hr"))
 coldata$SampleID <- rownames(coldata)
 
 ###plot eigengene expression per sample, 
-filename=paste("black-EGexp.png", sep = "")
+filename=paste("./Figures/WGCNA/black-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="black"
 signif(cor(MEs, use="p"), 2)
@@ -782,7 +773,7 @@ barplot(ME.black, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("red-EGexp.png", sep = "")
+filename=paste("./Figures/WGCNA/red-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="red"
 signif(cor(MEs, use="p"), 2)
@@ -792,7 +783,7 @@ barplot(ME.red, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("magenta-EGexp.png", sep = "")
+filename=paste("./Figures/WGCNA/magenta-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="magenta"
 signif(cor(MEs, use="p"), 2)
@@ -802,7 +793,7 @@ barplot(ME.magenta, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("blue-EGexp.png", sep = "")
+filename=paste("./Figures/WGCNA/blue-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="blue"
 signif(cor(MEs, use="p"), 2)
@@ -812,7 +803,7 @@ barplot(ME.blue, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("yellow-EGexp.png", sep = "")
+filename=paste("./Figures/WGCNA/yellow-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="yellow"
 signif(cor(MEs, use="p"), 2)
@@ -822,7 +813,7 @@ barplot(ME.yelow, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("brown-EGexp.png", sep = "")
+filename=paste("./Figures/WGCNA/brown-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="brown"
 signif(cor(MEs, use="p"), 2)
@@ -832,7 +823,7 @@ barplot(ME.brown, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("turquoise-EGexp.png", sep = "")
+filename=paste("./Figures/WGCNA/turquoise-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="turquoise"
 signif(cor(MEs, use="p"), 2)
@@ -842,7 +833,7 @@ barplot(ME.turquoise, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("pink-EGexp.png", sep = "")
+filename=paste("./Figures/WGCNA/pink-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="pink"
 signif(cor(MEs, use="p"), 2)
@@ -852,7 +843,7 @@ barplot(ME.pink, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("green-EGexp.png", sep = "")
+filename=paste("./Figures/WGCNA/green-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="green"
 signif(cor(MEs, use="p"), 2)
@@ -869,14 +860,14 @@ ME.black$SampleID <- rownames(ME.black)
 ME.black.m <- ME.black %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("black-EGexp-facet.png", sep = "")
+filename=paste("./Figures/WGCNA/black-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.black.m, aes(x=Time, y= ME.black)) +
   geom_point() + geom_boxplot(fill = "darkgrey") +
   facet_grid(~Condition) +
-  ylim(-0.35, 0.4) +
+  #ylim(-0.35, 0.4) +
   scale_x_discrete(labels = c("0", "6", "48")) +
-  labs(title = "black module", y = "Eigengene Expression", x= "Time post pyruvate addition (hr)") +
+  labs(title = "black module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
   theme(text = element_text(size = 10,
                             family = "Arial",
@@ -894,13 +885,13 @@ ME.red$SampleID <- rownames(ME.red)
 ME.red.m <- ME.red %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("red-EGexp-facet.png", sep = "")
+filename=paste("./Figures/WGCNA/red-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.red.m, aes(x=Time, y= ME.red)) +
   geom_point() + geom_boxplot(fill = "red") +
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
-  labs(title = "red module", y = "Eigengene Expression", x= "Time post pyruvate addition (hr)") +
+  labs(title = "red module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
   theme(text = element_text(size = 10,
                             family = "Arial",
@@ -918,13 +909,14 @@ ME.magenta$SampleID <- rownames(ME.magenta)
 ME.magenta.m <- ME.magenta %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("magenta-EGexp-facet.png", sep = "")
+filename=paste("./Figures/WGCNA/magenta-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.magenta.m, aes(x=Time, y= ME.magenta)) +
-  geom_point() + geom_boxplot(fill = "magenta") +
+  geom_boxplot(fill = "magenta") + geom_point() +
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
-  labs(title = "magenta module", y = "Eigengene Expression", x= "Time post pyruvate addition (hr)") +
+  ylim(-0.3, 0.7) +
+  labs(title = "magenta module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
   theme(text = element_text(size = 10,
                             family = "Arial",
@@ -942,13 +934,13 @@ ME.blue$SampleID <- rownames(ME.blue)
 ME.blue.m <- ME.blue %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("blue-EGexp-facet.png", sep = "")
+filename=paste("./Figures/WGCNA/blue-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.blue.m, aes(x=Time, y= ME.blue)) +
   geom_point() + geom_boxplot(fill = "blue") +
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
-  labs(title = "blue module", y = "Eigengene Expression", x= "Time post pyruvate addition (hr)") +
+  labs(title = "blue module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
   theme(text = element_text(size = 10,
                             family = "Arial",
@@ -966,13 +958,13 @@ ME.yellow$SampleID <- rownames(ME.yellow)
 ME.yellow.m <- ME.yellow %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("yellow-EGexp-facet.png", sep = "")
+filename=paste("./Figures/WGCNA/yellow-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.yellow.m, aes(x=Time, y= ME.yellow)) +
   geom_point() + geom_boxplot(fill = "yellow") +
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
-  labs(title = "yellow module", y = "Eigengene Expression", x= "Time post pyruvate addition (hr)") +
+  labs(title = "yellow module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   ylim(-0.3, 0.4) +
   theme_bw() +
   theme(text = element_text(size = 10,
@@ -991,14 +983,14 @@ ME.brown$SampleID <- rownames(ME.brown)
 ME.brown.m <- ME.brown %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("brown-EGexp-facet.png", sep = "")
+filename=paste("./Figures/WGCNA/brown-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.brown.m, aes(x=Time, y= ME.brown)) +
-  geom_point() + geom_boxplot(fill = "brown") +
+   geom_boxplot(fill = "brown") +geom_point() +
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
-  ylim(-.45, .3) +
-  labs(title = "brown module", y = "Eigengene Expression", x= "Time post pyruvate addition (hr)") +
+  ylim(-.5, .4) +
+  labs(title = "brown module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
   theme(text = element_text(size = 10,
                             family = "Arial",
@@ -1016,13 +1008,13 @@ ME.turquoise$SampleID <- rownames(ME.turquoise)
 ME.turquoise.m <- ME.turquoise %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("turquoise-EGexp-facet.png", sep = "")
+filename=paste("./Figures/WGCNA/turquoise-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.turquoise.m, aes(x=Time, y= ME.turquoise)) +
   geom_point() + geom_boxplot(fill = "turquoise") +
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
-  labs(title = "turquoise module", y = "Eigengene Expression", x= "Time post pyruvate addition (hr)") +
+  labs(title = "turquoise module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
   theme(text = element_text(size = 10,
                             family = "Arial",
@@ -1040,13 +1032,14 @@ ME.pink$SampleID <- rownames(ME.pink)
 ME.pink.m <- ME.pink %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("pink-EGexp-facet.png", sep = "")
+filename=paste("./Figures/WGCNA/pink-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.pink.m, aes(x=Time, y= ME.pink)) +
-  geom_point() + geom_boxplot(fill = "pink") +
+  geom_boxplot(fill = "pink") + geom_point() +
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
-  labs(title = "pink module", y = "Eigengene Expression", x= "Time post pyruvate addition (hr)") +
+  ylim(-0.4, 0.4) +
+  labs(title = "pink module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
   theme(text = element_text(size = 10,
                             family = "Arial",
@@ -1064,13 +1057,14 @@ ME.green$SampleID <- rownames(ME.green)
 ME.green.m <- ME.green %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("green-EGexp-facet.png", sep = "")
+filename=paste("./Figures/WGCNA/green-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.green.m, aes(x=Time, y= ME.green)) +
-  geom_point() + geom_boxplot(fill = "green") +
+  geom_boxplot(fill = "green") + geom_point() + 
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
-  labs(title = "green module", y = "Eigengene Expression", x= "Time post pyruvate addition (hr)") +
+  ylim(-0.4, 0.5) +
+  labs(title = "green module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
   theme(text = element_text(size = 10,
                             family = "Arial",

@@ -2,7 +2,7 @@
 
 # Visualize Pyruvate voc Fluxes
 
-# Johannes Ingrisch, modified by Linnea Honeker
+# Johannes Ingrisch, modified by Linnea Honeker for VOCs
 # 2021-08-26, modified 4/1/22
 
 # load packages
@@ -161,3 +161,6 @@ t.test(Flux ~ Condition, data = data_sub)
 #sample estimates:
 #  mean in group pre-drought     mean in group drought 
 # -1.830744                 70.676335 
+
+
+

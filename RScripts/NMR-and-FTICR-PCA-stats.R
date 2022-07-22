@@ -374,7 +374,9 @@ ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
 df.s <- df %>%
   rownames_to_column(., var = "sampleID") %>%
-  separate(., sampleID, into = c('unique','Condition',	'Time',	'Site',	'Label'), sep = "_", remove = T)
+  separate(., sampleID, into = c('unique','Condition',	'Time',	'Site',	'Label'), sep = "_", remove = T) %>%
+  rename ('Oxoisocaproate' = '2.Oxoisocaproate') %>%
+  rename('Hydroxybutyrate' = '3.Hydroxybutyrate')
 
 modelList <- list()
 for(i in 6:29) {
@@ -383,7 +385,7 @@ for(i in 6:29) {
 }
 modelList
 
-sink("./Output/PCA_meta_meta/Wilcox-results.txt")
+sink("./Output/PCA_meta/Wilcox-results.txt")
 print(modelList)
 sink()
 

@@ -1,0 +1,231 @@
+[[1]]
+NULL
+
+[[2]]
+NULL
+
+[[3]]
+NULL
+
+[[4]]
+NULL
+
+[[5]]
+NULL
+
+[[6]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Oxoisocaproate by Condition
+W = 1, p-value = 0.008845
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[7]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Hydroxybutyrate by Condition
+W = 12, p-value = 0.3613
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[8]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Acetate by Condition
+W = 10, p-value = 0.4102
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[9]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Acetone by Condition
+W = 14, p-value = 0.9131
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[10]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Alanine by Condition
+W = 2, p-value = 0.02127
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[11]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Benzoate by Condition
+W = 12, p-value = 0.3613
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[12]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Betaine by Condition
+W = 20, p-value = 0.2207
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[13]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Ethanol by Condition
+W = 21, p-value = 0.3097
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[14]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Formate by Condition
+W = 0, p-value = 0.007969
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[15]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Glutamate by Condition
+W = 12, p-value = 0.6388
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[16]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Glycerol by Condition
+W = 8.5, p-value = 0.2553
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[17]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Glycine by Condition
+W = 2, p-value = 0.01892
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[18]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Isoleucine by Condition
+W = 9, p-value = 0.1344
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[19]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Lactate by Condition
+W = 9, p-value = 0.2874
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[20]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Leucine by Condition
+W = 3.5, p-value = 0.03748
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[21]]
+
+	Wilcoxon rank sum exact test
+
+data:  Methanol by Condition
+W = 19, p-value = 0.5368
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[22]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Phenylalanine by Condition
+W = 6, p-value = 0.04513
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[23]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Pyroglutamate by Condition
+W = 2, p-value = 0.02097
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[24]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Pyruvate by Condition
+W = 0, p-value = 0.006477
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[25]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Succinate by Condition
+W = 20, p-value = 0.2207
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[26]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Threonine by Condition
+W = 9, p-value = 0.1364
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[27]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Trehalose by Condition
+W = 30, p-value = 0.005377
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[28]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Uracil by Condition
+W = 4, p-value = 0.0316
+alternative hypothesis: true location shift is not equal to 0
+
+
+[[29]]
+
+	Wilcoxon rank sum test with continuity correction
+
+data:  Valine by Condition
+W = 2, p-value = 0.01892
+alternative hypothesis: true location shift is not equal to 0
+
+

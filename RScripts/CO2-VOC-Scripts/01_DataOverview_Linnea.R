@@ -41,7 +41,7 @@ data$Condition <- factor(data$Condition, c(
 
 # Isotope Sig
 filename=paste("Figures/CO2-VOCs/C1_C2_delta_co2-update.png", sep = "")
-png(filename ,width=5, height=3, unit='in', res = 1000)
+png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
@@ -56,7 +56,7 @@ data_sub %>%
   scale_color_manual(values = colors,
                      breaks = c("pre_drought", "drought"),
                      labels = c("Pre Drought", "Drought")) + 
-  labs(x = "Hours after labeling", y = bquote(delta^13 *CO[2])) +
+  labs(x = "Time post pyruvate (h)", y = expression(delta^13 *"C"[CO[2]]*" (\u2030, VPDB)")) +
   theme(text = element_text(size = 12,
                            family = "Arial",
                            color = "black"),
