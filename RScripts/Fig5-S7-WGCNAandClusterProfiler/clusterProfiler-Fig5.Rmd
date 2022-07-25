@@ -1,0 +1,342 @@
+---
+title: "metat-phyloseq"
+author: "Linnea Honeker"
+date: "3/2/2022"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(clusterProfiler)
+library(dplyr)
+library(DOSE)
+library(enrichplot)
+library(tidyr)
+library(ggupset)
+library(ggplot2)
+
+#set directory
+#setwd("./Datasets/new-analysis-17Mar2022")
+```
+
+```{r import_data, include=FALSE}
+#load long-form module list as data frame
+data <- read.csv("../Data/ClusterProfiler/modules-gene-long-retry.csv", header = TRUE)
+
+#filter to  module
+data.green <- data %>%
+  filter(module == "green")
+
+data.black <- data %>%
+  filter(module == "black")
+
+data.brown <- data %>%
+  filter(module == "brown")
+
+data.yellow <- data %>%
+  filter(module == "yellow")
+
+data.blue <- data %>%
+  filter(module == "blue")
+
+data.red <- data %>%
+  filter(module == "red")
+
+data.pink <- data %>%
+  filter(module == "pink")
+
+data.magenta <- data %>%
+  filter(module == "magenta")
+
+data.turquoise <- data %>%
+  filter(module == "turquoise")
+
+#Extract only list of KOs
+data.green <- data.green$KO
+data.black <- data.black$KO
+data.brown <- data.brown$KO
+data.yellow <- data.yellow$KO
+data.blue <- data.blue$KO
+data.pink <- data.pink$KO
+data.magenta <- data.magenta$KO
+data.turquoise <- data.turquoise$KO
+data.red <- data.red$KO
+```
+
+```{r analysis, include=FALSE}
+#KEGG pathway over-representation analysis
+k.green <- enrichKEGG(gene = data.green,
+                      organism = 'ko',
+                      pvalueCutoff = 0.05)
+
+k.black <- enrichKEGG(gene = data.black,
+                      organism = 'ko',
+                      pvalueCutoff = 0.05)
+
+k.brown <- enrichKEGG(gene = data.brown,
+                      organism = 'ko',
+                      pvalueCutoff = 0.05)
+
+k.yellow <- enrichKEGG(gene = data.yellow,
+                      organism = 'ko',
+                      pvalueCutoff = 0.05)
+
+k.blue <- enrichKEGG(gene = data.blue,
+                       organism = 'ko',
+                       pvalueCutoff = 0.05)
+
+k.red <- enrichKEGG(gene = data.red,
+                     organism = 'ko',
+                     pvalueCutoff = 0.05)
+
+k.pink <- enrichKEGG(gene = data.pink,
+                    organism = 'ko',
+                    pvalueCutoff = 0.05)
+
+k.magenta <- enrichKEGG(gene = data.magenta,
+                    organism = 'ko',
+                    pvalueCutoff = 0.05)
+
+k.turquoise <- enrichKEGG(gene = data.turquoise,
+                    organism = 'ko',
+                    pvalueCutoff = 0.05)
+
+#KEGG module over-representation analysis
+m.green <- enrichMKEGG(gene = data.green,
+                        organism = 'ko',
+                        pvalueCutoff = 1,
+                        qvalueCutoff = 1)
+
+m.black <- enrichMKEGG(gene = data.black,
+                       organism = 'ko',
+                       pvalueCutoff = 1,
+                       qvalueCutoff = 1)
+
+m.brown <- enrichMKEGG(gene = data.brown,
+                       organism = 'ko',
+                       pvalueCutoff = 1,
+                       qvalueCutoff = 1)
+
+m.yellow <- enrichMKEGG(gene = data.yellow,
+                       organism = 'ko',
+                       pvalueCutoff = 1,
+                       qvalueCutoff = 1)
+
+m.blue <- enrichMKEGG(gene = data.blue,
+                        organism = 'ko',
+                        pvalueCutoff = 1,
+                        qvalueCutoff = 1)
+
+m.red <- enrichMKEGG(gene = data.red,
+                      organism = 'ko',
+                      pvalueCutoff = 1,
+                      qvalueCutoff = 1)
+
+m.pink <- enrichMKEGG(gene = data.pink,
+                      organism = 'ko',
+                      pvalueCutoff = 1,
+                      qvalueCutoff = 1)
+
+m.turquoise <- enrichMKEGG(gene = data.turquoise,
+                      organism = 'ko',
+                      pvalueCutoff = 1,
+                      qvalueCutoff = 1)
+
+m.magenta <- enrichMKEGG(gene = data.magenta,
+                      organism = 'ko',
+                      pvalueCutoff = 1,
+                      qvalueCutoff = 1)
+```
+
+
+```{r, include = FALSE}
+#barplot(k.green, showCategory = 25)
+p1 <- dotplot(k.green, showCategory = 25)
+p10 <- cnetplot(k.green)
+
+#barplot(k.black, showCategory = 25)
+p2 <- dotplot(k.black, showCategory = 25)
+p11 <- cnetplot(k.black) +
+  scale_color_manual(values = c("black", "darkgrey")) +
+  guides(color = FALSE)
+
+#barplot(k.brown, showCategory = 25)
+p3 <- dotplot(k.brown, showCategory = 25)
+p12 <- cnetplot(k.brown) +
+  scale_color_manual(values = c("brown", "#D98880")) +
+  guides(color = FALSE)
+
+#barplot(k.yellow, showCategory = 25)
+p4 <- dotplot(k.yellow, showCategory = 25)
+p13 <- cnetplot(k.yellow) +
+  scale_color_manual(values = c("yellow", "#F9E79F")) +
+  guides(color = FALSE)
+
+#barplot(k.blue, showCategory = 25)
+p5 <- dotplot(k.blue, showCategory = 25)
+p14 <- cnetplot(k.blue) +
+  scale_color_manual(values = c("blue", "#7FB3D5")) +
+  guides(color = FALSE)
+
+#barplot(k.red, showCategory = 25)
+p6 <- dotplot(k.red, showCategory = 25)
+p15 <- cnetplot(k.red) +
+  scale_color_manual(values = c("red", "#F3AE9A")) +
+  guides(color = FALSE)
+
+#barplot(k.pink, showCategory = 25)
+p7 <- dotplot(k.pink, showCategory = 25)
+p18 <- cnetplot(k.pink)+
+  scale_color_manual(values = c("pink", "pink")) +
+  guides(color = FALSE)
+
+#barplot(k.magenta, showCategory = 25)
+p8 <- dotplot(k.magenta, showCategory = 25)
+p16 <- cnetplot(k.magenta)+
+  scale_color_manual(values = c("magenta", "#EFBFF2")) +
+  guides(color = FALSE)
+
+#barplot(k.turquoise, showCategory = 25)
+p9 <- dotplot(k.turquoise, showCategory = 25)
+p17 <- cnetplot(k.turquoise) +
+  scale_color_manual(values = c("turquoise", "turquoise")) +
+  guides(color = FALSE)
+```
+
+## Over-represented pathways
+### Dot plots
+
+```{r, fig.height=30, fig.width=8, echo = FALSE}
+cowplot::plot_grid(p2,p1,p6, p5, p3, p4, p7, p8, p9, ncol=1 ,labels = c("A", "B", "C", "D", "E", "F"),
+                   label_size = 12)
+```
+
+## Network plots
+
+```{r, fig.height=30, fig.width=8, echo = FALSE}
+cowplot::plot_grid(p10,p11,p12, p13, p14, p15, p16,p17, p18, ncol=1 ,labels = c("A", "B", "C", "D", "E", "F"),label_size = 12)
+```
+
+
+
+```{r include = FALSE}
+#barplot(k.green, showCategory = 25)
+p1 <- dotplot(m.green, showCategory = 25)
+p10 <- cnetplot(m.green) +
+  scale_color_manual(values = c("green", "green")) +
+  guides(color = FALSE)
+
+#barplot(m.blacm, showCategory = 25)
+p2 <- dotplot(m.black, showCategory = 25)
+p11 <- cnetplot(m.black) +
+  scale_color_manual(values = c("black", "darkgrey")) +
+  guides(color = FALSE)
+
+#barplot(k.brown, showCategory = 25)
+p3 <- dotplot(m.brown, showCategory = 25)
+p12 <- cnetplot(m.brown) +
+  scale_color_manual(values = c("brown", "#D98880")) +
+  guides(color = FALSE)
+
+#barplot(m.yellow, showCategory = 25)
+p4 <- dotplot(m.yellow, showCategory = 25)
+p13 <- cnetplot(m.yellow) +
+  scale_color_manual(values = c("yellow", "#F9E79F")) +
+  guides(color = FALSE)
+
+#barplot(m.blue, showCategory = 25)
+p5 <- dotplot(m.blue, showCategory = 25)
+p14 <- cnetplot(m.blue) +
+  scale_color_manual(values = c("blue", "#7FB3D5")) +
+  guides(color = FALSE)
+
+#barplot(m.red, showCategory = 25)
+p6 <- dotplot(m.red, showCategory = 25)
+p15 <- cnetplot(m.red) +
+  scale_color_manual(values = c("red", "#F3AE9A")) +
+  guides(color = FALSE)
+
+#barplot(m.pinm, showCategory = 25)
+p7 <- dotplot(m.pink, showCategory = 25)
+p18 <- cnetplot(m.pink)+
+  scale_color_manual(values = c("pink", "pink")) +
+  guides(color = FALSE)
+
+#barplot(m.magenta, showCategory = 25)
+p8 <- dotplot(m.magenta, showCategory = 25)
+p16 <- cnetplot(m.magenta)+
+  scale_color_manual(values = c("magenta", "#EFBFF2")) +
+  guides(color = FALSE)
+
+#barplot(m.turquoise, showCategory = 25)
+p9 <- dotplot(m.turquoise, showCategory = 25)
+p17 <- cnetplot(m.turquoise) +
+  scale_color_manual(values = c("turquoise", "turquoise")) +
+  guides(color = FALSE)
+```
+## Over-represented modules
+### Dot plots
+
+```{r fig.height=30, fig.width=8, echo = FALSE}
+cowplot::plot_grid(p2,p1,p6, p5, p3, p4, p7, p8, p9, ncol=1 ,labels = c("A", "B", "C", "D", "E", "F"),
+                   label_size = 12)
+```
+### Network plots
+
+```{r fig.height=30, fig.width=8, echo = FALSE}
+cowplot::plot_grid(p10,p11,p12, p13, p14, p15, p16,p17, p18, ncol=1 ,labels = c("A", "B", "C", "D", "E", "F"),
+                   label_size = 12)
+```
+
+```{r save_figures, include = FALSE}
+#Networks for fig 5, which includes brown, green, magenta, and pink
+p11 <- cnetplot(k.black,
+                cex_label_gene = 0.75, cex_label_category = 1.5) +
+  scale_color_manual(values = c("black", "darkgrey")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-black-oeg-retry.png")
+ggsave(filename,width=10,height=5,dpi=1000,p11)
+
+p12 <- cnetplot(k.brown, cex_label_gene = 0.75, cex_label_category = 1.5) +
+  scale_color_manual(values = c("brown", "#D98880")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-brown-oeg-retry.png")
+ggsave(filename,width=10,height=5,dpi=1000,p12)
+
+
+p15 <- cnetplot(k.red,
+                cex_label_gene = 0.75, cex_label_category = 1.5) +
+  scale_color_manual(values = c("red", "#F3AE9A")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-red-oeg-retry.png")
+ggsave(filename,width=10,height=5,dpi=1000,p15)
+
+
+p16 <- cnetplot(k.green, showCategory = c("Oxidative phosphorylation", "Ribosome", "Carbon metabolism"),
+                cex_label_gene = 0.75, cex_label_category = 1.5) +
+  scale_color_manual(values = c("green", "lightgreen")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-green-oeg-retry.png")
+ggsave(filename,width=10,height=5,dpi=1000,p16)
+
+p16 <- cnetplot(k.pink, showCategory = c("Alanine, aspartate and glutamate metabolism", "Starch and sucrose metabolism",
+                                         "Ribosome", "Histidine metabolism"),
+                cex_label_gene = 0.75, cex_label_category = 1.5) +
+  scale_color_manual(values = c("pink3", "pink")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-pink-oeg-retry.png")
+ggsave(filename,width=10,height=5,dpi=1000,p16)
+
+p17 <- cnetplot(k.magenta,
+                cex_label_gene = 0.75, cex_label_category = 1.5) +
+  scale_color_manual(values = c("magenta", "#EFBFF2")) +
+  guides(color = FALSE)
+filename <- paste0("../Figures/ClusterProfiler/net-plot-magenta-oeg-retry.png")
+ggsave(filename,width=10,height=5,dpi=1000,p17)
+
+```
+
+
+
