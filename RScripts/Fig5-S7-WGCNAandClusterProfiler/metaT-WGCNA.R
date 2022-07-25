@@ -27,7 +27,7 @@ rownames(coldata) <- coldata$SampleID
 coldata$SampleID <- NULL
 row.names(coldata) [7] <- "X3300045460_Site1_Drought_48hr"
 
-#filter features that are not in at least x number of samples
+#filter features that are not in at least 9samples
 datExpr.f <- datExpr0 %>%
   mutate(count = rowSums(. > 0)) %>%
   filter(count > 9) %>%
@@ -49,13 +49,9 @@ datExpr <- t(vst.export)
 names(datExpr) <- rownames(datExpr.f)
 row.names(datExpr) [7] <- "X3300045460_Site1_Drought_48hr"
 
-
-head(datExpr, n=5)
-
 #not sure what this does
 gsg = goodSamplesGenes(datExpr, verbose=3)
 gsg$allOK
-
 
 if (!gsg$allOK)
 {
@@ -68,9 +64,9 @@ if (!gsg$allOK)
   datExpr0 = datExpr0[gsg$goodSamples, gsg$goodGenes]
 }
 
+# make a cluster tree of samples to detect outliers
 sampleTree = hclust(dist(datExpr), method = "average");
 # Plot the sample tree: Open a graphic output window of size 12 by 9 inches
-# The user should change the dimensions if the window is too large or too small.
 sizeGrWindow(12,9)
 #pdf(file = "Plots/sampleClustering.pdf", width = 12, height = 9);
 par(cex = 0.6);
@@ -86,18 +82,14 @@ table(clust)
 # clust 1 contains the samples we want to keep.
 keepSamples = (clust==1)
 datExpr = datExpr[keepSamples, ]
+names(datExpr) <- rownames(datExpr.f)
 nGenes = ncol(datExpr)
 nSamples = nrow(datExpr)
 
-
+#load trait data
 traitData = read.csv("./Data/WGCNA/metaT-metadata-for-WGCNA.csv", header = TRUE)
 traitData$Acetone.C2 <- as.numeric(traitData$Acetone.C2)
 traitData$Acetate.C2 <- as.numeric(traitData$Acetate.C2)
-
-
-dim(traitData)
-names(traitData)
-
 
 # Form a data frame analogous to expression data that will hold the clinical traits.
 Samples = rownames(datExpr)
@@ -105,17 +97,6 @@ traitRows = match(Samples, traitData$SampleID)
 datTraits = traitData[traitRows, -1]
 rownames(datTraits) = traitData[traitRows, 1]
 collectGarbage()
-
-
-
-#datTraits = as.numeric(datTraits$Sex, datTraits$Esonophls_per, datTraits$Neutrophils_per,
-#                       datTraits$Macrophages_per, datTraits$Lymphocytes_per,
-#                        datTraits$Eosinophils_total, datTraits$Neutrophils_tot, 
-#                        datTraits$Lymphocytes_total, datTraits$Treatment, datTraits$Treatment,
-#                        datTraits$Hutt_Amish)
-
-#charData = apply(as.matrix(datTraits), 2, as.character)
-#numData = apply(charData, 2, as.numeric)
 
 # Re-cluster samples
 sampleTree2 = flashClust(dist(datExpr), method = "average")
@@ -126,10 +107,8 @@ plotDendroAndColors(sampleTree2, traitColors,
                     groupLabels = names(datTraits),
                     main = "Sample dendrogram and trait heatmap")
 
-
+# save input for wgcna analysis
 save(datExpr, datTraits, file = "./Output/WGCNA/soil-pyruvate-input.RData")
-
-#s2
 
 # The following setting is important, do not omit.
 options(stringsAsFactors = FALSE);
@@ -165,14 +144,7 @@ plot(sft$fitIndices[,1], sft$fitIndices[,5],
      main = paste("Mean connectivity"))
 text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
 
-#set integer values to numeric
-#datExpr <- lapply(datExpr, as.numeric)
-class(datExpr)
-
-#standard "gene" screening based on marginal correlation
-#GS1 = as.numeric(cor(y, datExpr, use="p"))
-
-
+#create WGCNA TOM network, power = 6 chosen becuase this is where R2 passed 0.8
 net = blockwiseModules(datExpr, checkMissingData = TRUE, power = 6, minModuleSize = 80 ,
                        numericLabels = TRUE,
                        pamRespectsDendro = FALSE,
@@ -186,13 +158,12 @@ net = blockwiseModules(datExpr, checkMissingData = TRUE, power = 6, minModuleSiz
                        minKMEtoStay = 0.35,
                        verbose = 3)
 table(net$colors)
-
 # open a graphics window
 sizeGrWindow(12, 9)
 # Convert labels to colors for plotting
 mergedColors = labels2colors(net$colors)
-# Plot the dendrogram and the module colors underneath
-filename=paste("./Figures/WGCNA/modules-trait-relationships_all.png",sep="")
+# Plot the dendrogram and the module colors underneath, save image (Fig S7a)
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/modules-trait-relationships_all.png",sep="")
 png(filename ,width=7, height=6,unit = "in", res = 1000)
 plotDendroAndColors(net$dendrograms[[1]], mergedColors[net$blockGenes[[1]]],
                     "Module colors",
@@ -200,6 +171,7 @@ plotDendroAndColors(net$dendrograms[[1]], mergedColors[net$blockGenes[[1]]],
                     addGuide = TRUE, guideHang = 0.05)
 dev.off()
 
+#save network construction data
 moduleLabels = net$colors
 moduleColors = labels2colors(net$colors)
 MEs = net$MEs;
@@ -208,7 +180,6 @@ save(MEs, moduleLabels, moduleColors, geneTree,
      file = "./Output/WGCNA/networkConstruction-auto.RData")
 
 ##Relating modules to external information and identifying important genes
-
 # Define numbers of genes and samples
 nGenes = ncol(datExpr);
 nSamples = nrow(datExpr);
@@ -219,12 +190,8 @@ MEs = orderMEs(MEs0)
 #Erase grey column from MEs 
 MEs$MEgrey <- NULL
 
-
 ######All modules#####
-#MEs_order = MEs[,c(9,8,2,4,5,1)]
-MEs_order <- MEs
-
-moduleTraitCor = cor(MEs_order, datTraits, use = "p");
+moduleTraitCor = cor(MEs, datTraits, use = "p");
 
 #calculate correlations and pvalues, create each set of p values as a vector to caclulate fdr-corrected q values
 moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples);
@@ -233,43 +200,27 @@ moduleTraitQobj = qvalue(moduleTraitPvector, lambda = 0,  fdr.level = 0.05)
 
 moduleTraitQvector= moduleTraitQobj$qvalues
 
-
-ncol(MEs_order)
-nrow(MEs_order)
-
 moduleTraitQvalues = matrix(moduleTraitQvector,
                             nrow=9, ncol=3, byrow=FALSE, 
-                            dimnames=list(names(MEs_order),
+                            dimnames=list(names(MEs),
                                           names(datTraits)))
 
-
-
-
-#colnames(MEs) <- sub("")
-
-#sizeGrWindow(20,20)
 # Will display correlations and their p-values
 textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
                    signif(moduleTraitQvalues, 1), ")", sep = "")
 dim(textMatrix) = dim(moduleTraitCor)
 par(mar = c(6, 8.5, 3, 3));
 
-
-#change order of rows
-
-
 #Display the correlation values within a heatmap plot
-filename=paste("./Figures/WGCNA/modules-trait-relationships_all.png",sep="")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/modules-trait-relationships_all.png",sep="")
 png(filename ,width=12, height=20,unit = "in", res = 1000)
 labeledHeatmap(Matrix = moduleTraitCor,
                xLabels = c("Condition", "Acetate-c2", "Acetone-c2"),
-               #yLabels = c("BLL", "GRN", "RED", "BLU", "BRN", "YLW"),
-               yLabels = names(MEs_order),
-               ySymbols = names(MEs_order),
+               yLabels = names(MEs),
+               ySymbols = names(MEs),
                colorLabels = FALSE,
                colors = blueWhiteRed(50),
                textMatrix = textMatrix,
-               #setStdMargins = FALSE,
                cex.text = 1.0,
                cex.lab.y = 1.2,
                cex.lab.x = 1.2,
@@ -279,11 +230,8 @@ labeledHeatmap(Matrix = moduleTraitCor,
                zlim = c(-1,1))
 dev.off()
 
-######Subset modules#####
+######Subset modules to those discussed in paper (Fig S7)#####
 MEs_order = MEs[,c(9,8,7,1)]
-
-#Remove diacetyl for figure
-datTraits$Diacetyl.C2 <- NULL
 
 #correlate traits and MEs
 moduleTraitCor = cor(MEs_order, datTraits, use = "p");
@@ -295,33 +243,20 @@ moduleTraitQobj = qvalue(moduleTraitPvector, lambda = 0,  fdr.level = 0.05)
 
 moduleTraitQvector= moduleTraitQobj$qvalues
 
-
-ncol(MEs_order)
-nrow(MEs_order)
-
 moduleTraitQvalues = matrix(moduleTraitQvector,
                             nrow=4, ncol=3, byrow=FALSE, 
                             dimnames=list(names(MEs_order),
                                           names(datTraits)))
 
 
-
-
-#colnames(MEs) <- sub("")
-
-#sizeGrWindow(20,20)
 # Will display correlations and their p-values
 textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
                    signif(moduleTraitQvalues, 1), ")", sep = "")
 dim(textMatrix) = dim(moduleTraitCor)
 par(mar = c(6, 8.5, 3, 3));
 
-
-#change order of rows
-
-
 #Display the correlation values within a heatmap plot
-filename=paste("./Figures/WGCNA/modules-trait-relationships_subset.png",sep="")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/modules-trait-relationships_subset_FigS7b.png",sep="")
 png(filename ,width=6, height=6,unit = "in", res = 1000)
 labeledHeatmap(Matrix = moduleTraitCor,
                xLabels = c("Condition", "Acetate-C2", "Acetone-C2"),
@@ -341,15 +276,8 @@ labeledHeatmap(Matrix = moduleTraitCor,
                zlim = c(-1,1))
 dev.off()
 
-# Plot the relationships among the eigengenes 
-filename=paste("./Figures/modules_eigengene3-subset.pdf",sep="")
-pdf(filename, width=8, height=6)
-plotEigengeneNetworks(MEs_order,"",marDendro=c(0,4,1,6), 
-                      marHeatmap=c(3,4,1,2), cex.lab=0.8,xLabelsAngle=90)
-dev.off()
-
 # Plot the relationships among the eigengenes as png
-filename=paste("modules_eigengene3-no-pink-turq.png",sep="")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/modules_eigengene3-subset.png",sep="")
 png(filename, width=12, height=9, unit = "in", res = 1000)
 plotEigengeneNetworks(MEs_order,"",marDendro=c(0,4,1,6), 
                       marHeatmap=c(3,4,1,2), cex.lab=0.8,xLabelsAngle=90)
@@ -357,12 +285,12 @@ dev.off()
 
 
 #####Condition#####
-#Define variable MT.ND1 containing the MT.ND1 column of datTrait
+#Define variable Condition
 Condition = as.data.frame(datTraits$Condition);
 names(Condition) = ("Condition")
 # names (colors) of the modules
-modNames = substring(names(MEs_order), 3)
-geneModuleMembership = as.data.frame(cor(datExpr, MEs_order, use = "p"));
+modNames = substring(names(MEs0), 3)
+geneModuleMembership = as.data.frame(cor(datExpr, MEs0, use = "p"));
 MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples));
 names(geneModuleMembership) = paste("MM", modNames, sep="");
 names(MMPvalue) = paste("p.MM", modNames, sep="");
@@ -374,73 +302,46 @@ GSQvalue.0 = qvalue(p=GSPvalue.0, lambda = 0, fdr.level = 0.05)
 GSQvalue <- as.data.frame(GSQvalue.0$qvalues, row.names=names(datExpr))
 summary(GSQvalue.0)
 
-
 pi0 <- GSQvalue.0$pi0
 lfdr <- GSQvalue.0$lfdr 
 
-names(geneTraitSignificance) = paste("GS.", names(Condition), sep="");
-names(GSQvalue) = paste("q.GS.", names(Condition), sep="");
-module = "black"
-column = match(module, modNames);
-moduleGenes = moduleColors==module;
-sizeGrWindow(7, 7);
-par(mfrow = c(1,1));
-verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
-                   abs(geneTraitSignificance[moduleGenes, 1]),
-                   xlab = paste("Module Membership in", module, "module"),
-                   ylab = "Gene significance for Condition",
-                   main = paste("Module membership vs. gene significance\n"),
-                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
-
-#write.csv(geneModuleMembership, file= "geneModuleMembeship_updated_trait_data-q.csv")
-write.csv(geneTraitSignificance, file= "geneTraitsSignif-Condition-black-updated-trait-data-q-no-pink-turq.csv")
-
-#Summary output of network analysis results
-names(datExpr) <- rownames(datExpr.f)
-x <- names(datExpr)[moduleColors=="black"]
-write.csv(x, file = "datExpr_black-no-pink-tuq.csv")
-
-moduleColor=names(MEs_order)
+moduleColor=names(MEs0)
 probes=names(datExpr)
+
 # Create the starting data frame
 geneInfo0 = data.frame(datExpr = probes, ModuleColor = moduleColors,
                        geneTraitSignificance,
                        GSQvalue)
 
 # Order modules by their significance for weight
-modOrder = order(-abs(cor(MEs_order, Condition, use = "p")));
+modOrder = order(-abs(cor(MEs0, Condition, use = "p")));
 
 # Add module membership information in the chosen order
 for (mod in 1:ncol(geneModuleMembership))
 {
   oldNames = names(geneInfo0)
-  geneInfo0 = data.frame(geneInfo0, geneModuleMembership[, modOrder[mod
-  ]],
+  geneInfo0 = data.frame(geneInfo0, geneModuleMembership[, modOrder[mod]],
                          MMPvalue[, modOrder[mod]]);
   names(geneInfo0) = c(oldNames, paste("MM.", modNames[modOrder[mod]], sep=""),
                        paste("p.MM.", modNames[modOrder[mod]], sep=""))
 }
 
 # Order the genes in the geneInfo variable first by module color, then by geneTraitSignificance
-geneOrder = order(geneInfo0$ModuleColor, -abs(geneInfo0$GS.Condition));
-geneInfo = geneInfo0[geneOrder, ]
-write.csv(geneInfo, file = "geneInfo_Condition_no-pink-tur.csv")
-write.csv(geneInfo0, file = "geneInfo-not-Condition-ordered-q-no-pink-turq.csv")
+write.csv(geneInfo0, file = "./Output/WGCNA/geneInfo-Condition-not-ordered.csv")
 
 #gene screening method bsed on detailied definition of module membership
 NS1=networkScreening(y=datTraits$Condition, datME=MEs0, datExpr=datExpr,
                      oddPower=3, blockSize=1000, minimumSampleSize=4,
-                     addMEy=TRUE, removeDiag=FALSE, weightESy=0.5)
-write.csv(NS1, "condition-gene-screening-no-pink-turq.csv")
-
+                     addMEy=TRUE, removeDiag=FALSE, weightESy=0.5, corOptions = "use = 'p', method = 'spearman'")
+write.csv(NS1, "./Output/WGCNA/gene-screening-condition-spearman.csv")
 
 #####Acetate-c2#####
 #Define variable AcetateC2 containing the Acetate.C2 column of datTrait
 AcetateC2 = as.data.frame(datTraits$Acetate.C2);
 names(AcetateC2) = ("AcetateC2")
 # names (colors) of the modules
-modNames = substring(names(MEs), 3)
-geneModuleMembership = as.data.frame(cor(datExpr, MEs, use = "p"));
+modNames = substring(names(MEs0), 3)
+geneModuleMembership = as.data.frame(cor(datExpr, MEs0, use = "p"));
 MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples));
 names(geneModuleMembership) = paste("MM", modNames, sep="");
 names(MMPvalue) = paste("p.MM", modNames, sep="");
@@ -452,26 +353,8 @@ GSQvalue.0 = qvalue(p=GSPvalue.0, lambda = 0, fdr.level = 0.05)
 GSQvalue <- as.data.frame(GSQvalue.0$qvalues, row.names=names(datExpr))
 summary(GSQvalue.0)
 
-
 pi0 <- GSQvalue.0$pi0
 lfdr <- GSQvalue.0$lfdr 
-
-names(geneTraitSignificance) = paste("GS.", names(AcetateC2), sep="");
-names(GSQvalue) = paste("q.GS.", names(AcetateC2), sep="");
-module = "green"
-column = match(module, modNames);
-moduleGenes = moduleColors==module;
-sizeGrWindow(7, 7);
-par(mfrow = c(1,1));
-verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
-                   abs(geneTraitSignificance[moduleGenes, 1]),
-                   xlab = paste("Module Membership in", module, "module"),
-                   ylab = "Gene significance for AcetateC2",
-                   main = paste("Module membership vs. gene significance\n"),
-                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
-
-#write.csv(geneModuleMembership, file= "geneModuleMembeship_updated_trait_data-q.csv")
-write.csv(geneTraitSignificance, file= "geneTraitsSignif-AcetateC2-green-updated-trait-data-q.csv")
 
 # Create the starting data frame
 geneInfo0 = data.frame(datExpr = probes, ModuleColor = moduleColors,
@@ -485,24 +368,20 @@ modOrder = order(-abs(cor(MEs, AcetateC2, use = "p")));
 for (mod in 1:ncol(geneModuleMembership))
 {
   oldNames = names(geneInfo0)
-  geneInfo0 = data.frame(geneInfo0, geneModuleMembership[, modOrder[mod
-                                                                    ]],
+  geneInfo0 = data.frame(geneInfo0, geneModuleMembership[, modOrder[mod]],
                          MMPvalue[, modOrder[mod]]);
   names(geneInfo0) = c(oldNames, paste("MM.", modNames[modOrder[mod]], sep=""),
                        paste("p.MM.", modNames[modOrder[mod]], sep=""))
 }
 
 # Order the genes in the geneInfo variable first by module color, then by geneTraitSignificance
-geneOrder = order(geneInfo0$ModuleColor, -abs(geneInfo0$GS.AcetateC2));
-geneInfo = geneInfo0[geneOrder, ]
-write.csv(geneInfo, file = "geneInfo_Acetatec2.csv")
 write.csv(geneInfo0, file = "geneInfo-not-Acetatec2-ordered-q.csv")
 
 #gene screening method bsed on detailied definition of module membership
 NS1=networkScreening(y=datTraits$Acetate.C2, datME=MEs0, datExpr=datExpr,
                      oddPower=3, blockSize=1000, minimumSampleSize=4,
-                     addMEy=TRUE, removeDiag=FALSE, weightESy=0.5)
-write.csv(NS1, "gene-screening-acetatec2.csv")
+                     addMEy=TRUE, removeDiag=FALSE, weightESy=0.5, corOptions = "use = 'p', method = 'spearman'")
+write.csv(NS1, "./Output/WGCNA/gene-screening-AcetateC2-spearman.csv")
 
 
 #####acetone-c2#####
@@ -510,8 +389,8 @@ write.csv(NS1, "gene-screening-acetatec2.csv")
 AcetoneC2 = as.data.frame(datTraits$Acetone.C2);
 names(AcetoneC2) = ("AcetoneC2")
 # names (colors) of the modules
-modNames = substring(names(MEs), 3)
-geneModuleMembership = as.data.frame(cor(datExpr, MEs, use = "p"));
+modNames = substring(names(MEs0), 3)
+geneModuleMembership = as.data.frame(cor(datExpr, MEs0, use = "p"));
 MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples));
 names(geneModuleMembership) = paste("MM", modNames, sep="");
 names(MMPvalue) = paste("p.MM", modNames, sep="");
@@ -527,30 +406,13 @@ summary(GSQvalue.0)
 pi0 <- GSQvalue.0$pi0
 lfdr <- GSQvalue.0$lfdr 
 
-names(geneTraitSignificance) = paste("GS.", names(AcetoneC2), sep="");
-names(GSQvalue) = paste("q.GS.", names(AcetoneC2), sep="");
-module = "green"
-column = match(module, modNames);
-moduleGenes = moduleColors==module;
-sizeGrWindow(7, 7);
-par(mfrow = c(1,1));
-verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
-                   abs(geneTraitSignificance[moduleGenes, 1]),
-                   xlab = paste("Module Membership in", module, "module"),
-                   ylab = "Gene significance for AcetoneC2",
-                   main = paste("Module membership vs. gene significance\n"),
-                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
-
-#write.csv(geneModuleMembership, file= "geneModuleMembeship_updated_trait_data-q.csv")
-write.csv(geneTraitSignificance, file= "geneTraitsSignif-AcetoneC2-green-updated-trait-data-q.csv")
-
 # Create the starting data frame
 geneInfo0 = data.frame(datExpr = probes, ModuleColor = moduleColors,
                        geneTraitSignificance,
                        GSQvalue)
 
 # Order modules by their significance for weight
-modOrder = order(-abs(cor(MEs, AcetoneC2, use = "p")));
+modOrder = order(-abs(cor(MEs0, AcetoneC2, use = "p")));
 
 # Add module membership information in the chosen order
 for (mod in 1:ncol(geneModuleMembership))
@@ -564,197 +426,17 @@ for (mod in 1:ncol(geneModuleMembership))
 }
 
 # Order the genes in the geneInfo variable first by module color, then by geneTraitSignificance
-geneOrder = order(geneInfo0$ModuleColor, -abs(geneInfo0$GS.Diacetyl.C2));
-geneInfo = geneInfo0[geneOrder, ]
-write.csv(geneInfo, file = "geneInfo_AcetoneC2.csv")
-write.csv(geneInfo0, file = "geneInfo-not-AcetoneC2-ordered-q.csv")
+
+write.csv(geneInfo0, file = "./Output/WGCNA/geneInfo-not-AcetoneC2-ordered-q.csv")
 
 #gene screening method bsed on detailied definition of module membership
 NS1=networkScreening(y=datTraits$Acetone.C2, datME=MEs0, datExpr=datExpr,
                      oddPower=3, blockSize=1000, minimumSampleSize=4,
-                     addMEy=TRUE, removeDiag=FALSE, weightESy=0.5)
-write.csv(NS1, "gene-screening-AcetoneC2.csv")
-
-#####Diacetyl-c2#####
-#Define variable AcetateC2 containing the Acetate.C2 column of datTrait
-DiacetylC2 = as.data.frame(datTraits$Diacetyl.C2);
-names(DiacetylC2) = ("DiacetylC2")
-# names (colors) of the modules
-modNames = substring(names(MEs), 3)
-geneModuleMembership = as.data.frame(cor(datExpr, MEs, use = "p"));
-MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples));
-names(geneModuleMembership) = paste("MM", modNames, sep="");
-names(MMPvalue) = paste("p.MM", modNames, sep="");
-geneTraitSignificance = as.data.frame(cor(datExpr, DiacetylC2, use = "p"));
-GSPvalue = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSamples));
-#GSPvalue = corPvalueStudent(as.matrix(geneTraitSignificance), nSamples)
-GSPvalue.0 = as.vector(GSPvalue[,'DiacetylC2'])
-GSQvalue.0 = qvalue(p=GSPvalue.0, lambda = 0, fdr.level = 0.05)
-GSQvalue <- as.data.frame(GSQvalue.0$qvalues, row.names=names(datExpr))
-summary(GSQvalue.0)
+                     addMEy=TRUE, removeDiag=FALSE, weightESy=0.5, corOptions = "use = 'p', method = 'spearman'")
+write.csv(NS1, "gene-screening-AcetoneC2-spearman.csv")
 
 
-pi0 <- GSQvalue.0$pi0
-lfdr <- GSQvalue.0$lfdr 
-
-names(geneTraitSignificance) = paste("GS.", names(DiacetylC2), sep="");
-names(GSQvalue) = paste("q.GS.", names(DiacetylC2), sep="");
-module = "green"
-column = match(module, modNames);
-moduleGenes = moduleColors==module;
-sizeGrWindow(7, 7);
-par(mfrow = c(1,1));
-verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
-                   abs(geneTraitSignificance[moduleGenes, 1]),
-                   xlab = paste("Module Membership in", module, "module"),
-                   ylab = "Gene significance for DiacetylC2",
-                   main = paste("Module membership vs. gene significance\n"),
-                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
-
-#write.csv(geneModuleMembership, file= "geneModuleMembeship_updated_trait_data-q.csv")
-write.csv(geneTraitSignificance, file= "geneTraitsSignif-DiacetylC2-green-updated-trait-data-q.csv")
-
-# Create the starting data frame
-geneInfo0 = data.frame(datExpr = probes, ModuleColor = moduleColors,
-                       geneTraitSignificance,
-                       GSQvalue)
-
-# Order modules by their significance for weight
-modOrder = order(-abs(cor(MEs, DiacetylC2, use = "p")));
-
-# Add module membership information in the chosen order
-for (mod in 1:ncol(geneModuleMembership))
-{
-  oldNames = names(geneInfo0)
-  geneInfo0 = data.frame(geneInfo0, geneModuleMembership[, modOrder[mod
-                                                                    ]],
-                         MMPvalue[, modOrder[mod]]);
-  names(geneInfo0) = c(oldNames, paste("MM.", modNames[modOrder[mod]], sep=""),
-                       paste("p.MM.", modNames[modOrder[mod]], sep=""))
-}
-
-# Order the genes in the geneInfo variable first by module color, then by geneTraitSignificance
-geneOrder = order(geneInfo0$ModuleColor, -abs(geneInfo0$GS.DiacetylC2));
-geneInfo = geneInfo0[geneOrder, ]
-write.csv(geneInfo, file = "geneInfo_DiacetylC2.csv")
-write.csv(geneInfo0, file = "geneInfo-not-DiacetylC2-ordered-q.csv")
-
-#gene screening method bsed on detailied definition of module membership
-NS1=networkScreening(y=datTraits$Acetone.C2, datME=MEs0, datExpr=datExpr,
-                     oddPower=3, blockSize=1000, minimumSampleSize=4,
-                     addMEy=TRUE, removeDiag=FALSE, weightESy=0.5)
-write.csv(NS1, "gene-screening-DiacetylC2.csv")
-
-####calculate intramodular connectivity
-ADJ1=abs(cor(datExpr,use="p"))^6
-Alldegrees1=intramodularConnectivity(ADJ1,moduleColors)
-head(Alldegrees1)
-write.csv(Alldegrees1, file = "module-interconnectivity.csv")
-
-#calculate gene significance Il13_slope
-GS_cond=as.numeric(cor(datTraits$Condition,datExpr,use="p"))
-geneSignificance=abs(GS_cond)
-
-GS_acetatec2 = as.numeric(cor(datTraits$Acetate.C2, datExpr, use="p"))
-geneSignificance = abs(GS_acetatec2)
-
-GS_Prg3 = as.numeric(cor(datTraits$Prg3, datExpr, use="p"))
-geneSignificance = abs(GS_Prg3)
-
-GS_reos = as.numeric(cor(datTraits$Resident_Eos, datExpr, use="p"))
-geneSignificance = abs(GS_reos)
-
-GS_reos = as.numeric(cor(datTraits$Resident_Eos, datExpr, use="p"))
-geneSignificance = abs(GS_reos)
-
-moduleSignificance=tapply(geneSignificance, moduleColors, mean, na.rm=T)
-
-##relationship between gene significance and intramodular connectivity
-colorlevels=unique(moduleColors)
-sizeGrWindow(9,6)
-par(mfrow=c(2,as.integer(0.5+length(colorlevels)/2)))
-par(mar = c(4,5,3,1))
-
-for (i in c(1:length(colorlevels)))
-{
-  whichmodule=colorlevels[[i]];
-  restrict1 = (moduleColors==whichmodule);
-  verboseScatterplot(Alldegrees1$kWithin[restrict1],
-                     geneSignificance[restrict1], col=moduleColors[restrict1],
-                     main=whichmodule,
-                     xlab = "Connectivity", ylab = "Gene Significance", abline = TRUE)
-}
-
-##relationship between gene significance and module membership
-ModMem <- read.csv("geneInfo-not-Condition-ordered-q.csv", header = TRUE)
-colorlevels=unique(moduleColors)
-sizeGrWindow(9,6)
-par(mfrow=c(2,as.integer(0.5+length(colorlevels)/2)))
-par(mar = c(4,5,3,1))
-
-for (i in c(1:length(colorlevels)))
-{
-  whichmodule=colorlevels[[i]];
-  restrict1 = (moduleColors==whichmodule);
-  verboseScatterplot(ModMem$MM[restrict1],
-                     geneSignificance[restrict1], col=moduleColors[restrict1],
-                     main=whichmodule,
-                     xlab = "Module membership", ylab = "Gene Significance", abline = TRUE)
-}
-
-
-datKME=signedKME(datExpr, MEs0, outputColumnName="MM.")
-head(datKME)
-
-
-#Find genes with high gene significance and high intramodular connectivity in ineresting modules
-FilterGenes = abs(GS_cond)> .5 & datKME$MM.green> .8
-table(FilterGenes)
-
-
-
-x <- dimnames(data.frame(datExpr))[[2]][FilterGenes]
-write.csv(x,file="filtered_cond_green.csv")
-
-
-#relationship between module membership and intramodular connectivity
-sizeGrWindow(8,6)
-par(mfrow=c(2,2))
-# We choose 4 modules to plot: turquoise, blue, brown, green.
-# For simplicity we write the code out explicitly for each module.
-which.color="green";
-restrictGenes=moduleColors==which.color
-verboseScatterplot(Alldegrees1$kWithin[ restrictGenes],
-                   (datKME[restrictGenes, paste("MM.", which.color, sep="")])^6,
-                   col=which.color,
-                   xlab="Intramodular Connectivity",
-                   ylab="(Module Membership)^6")
-which.color="black";
-restrictGenes=moduleColors==which.color
-verboseScatterplot(Alldegrees1$kWithin[ restrictGenes],
-                   (datKME[restrictGenes, paste("MM.", which.color, sep="")])^6,
-                   col=which.color,
-                   xlab="Intramodular Connectivity",
-                   ylab="(Module Membership)^6")
-which.color="yellow";
-restrictGenes=moduleColors==which.color
-verboseScatterplot(Alldegrees1$kWithin[ restrictGenes],
-                   (datKME[restrictGenes, paste("MM.", which.color, sep="")])^6,
-                   col=which.color,
-                   xlab="Intramodular Connectivity",
-                   ylab="(Module Membership)^6")
-
-which.color="brown";
-restrictGenes=moduleColors==which.color
-verboseScatterplot(Alldegrees1$kWithin[ restrictGenes],
-                   (datKME[restrictGenes, paste("MM.", which.color, sep="")])^6,
-                   col=which.color,
-                   xlab="Intramodular Connectivity",
-                   ylab="(Module Membership)^6")
-
-
-
-##plot eigengene expression per condition_time
+##plot eigengene expression per condition_time (Fig 5)
 coldata$Condition_Time <- factor(coldata$Condition_Time, c("PreDrought_0hr", "PreDrought_6hr", "PreDrought_48hr",
                                                            "Drought_0hr", "Drought_6hr", "Drought_48hr"))
 coldata$Condition <- factor(coldata$Condition, c("PreDrought", "Drought"))
@@ -763,7 +445,7 @@ coldata$Time <- factor(coldata$Time, c("0hr", "6hr", "48hr"))
 coldata$SampleID <- rownames(coldata)
 
 ###plot eigengene expression per sample, 
-filename=paste("./Figures/WGCNA/black-EGexp.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/black-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="black"
 signif(cor(MEs, use="p"), 2)
@@ -783,7 +465,7 @@ barplot(ME.red, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("./Figures/WGCNA/magenta-EGexp.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/magenta-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="magenta"
 signif(cor(MEs, use="p"), 2)
@@ -793,7 +475,7 @@ barplot(ME.magenta, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("./Figures/WGCNA/blue-EGexp.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/blue-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="blue"
 signif(cor(MEs, use="p"), 2)
@@ -803,7 +485,7 @@ barplot(ME.blue, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("./Figures/WGCNA/yellow-EGexp.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/yellow-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="yellow"
 signif(cor(MEs, use="p"), 2)
@@ -813,7 +495,7 @@ barplot(ME.yelow, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("./Figures/WGCNA/brown-EGexp.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/brown-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="brown"
 signif(cor(MEs, use="p"), 2)
@@ -823,7 +505,7 @@ barplot(ME.brown, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("./Figures/WGCNA/turquoise-EGexp.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/turquoise-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="turquoise"
 signif(cor(MEs, use="p"), 2)
@@ -833,7 +515,7 @@ barplot(ME.turquoise, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("./Figures/WGCNA/pink-EGexp.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/pink-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="pink"
 signif(cor(MEs, use="p"), 2)
@@ -843,7 +525,7 @@ barplot(ME.pink, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("./Figures/WGCNA/green-EGexp.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/green-EGexp.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 which.module="green"
 signif(cor(MEs, use="p"), 2)
@@ -860,7 +542,7 @@ ME.black$SampleID <- rownames(ME.black)
 ME.black.m <- ME.black %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/WGCNA/black-EGexp-facet.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/black-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.black.m, aes(x=Time, y= ME.black)) +
   geom_point() + geom_boxplot(fill = "darkgrey") +
@@ -885,7 +567,7 @@ ME.red$SampleID <- rownames(ME.red)
 ME.red.m <- ME.red %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/WGCNA/red-EGexp-facet.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/red-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.red.m, aes(x=Time, y= ME.red)) +
   geom_point() + geom_boxplot(fill = "red") +
@@ -909,7 +591,7 @@ ME.magenta$SampleID <- rownames(ME.magenta)
 ME.magenta.m <- ME.magenta %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/WGCNA/magenta-EGexp-facet.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-magenta-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.magenta.m, aes(x=Time, y= ME.magenta)) +
   geom_boxplot(fill = "magenta") + geom_point() +
@@ -934,7 +616,7 @@ ME.blue$SampleID <- rownames(ME.blue)
 ME.blue.m <- ME.blue %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/WGCNA/blue-EGexp-facet.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/blue-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.blue.m, aes(x=Time, y= ME.blue)) +
   geom_point() + geom_boxplot(fill = "blue") +
@@ -958,7 +640,7 @@ ME.yellow$SampleID <- rownames(ME.yellow)
 ME.yellow.m <- ME.yellow %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/WGCNA/yellow-EGexp-facet.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/yellow-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.yellow.m, aes(x=Time, y= ME.yellow)) +
   geom_point() + geom_boxplot(fill = "yellow") +
@@ -983,7 +665,7 @@ ME.brown$SampleID <- rownames(ME.brown)
 ME.brown.m <- ME.brown %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/WGCNA/brown-EGexp-facet.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-brown-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.brown.m, aes(x=Time, y= ME.brown)) +
    geom_boxplot(fill = "brown") +geom_point() +
@@ -1008,7 +690,7 @@ ME.turquoise$SampleID <- rownames(ME.turquoise)
 ME.turquoise.m <- ME.turquoise %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/WGCNA/turquoise-EGexp-facet.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/turquoise-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.turquoise.m, aes(x=Time, y= ME.turquoise)) +
   geom_point() + geom_boxplot(fill = "turquoise") +
@@ -1032,7 +714,7 @@ ME.pink$SampleID <- rownames(ME.pink)
 ME.pink.m <- ME.pink %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/WGCNA/pink-EGexp-facet.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-pink-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.pink.m, aes(x=Time, y= ME.pink)) +
   geom_boxplot(fill = "pink") + geom_point() +
@@ -1057,7 +739,7 @@ ME.green$SampleID <- rownames(ME.green)
 ME.green.m <- ME.green %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/WGCNA/green-EGexp-facet.png", sep = "")
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-green-EGexp-facet.png", sep = "")
 png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.green.m, aes(x=Time, y= ME.green)) +
   geom_boxplot(fill = "green") + geom_point() + 
