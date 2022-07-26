@@ -703,7 +703,7 @@ as.data.frame(res) %>%
         axis.title.x = element_text(face= "bold"), 
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
-ggsave("../Figures/Deseq2/VOC-genes-all-times.png", dpi = 300, width = 3, height = 5)
+ggsave("../Figures/Fig3-S4-S5-Deseq2/VOC-genes-all-times.png", dpi = 300, width = 3, height = 5)
 ```
 
 
@@ -741,7 +741,7 @@ p1 <- as.data.frame(res.T0) %>%
         axis.title.x = element_text(face= "bold"), 
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
-ggsave("../Figures/Deseq2/VOC-genes-T0.png", dpi = 300, width = 3, height = 5)
+ggsave("../Figures/Fig3-S4-S5-Deseq2/Fig3-VOC-genes-T0.png", dpi = 300, width = 3, height = 5)
 
 # return vecor with correct gene order from plot above
 ordered.res.T0 <- as.data.frame(res.T0) %>%
@@ -785,7 +785,7 @@ p2 <- as.data.frame(res.T6) %>%
         axis.title.x = element_text(face= "bold"), 
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
-ggsave("../Figures/Deseq2/VOC-genes-T6.png", dpi = 300, width = 3, height = 5)
+ggsave("../Figures/Fig3-S4-S5-Deseq2/Fig3-VOC-genes-T6.png", dpi = 300, width = 3, height = 5)
 ```
 ###Time 48 hr
 ```{r}
@@ -819,7 +819,7 @@ p3 <- as.data.frame(res.t48) %>%
         axis.title.x = element_text(face= "bold"), 
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
-ggsave("../Figures/Deseq2/VOC-genes-T48.png", dpi = 300, width = 3, height = 5)
+ggsave("../Figures/Fig3-S4-S5-Deseq2/Fig3-VOC-genes-T48.png", dpi = 300, width = 3, height = 5)
 ```
 
 
@@ -861,7 +861,7 @@ p4 <- as.data.frame(res.d.6.0) %>%
         axis.title.x = element_text(face= "bold"), 
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
-ggsave("../Figures/Deseq2/VOC-genes-dr-6-0.png", dpi = 300, width = 3, height = 5)
+ggsave("../Figures/Fig3-S4-S5-Deseq2/FigS4-VOC-genes-dr-6-0.png", dpi = 300, width = 3, height = 5)
 ```
 ###Drought 48 vs 0hr
 ```{r}
@@ -894,7 +894,7 @@ p5 <- as.data.frame(res.d.48.0) %>%
         axis.title.x = element_text(face= "bold"), 
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
-ggsave("../Figures/Deseq2/VOC-genes-dr-48-0.png", dpi = 300, width = 3, height = 5)
+ggsave("../Figures/Fig3-S4-S5-Deseq2/FigS4-VOC-genes-dr-48-0.png", dpi = 300, width = 3, height = 5)
 ```
 
 ###PreDrought 6 vs 0hr
@@ -929,7 +929,7 @@ p6 <- as.data.frame(res.pd.6.0) %>%
         axis.title.x = element_text(face= "bold"), 
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
-ggsave("../Figures/Deseq2/VOC-genes-pd-6-0.png", dpi = 300, width = 3, height = 5)
+ggsave("../Figures/Fig3-S4-S5-Deseq2/FigS4-VOC-genes-pd-6-0.png", dpi = 300, width = 3, height = 5)
 ```
 ###PreDrought 48 vs 0hr
 ```{r}
@@ -962,7 +962,7 @@ p7 <- as.data.frame(res.pd.48.0) %>%
         axis.title.x = element_text(face= "bold"), 
         axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
         axis.text.y = element_text(color = "black", size = 10))
-ggsave("../Figures/Deseq2/VOC-genes-pd-48-0.png", dpi = 300, width = 3, height = 5)
+ggsave("../Figures/Fig3-S4-S5-Deseq2/FigS4-VOC-genes-pd-48-0.png", dpi = 300, width = 3, height = 5)
 ```
 # Plot gene expression across time points
 ```{r}
@@ -970,7 +970,7 @@ ggsave("../Figures/Deseq2/VOC-genes-pd-48-0.png", dpi = 300, width = 3, height =
 d <- plotCounts(dds, gene="KO:K00156", intgroup=c("Condition", "Time"),
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K00156.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K00156.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -991,7 +991,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K00158", intgroup=c("Condition", "Time"),
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K00158.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K00158.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1012,7 +1012,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K01067", intgroup=c("Condition", "Time"),
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K01067.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K01067.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1033,7 +1033,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K01026", intgroup=c("Condition", "Time"),
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K01026.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K01026.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1054,7 +1054,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K18118", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K18118.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K18118.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1075,7 +1075,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K01895", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K01895.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K01895.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1097,7 +1097,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K00925", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K00925.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K00925.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1118,7 +1118,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K01512", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K01512.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K01512.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1140,7 +1140,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K01574", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K01574.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K01574.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1162,7 +1162,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K18382", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K18382.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K18382.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1184,7 +1184,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K18371", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K18371.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K18371.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1206,7 +1206,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K10854", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K10854.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K10854.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1228,7 +1228,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K10855", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K10855.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K10855.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 
@@ -1250,7 +1250,7 @@ dev.off()
 d <- plotCounts(dds, gene="KO:K10856", intgroup=c("Condition", "Time"), 
                 returnData=TRUE)
 
-filename=paste("../Figures/Deseq2/K10856.png", sep = "")
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/FigS5-K10856.png", sep = "")
 png(filename ,width=6, height=5, unit='in', res = 1000)
 ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
   geom_point() + geom_boxplot() + 

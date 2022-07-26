@@ -49,7 +49,7 @@ colors = c("black","gray","coral4","coral",
 
 ```{r import_data}
 #import biom table
-otu=read.table('../Data/Taxonomy/MetaT/feature-table.csv',sep = ",", header = TRUE)
+otu=read.table('../../Data/Taxonomy/MetaT/feature-table.csv',sep = ",", header = TRUE)
 
 rownames(otu) <- otu[,1]
 otu$Tax_ID <- NULL
@@ -60,14 +60,14 @@ is.matrix(otu)
 otu <- otu_table(otu, taxa_are_rows = TRUE)
 
 #import sample metadata
-map = read.table('../Data/Taxonomy/MetaT/metadata.csv',sep = ",", header = TRUE)
+map = read.table('../../Data/Taxonomy/MetaT/metadata.csv',sep = ",", header = TRUE)
 row.names(map) <- map[,1]
 map$SampleID <- NULL
 map <- as.data.frame(map)
 map <- sample_data(map)
 
 #import taxnomy
-taxa.frame = read.csv(file="../Data/Taxonomy/MetaT/metaT-taxonomy.csv", header = TRUE, sep=",", 
+taxa.frame = read.csv(file="../../Data/Taxonomy/MetaT/metaT-taxonomy.csv", header = TRUE, sep=",", 
                       blank.lines.skip = TRUE)
 taxmat = as.matrix(taxa.frame)
 rownames(taxmat) <- taxmat[,1]
@@ -112,14 +112,6 @@ F.dat$Family <- as.character(F.dat$Family) #convert to character vector from fac
 F.dat$Family[F.dat$Abundance < 0.035] <- "Family < 3.5%"
 ```
 
-# Playing around
-```{r}
-#F.dat.short <- F.dat %>%
-#  select(-OTU) %>%
-#  pivot_wider(names_from = Family, values_from = Abundance)
-```
-
-
 # Taxonomic profiles
 
 ```{r echo=FALSE, comment=""}
@@ -128,17 +120,19 @@ k.dat$Condition <- factor(k.dat$Condition, c("PreDrought", "Drought"))
 k.dat$Time <- factor(k.dat$Time, c("0hr", "6hr", "48hr"))
 
 
-p <- ggplot(k.dat, aes(x=Condition, y=Abundance, fill=Kingdom)) 
+p <- ggplot(k.dat, aes(x=Time, y=Abundance, fill=Kingdom)) 
 
 K_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
-  facet_wrap(~Site, scales="free") +
+  facet_wrap(~ Condition, scales="free") +
   scale_fill_manual(values=colors_very_short) +
-  theme(text = element_text(size = 12),
-        axis.text.x=element_text(size = 12, hjust =0.5, vjust=0.2),
-        legend.text = element_text(size = 12)
+  theme_bw() +
+  theme(text = element_text(size = 11),
+        axis.text.x=element_text(hjust =0.5, vjust=0.2),
+        legend.title = element_blank()
   )
 
-
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Kingdom.png")
+ggsave(filename,width=4,height=5,dpi=1000,K_barplot)
 
 #######plot Phylum######################################
 P.dat$Condition <- factor(P.dat$Condition, c("PreDrought", "Drought"))
@@ -151,12 +145,13 @@ p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
   facet_wrap(~ Condition, scales="free") +
   scale_fill_manual(values=colors) +
   theme_bw() +
-  theme(text = element_text(size = 12),
-        axis.text.x=element_text(size=12,hjust =0.5, vjust=0.2),
-        legend.text = element_text(size = 10),
+  theme(text = element_text(size = 11),
+        axis.text.x=element_text(hjust =0.5, vjust=0.2),
+        legend.title = element_blank()
   )
 
-
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum.png")
+ggsave(filename,width=5,height=5,dpi=1000,p_barplot)
 
 #######plot Classes######################################
 C.dat$Condition <- factor(C.dat$Condition, c("PreDrought", "Drought"))
@@ -172,8 +167,8 @@ c_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         axis.text.x=element_text(size=12, hjust =0.5, vjust=0.2),
         legend.text = element_text(size = 10))
 
-
-
+filename <- paste0("../../Figures/FigS3-Taxonomy/metaT-Class.png")
+ggsave(filename,width=10,height=5,dpi=1000,c_barplot)
 
 #######plot family######################################
 F.dat$Condition <- factor(F.dat$Condition, c("PreDrought", "Drought"))
@@ -247,7 +242,6 @@ ord.plot.time <- (
       #                 values = c("green4", "red", "blue"))
 #)
 
-
 #condition and site
 ord.plot.site <- (
   plot_ordination(
@@ -282,7 +276,6 @@ p1 <- p + scale_color_manual(values = my_colors_st) +
   theme(text = element_text(size = 11),
         legend.position = "none",
         axis.text.x=element_text(size=11,hjust =0.5, vjust=0.8),)
-
 
 #condition and site
 #define and plot alpha diversity measurements on unrarefied samples

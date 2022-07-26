@@ -11,7 +11,7 @@ library(viridis)
 library(vegan)
 
 
-source('./RScripts/extra_functions.R')
+source('./RScripts/Fig4-S3-PCA/extra_functions.R')
 
 colors = c("#2ECC71" ,"#F39C12")
 
@@ -124,7 +124,7 @@ pca_plot <-  ggplot(mapping = aes(x, y)) +
          axis.title.y = element_text(size=size+3,face="bold"),
          plot.title = element_text(size=size+3,face="bold")) 
 pca_plot
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot.png")
+filename <- paste0("./Figures/Fig4-S3-PCA/metabol/NMR_PCA_plot.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
 # pca biplot
@@ -137,43 +137,10 @@ pca_biplot <- pca_plot +
 
 pca_biplot 
 
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot.png")
+filename <- paste0("./Figures/Fig4-S3-PCA/metabol/Fig4-NMR_PCA_biplot.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
-### Pca with site as shapes
-pca_plot <-  ggplot(mapping = aes(x, y)) +
-  geom_point(data=pca_coordinates, aes(x=PC1, y=PC2, col=Condition, shape = Site), 
-             size=size/2, show.legend = TRUE) +
-  theme_linedraw(base_size = size) + labs(x= pc1, y=pc2) +
-  scale_color_manual(values = colors,
-                     breaks = c("pre", "drought"),
-                     labels = c("Pre Drought", "Drought")) +
-  scale_shape_manual(values= list_of_shapes) +
-  
-  theme( legend.text = element_text(size=size+3, face="bold"),
-         legend.title = element_blank(),
-         legend.key.size = unit(0.6, "cm"),
-         legend.key.width = unit(0.6,"cm"),
-         legend.position = "bottom",
-         axis.title.x = element_text(size=size+3,face="bold"),
-         axis.title.y = element_text(size=size+3,face="bold"),
-         plot.title = element_text(size=size+3,face="bold")) 
-pca_plot
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot_site.png")
-ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
-# pca biplot
-pca_biplot <- pca_plot +
-  new_scale_color() +
-  geom_segment(data=arrows, aes(x=0, y=0, xend=xend, yend=yend),
-               arrow=arrow(length = unit(0.1,"cm")), size=0.7, color = "grey") +
-  geom_text_repel(data=arrows, aes(x=xend, y=yend), color = "black",
-                  label=arrows$name, size=size/3, show.legend = FALSE)
-
-pca_biplot 
-
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot_site.png")
-ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 ########################################## PCA on FTICR#####################
 # Calculate PCA with prcomp()
 pca <- prcomp(df.f, scale = TRUE, center = TRUE)
@@ -201,8 +168,6 @@ pca_coordinates <- pca_coordinates %>%
 pca_coordinates$Condition <- factor(pca_coordinates$Condition, c("PreDrought", "Drought"))
 
 write.csv(pca_coordinates,file=paste0("./Output/PCA_meta/PCA_individual_coordinates_FTICR.csv"),row.names=TRUE)
-
-
 
 # prepare label for graph
 pc1 <- paste0('PC1 (',round(eigen$variance.percent[1],digits=1),'%)')
@@ -237,7 +202,7 @@ pca_plot <-  ggplot(mapping = aes(x, y)) +
          axis.title.y = element_text(size=size+3,face="bold"),
          plot.title = element_text(size=size+3,face="bold")) 
 pca_plot
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot_FTICR.png")
+filename <- paste0("./Figures/Fig4-S3-PCA/metabol/PCA_plot_FTICR.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
 # pca biplot
@@ -250,7 +215,7 @@ pca_biplot <- pca_plot +
 
 pca_biplot 
 
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot_FTICR.png")
+filename <- paste0("./Figures/Fig4-S3-PCA/metabol/PCA_biplot_FTICR-top-one-perc.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
 ########################################## PCA on FTICR classes#####################
@@ -282,8 +247,6 @@ pca_coordinates$Time <- factor(pca_coordinates$Time, c("0", "6", "48"))
 
 write.csv(pca_coordinates,file=paste0("./Output/PCA_meta/PCA_individual_coordinates_FTICR_class.csv"),row.names=TRUE)
 
-
-
 # prepare label for graph
 pc1 <- paste0('PC1 (',round(eigen$variance.percent[1],digits=1),'%)')
 pc2 <- paste0('PC2 (',round(eigen$variance.percent[2],digits=1),'%)')
@@ -291,12 +254,6 @@ pc2 <- paste0('PC2 (',round(eigen$variance.percent[2],digits=1),'%)')
 # arrows
 arrows <- get_arrows(pca, pca_coordinates)
 write.csv(arrows,file=paste0("./Output/PCA_meta/PCA_vector_coordinates_FTICR_class.csv"), row.names=TRUE)
-
-#filter arrows to top 25% loadings. Can modify "0.75" to "0.85" for 15% top loadings, etc.
-#top <- quantile(arrows$coord, 0.99) 
-#arrows.f <- arrows %>%
-#  subset(coord > top)
-#length(arrows.f$coord)
 
 #pca with shapes as time since pyruvate addition
 pca_plot <-  ggplot(mapping = aes(x, y)) +
@@ -317,7 +274,7 @@ pca_plot <-  ggplot(mapping = aes(x, y)) +
          axis.title.y = element_text(size=size+3,face="bold"),
          plot.title = element_text(size=size+3,face="bold")) 
 pca_plot
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot_FTICR_class.png")
+filename <- paste0("./Figures/Fig4-S3-PCA/metabol/VOC_PCA_plot_FTICR_class.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
 # pca biplot
@@ -330,42 +287,7 @@ pca_biplot <- pca_plot +
 
 pca_biplot 
 
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot_FTICR_class.png")
-ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
-
-### pca with shapes as sites
-pca_plot <-  ggplot(mapping = aes(x, y)) +
-  geom_point(data=pca_coordinates, aes(x=PC1, y=PC2, col=Condition, shape = Site), 
-             size=size/2, show.legend = TRUE) +
-  theme_linedraw(base_size = size) + labs(x= pc1, y=pc2) +
-  scale_color_manual(values = colors,
-                     breaks = c("PreDrought", "Drought"),
-                     labels = c("Pre Drought", "Drought")) +
-  scale_shape_manual(values= list_of_shapes) +
-  
-  theme( legend.text = element_text(size=size+3, face="bold"),
-         legend.title = element_blank(),
-         legend.key.size = unit(0.6, "cm"),
-         legend.key.width = unit(0.6,"cm"),
-         legend.position = "bottom",
-         axis.title.x = element_text(size=size+3,face="bold"),
-         axis.title.y = element_text(size=size+3,face="bold"),
-         plot.title = element_text(size=size+3,face="bold")) 
-pca_plot
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_plot_FTICR_class_site.png")
-ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
-
-# pca biplot
-pca_biplot <- pca_plot +
-  new_scale_color() +
-  geom_segment(data=arrows, aes(x=0, y=0, xend=xend, yend=yend),
-               arrow=arrow(length = unit(0.1,"cm")), size=0.7, color = "grey") +
-  geom_text_repel(data=arrows, aes(x=xend, y=yend), color = "black",
-                  label=arrows$name, size=size/3, show.legend = FALSE)
-
-pca_biplot 
-
-filename <- paste0("./Figures/PCA_meta/VOC_PCA_biplot_FTICR_class_site.png")
+filename <- paste0("./Figures/Fig4-S3-PCA/metabol/Fig4-PCA_biplot_FTICR_class.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
 ####statistical tests#####
