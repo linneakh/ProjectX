@@ -296,13 +296,13 @@ p11 <- cnetplot(k.black,
                 cex_label_gene = 0.75, cex_label_category = 1.5) +
   scale_color_manual(values = c("black", "darkgrey")) +
   guides(color = FALSE)
-filename <- paste0("../Figures/ClusterProfiler/net-plot-black-oeg-retry.png")
+filename <- paste0("../Figures/Fig5-S7-WGCNA-ClusterProfiler/ClusterProfiler/net-plot-black-oeg-retry.png")
 ggsave(filename,width=10,height=5,dpi=1000,p11)
 
 p12 <- cnetplot(k.brown, cex_label_gene = 0.75, cex_label_category = 1.5) +
   scale_color_manual(values = c("brown", "#D98880")) +
   guides(color = FALSE)
-filename <- paste0("../Figures/ClusterProfiler/net-plot-brown-oeg-retry.png")
+filename <- paste0("../Figures/Fig5-S7-WGCNA-ClusterProfiler/ClusterProfiler/Fig5-net-plot-brown-oeg.png")
 ggsave(filename,width=10,height=5,dpi=1000,p12)
 
 
@@ -310,7 +310,7 @@ p15 <- cnetplot(k.red,
                 cex_label_gene = 0.75, cex_label_category = 1.5) +
   scale_color_manual(values = c("red", "#F3AE9A")) +
   guides(color = FALSE)
-filename <- paste0("../Figures/ClusterProfiler/net-plot-red-oeg-retry.png")
+filename <- paste0("../Figures/Fig5-S7-WGCNA-ClusterProfiler/ClusterProfiler/net-plot-red-oeg-retry.png")
 ggsave(filename,width=10,height=5,dpi=1000,p15)
 
 
@@ -318,7 +318,7 @@ p16 <- cnetplot(k.green, showCategory = c("Oxidative phosphorylation", "Ribosome
                 cex_label_gene = 0.75, cex_label_category = 1.5) +
   scale_color_manual(values = c("green", "lightgreen")) +
   guides(color = FALSE)
-filename <- paste0("../Figures/ClusterProfiler/net-plot-green-oeg-retry.png")
+filename <- paste0("../Figures/Fig5-S7-WGCNA-ClusterProfiler/ClusterProfiler/Fig5-net-plot-green-oeg.png")
 ggsave(filename,width=10,height=5,dpi=1000,p16)
 
 p16 <- cnetplot(k.pink, showCategory = c("Alanine, aspartate and glutamate metabolism", "Starch and sucrose metabolism",
@@ -326,14 +326,14 @@ p16 <- cnetplot(k.pink, showCategory = c("Alanine, aspartate and glutamate metab
                 cex_label_gene = 0.75, cex_label_category = 1.5) +
   scale_color_manual(values = c("pink3", "pink")) +
   guides(color = FALSE)
-filename <- paste0("../Figures/ClusterProfiler/net-plot-pink-oeg-retry.png")
+filename <- paste0("../Figures/Fig5-S7-WGCNA-ClusterProfiler/ClusterProfiler/Fig5-net-plot-pink-oeg.png")
 ggsave(filename,width=10,height=5,dpi=1000,p16)
 
 p17 <- cnetplot(k.magenta,
                 cex_label_gene = 0.75, cex_label_category = 1.5) +
   scale_color_manual(values = c("magenta", "#EFBFF2")) +
   guides(color = FALSE)
-filename <- paste0("../Figures/ClusterProfiler/net-plot-magenta-oeg-retry.png")
+filename <- paste0("../Figures/Fig5-S7-WGCNA-ClusterProfiler/ClusterProfiler/Fig5-net-plot-magenta-oeg.png")
 ggsave(filename,width=10,height=5,dpi=1000,p17)
 
 ```
