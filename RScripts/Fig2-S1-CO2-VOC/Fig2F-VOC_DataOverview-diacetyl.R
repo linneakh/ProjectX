@@ -1,8 +1,7 @@
 
-
 # Visualize Pyruvate voc Fluxes
 
-# Johannes Ingrisch, modified by Linnea Honeker for VOCs
+# Johannes Ingrisch, modified by Linnea Honeker
 # 2021-08-26, modified 4/1/22
 
 # load packages
@@ -17,56 +16,46 @@ theme_set(theme_custom)
 
 colors = c("#2ECC71" ,"#F39C12")
 
-data <- read.csv("./Data/CO2-VOCs/voc_raw/acetic-acid-for-ggplot.csv") 
-
-
-
+data <- read.csv("./Data/CO2-VOCs/voc_raw/diacetyl-for-ggplot.csv") 
 
 # re order factors for condition
-
 data$Condition <- factor(data$Condition, c(
   "pre-drought", "drought"))
 
 # filter out times outside of -12 hour to 48 hour
-
 data_sub <- data %>%
   filter(Time > -0.3 & Time <2 )
 
-# Isotope Sig acetate
-filename=paste("Figures/CO2-VOCs/acetate.png", sep = "")
-png(filename ,width=5, height=3, unit='in', res = 1000)
+# Isotope Sig diacetyl
+filename=paste("./Figures/Fig2-S1-CO2-VOCs/Fig2F-diacetyl.png", sep = "")
+png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
   filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
-  mutate(Site = case_when(
-    startsWith(Sample, "S1") ~ "Site1",
-    startsWith(Sample, "S2") ~ "Site2",
-    startsWith(Sample, "S3") ~ "Site3"
-  )) %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
-  facet_grid(Site ~ Pyruv) + 
+  facet_grid(. ~ Pyruv) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
-  geom_point(alpha = 0.3, size = 1.5) +
+  geom_point(alpha = 0.3, size = 1) +
   geom_smooth(aes(group = Condition), span = 0.5) +
   scale_color_manual(values = colors,
                      breaks = c("pre-drought", "drought"),
                      labels = c("Pre Drought", "Drought")) + 
-  labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux") +
+  labs(x = "Time post pyruvate (h)", y = expression(""^13*"C/("^12*"C + "^13*"C) flux (m"^-2*" h"^-1*")")) +
   theme(text = element_text(size = 12,
-                           family = "Arial",
-                           color = "black"),
-    legend.position = "bottom",
-    legend.title = element_blank())
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        legend.title = element_blank())
 dev.off()
 
 
 
-# Plotwise
+# Plotwise by chamber
 data_sub %>%
-  #filter(Type == "sample") %>% 
+  filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
-  filter(Pyruv != "C2") %>%
+  filter(Pyruv == "C1") %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
   facet_wrap(. ~ Sample, ncol = 5) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
@@ -77,12 +66,12 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C1 pyurvate") +
   theme(legend.position = "bottom")
-ggsave("./Figures/CO2-VOCs/01_Pyruvate_acetate_C1_and_ctrl_Plotwise.png")
+ggsave("./Figures/Fig2-S1-CO2-VOCs/01_pyruvate-diacetyl_C1_Plotwise.png")
 
 data_sub %>%
-  #filter(Type == "sample") %>% 
+  filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
-  filter(Pyruv != "C1") %>%
+  filter(Pyruv == "C2") %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
   facet_wrap(. ~ Sample, ncol = 5) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
@@ -93,39 +82,10 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C2 pyurvate") +
   theme(legend.position = "bottom")
-ggsave("./Figures/CO2-VOCs/01_Pyruvate_acetate_C2_and_ctrl_Plotwise.png")
-
-# Isotope Sig - boxplots
-filename=paste("./Figures/CO2-VOCs/acetate-boxplot.png", sep = "")
-png(filename ,width=4, height=4, unit='in', res = 1000)
-
-data_sub %>%
-  mutate(Site = case_when(
-    startsWith(Sample, "S1") ~ "Site1",
-    startsWith(Sample, "S2") ~ "Site2",
-    startsWith(Sample, "S3") ~ "Site3")) %>%
-  filter(Type == "sample") %>% 
-  mutate(label_state = ifelse(Time >0 & Time < 2, "post", "pre")) %>% 
-  mutate(Time_hours = Time*24) %>%
-  filter(label_state == "post") %>%
-  ggplot(aes(x = Condition, y = Flux, fill = Condition)) +
-  facet_grid(Pyruv ~ Site) + 
-   geom_boxplot() +
-  scale_x_discrete(labels = c("Pre Drought", "Drought")) +
-  scale_fill_manual(values = colors,
-                     breaks = c("pre-drought", "drought"),
-                     labels = c("Pre Drought", "Drought")) + 
-  labs(y = "13C/(12C+13C) flux" ) +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        legend.position = "bottom",
-        axis.title.x = element_blank(),
-        legend.title = element_blank())
-dev.off()
+ggsave("./Figures/Fig2-S1-CO2-VOCs/01_Pyruvate_diacetyl_C2_Plotwise.png")
 
 
-####statistical analysis
+####statistical analysis, comparing differences in treatments based on mean flux data
 #Flux - Condition, in C1 and C2 separated
 data_c1 <- data_sub %>%
  filter(Pyruv == "C1")
@@ -161,6 +121,4 @@ t.test(Flux ~ Condition, data = data_sub)
 #sample estimates:
 #  mean in group pre-drought     mean in group drought 
 # -1.830744                 70.676335 
-
-
 

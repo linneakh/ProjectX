@@ -40,7 +40,7 @@ data$Condition <- factor(data$Condition, c(
   "pre_drought", "drought"))
 
 # Isotope Sig
-filename=paste("Figures/CO2-VOCs/C1_C2_delta_co2-update.png", sep = "")
+filename=paste("Figures/Fig2-S1-CO2-VOCs/Fig2A-C1_C2_delta_co2-update.png", sep = "")
 png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
@@ -65,7 +65,7 @@ data_sub %>%
 dev.off()
 
 
-filename=paste("Figures/CO2-VOCs/C1_comb_C2_flux-update.png", sep = "")
+filename=paste("Figures/Fig2-S1-CO2-VOCs/FigS1-C1_comb_C2_flux-update.png", sep = "")
 png(filename ,width=9, height=5, unit='in', res = 1000)
 
 data_sub %>% 
@@ -81,7 +81,7 @@ data_sub %>%
   scale_color_manual(values = colors,
                      breaks = c("pre_drought", "drought"),
                      labels = c("Pre Drought", "Drought")) + 
-  labs(x = "Hours after labeling", y = bquote("Soil" ~ CO[2]~"efflux (" *mu*mol ~m^-2*s^-1*")")) +
+  labs(x = "Time post pyruvate (h)", y = bquote("Soil" ~ CO[2]~"efflux (" *mu*mol ~m^-2*s^-1*")")) +
   theme(text = element_text(size = 17,
                             family = "Arial",
                             color = "black"),
@@ -107,7 +107,7 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = bquote(delta^13 *CO[2]), subtitle = "C1-Pyruvate") +
   theme(legend.position = "bottom")
-ggsave("./Figures/CO2-VOCs/01_Pyruvate_SoilResp_C1_Plotwise_update.png")
+ggsave("./Figures/Fig2-S1-CO2-VOCs/01_Pyruvate_SoilResp_C1_Plotwise_update.png")
 
 data_sub %>% 
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
@@ -124,69 +124,15 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = bquote(delta^13 *CO[2]), subtitle = "C2-Pyruvate") +
   theme(legend.position = "bottom")
-ggsave("./Figures/CO2-VOCs/01_Pyruvate_SoilResp_C2_Plotwise_update.png")
+ggsave("./Figures/Fig2-S1-CO2-VOCs/01_Pyruvate_SoilResp_C2_Plotwise_update.png")
 
-# Isotope Sig - boxplots
-filename=paste("Figures/CO2-VOCs/C1_C2_delta_co2-boxplot.png", sep = "")
-png(filename ,width=4, height=4, unit='in', res = 1000)
-
-data_sub %>%
-  gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
-  mutate(Condition=factor(Condition, levels = c("pre_drought", "drought"))) %>%
-  filter(Variable == "D13C") %>% 
-  mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
-  filter(label_state == "post") %>%
-  ggplot(aes(x = Condition, y = Value, fill = Condition)) +
-  facet_grid(. ~ Pyruv) + 
-  geom_boxplot() +
-  scale_x_discrete(labels = c("Pre Drought", "Drought")) +
-  scale_fill_manual(values = colors,
-                     breaks = c("pre_drought", "drought"),
-                     labels = c("Pre Drought", "Drought")) + 
-  labs(x = "", y = bquote(delta^13 *CO[2])) +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        legend.position = "bottom",
-        axis.title.x = element_blank(),
-        legend.title = element_blank())
-dev.off()
-
-
-filename=paste("Figures/CO2-VOCs/C1_comb_C2_flux-barplot.png", sep = "")
-png(filename ,width=2.5, height=4, unit='in', res = 1000)
-
-data_sub %>% 
-  gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
-  mutate(Condition=factor(Condition, levels = c("pre_drought", "drought"))) %>% 
-  filter(Variable == "Flux") %>% 
-  mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
-  filter(label_state == "post") %>%
-  ggplot(aes(x = Condition, y = Value, fill = Condition)) +
-  #facet_grid(. ~ Pyruv) + 
-  geom_boxplot() +
-  scale_x_discrete(labels = c("Pre Drought", "Drought")) +
-  scale_fill_manual(values = colors,
-                     breaks = c("pre_drought", "drought"),
-                     labels = c("Pre Drought", "Drought")) + 
-  labs(y = bquote("Soil" ~ CO[2]~"efflux (" *mu*mol ~m^-2*s^-1*")")) +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        legend.position = "bottom",
-        axis.title.x = element_blank(),
-        legend.title = element_blank()) +
-  ylim(0,6)
-dev.off()
-
-####statistical analysis
+####statistical analysis, comparing differences in treatments based on mean flux data
 #Flux - Condition, in C1 and C2 separated
 data_sub_c1 <- data_sub %>%
  filter(Pyruv == "C1")
 
 data_sub_c2 <- data_sub %>%
   filter(Pyruv == "C2")
-
 
 wilcox.test(Flux ~ Condition, data = data_sub_c1)
 
