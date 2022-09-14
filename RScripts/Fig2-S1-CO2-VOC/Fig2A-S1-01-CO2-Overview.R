@@ -129,10 +129,12 @@ ggsave("./Figures/Fig2-S1-CO2-VOCs/01_Pyruvate_SoilResp_C2_Plotwise_update.png")
 ####statistical analysis, comparing differences in treatments based on mean flux data
 #Flux - Condition, in C1 and C2 separated
 data_sub_c1 <- data_sub %>%
- filter(Pyruv == "C1")
+ filter(Pyruv == "C1") %>%
+  filter(Trel > 0)
 
 data_sub_c2 <- data_sub %>%
-  filter(Pyruv == "C2")
+  filter(Pyruv == "C2")%>%
+  filter(Trel > 0)
 
 wilcox.test(Flux ~ Condition, data = data_sub_c1)
 

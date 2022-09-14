@@ -22,9 +22,10 @@ data <- read.csv("./Data/CO2-VOCs/voc_raw/diacetyl-for-ggplot.csv")
 data$Condition <- factor(data$Condition, c(
   "pre-drought", "drought"))
 
-# filter out times outside of -12 hour to 48 hour
+# filter out times outside of -12 hour to 48 hour and water samples
 data_sub <- data %>%
-  filter(Time > -0.3 & Time <2 )
+  filter(Time > -0.3 & Time <2 ) %>%
+  filter(Type == 'sample')
 
 # Isotope Sig diacetyl
 filename=paste("./Figures/Fig2-S1-CO2-VOCs/Fig2F-diacetyl.png", sep = "")
@@ -88,26 +89,27 @@ ggsave("./Figures/Fig2-S1-CO2-VOCs/01_Pyruvate_diacetyl_C2_Plotwise.png")
 ####statistical analysis, comparing differences in treatments based on mean flux data
 #Flux - Condition, in C1 and C2 separated
 data_c1 <- data_sub %>%
- filter(Pyruv == "C1")
+ filter(Pyruv == "C1") %>%
+  filter(Time > 0)
 
 data_c2 <- data_sub %>%
-  filter(Pyruv == "C2")
+  filter(Pyruv == "C2") %>%
+  filter(Time > 0) 
 
-
-wilcox.test(Flux ~ Condition, data = data_c1)
+wilcox.test(Flux ~ Condition, data = data_c1, paired = FALSE) #there are an uneven number of samples so paired = TRUE returns an error
 #data:  Flux by Condition
-#W = 63724, p-value < 2.2e-16
+#W = 75848, p-value 0.00659
 #alternative hypothesis: true location shift is not equal to 0
 
 
-wilcox.test(Flux ~ Condition, data = data_c2)
+wilcox.test(Flux ~ Condition, data = data_c2, paired = FALSE)
 #data:  Flux by Condition
 #W = 40978, p-value < 2.2e-16
 #alternative hypothesis: true location shift is not equal to 0
 
 #Flux - Condition, in C1 and C2 combined
 
-wilcox.test(Flux ~ Condition, data = data_sub)
+wilcox.test(Flux ~ Condition, data = data_sub, paired = FALSE)
 #data:  Flux by Condition
 #W = 180858, p-value < 2.2e-16
 #alternative hypothesis: true location shift is not equal to 0

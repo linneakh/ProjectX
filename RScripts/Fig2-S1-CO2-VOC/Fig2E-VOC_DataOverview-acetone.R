@@ -30,7 +30,8 @@ data$Condition <- factor(data$Condition, c(
 # filter out times outside of -12 hour to 48 hour
 
 data_sub <- data %>%
-  filter(Time > -0.3 & Time <2 )
+  filter(Time > -0.3 & Time <2 ) %>%
+  filter(Type == "sample")
 
 # Isotope Sig acetate
 filename=paste("./Figures/CO2-VOCs/acetone.png", sep = "")
@@ -174,13 +175,15 @@ dev.off()
 ####statistical analysis
 #Flux - Condition, in C1 and C2 separated
 data_c1 <- data_sub %>%
- filter(Pyruv == "C1")
+ filter(Pyruv == "C1") %>%
+  filter(Time >0)
 
 data_c2 <- data_sub %>%
-  filter(Pyruv == "C2")
+  filter(Pyruv == "C2") %>%
+  filter(Time >0)
 
 
-wilcox.test(Flux ~ Condition, data = data_c1)
+wilcox.test(Flux ~ Condition, data = data_c1, paired = FALSE)
 #data:  Flux by Condition
 #W = 98902, p-value = 0.592
 #alternative hypothesis: true location shift is not equal to 0

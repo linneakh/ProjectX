@@ -71,7 +71,7 @@ ratios_per_set$Condition <- factor(ratios_per_set$Condition, c("pre_drought", "d
 ratios_per_set %>%
   ggplot(aes(x = Time, y = C1_C2_diff_fCO2_13_py, fill = Condition)) +
   geom_boxplot() +
-  labs(x = "Time post pyruvate (h)", y= expression(""^13*"C-CO"[2-C1]*" - "^13*"C-CO"[2-C2]*" ("*mu*"mol m"^-2*"s"^-1*")")) +
+  labs(x = "Time post pyruvate (h)", y= expression("C allocation to biosynthesis ("*mu*"mol m"^-2*"s"^-1*")")) +
   #facet_wrap(. ~ Site) + 
   scale_fill_manual(values = colors,
                     breaks = c("pre_drought", "drought"),
@@ -88,7 +88,7 @@ ratios_per_set %>%
   #filter(Set != "Set4") %>%
   ggplot(aes(x = Time, y = C1_C2_ratio_sum_fCO2_13_py, fill = Condition)) +
   geom_boxplot() +
-  labs(x = "Time post pyruvate (h)", y= expression(""^13*"C-CO"[2-C1]*" / ("^13*"C-CO"[2-C1]*" + "^13*"C-CO"[2-C2]*") ")) +
+  labs(x = "Time post pyruvate (h)", y= expression("C allocation to biosynthesis (proportion)")) +
   #facet_wrap(~Site) + 
   scale_fill_manual(values = colors,
                     breaks = c("pre_drought", "drought"),

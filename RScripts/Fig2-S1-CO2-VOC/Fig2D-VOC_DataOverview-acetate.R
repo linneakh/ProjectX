@@ -23,7 +23,8 @@ data$Condition <- factor(data$Condition, c(
 
 # filter out times outside of -12 hour to 48 hour
 data_sub <- data %>%
-  filter(Time > -0.3 & Time <2 )
+  filter(Time > -0.3 & Time <2 ) %>%
+  filter(Type == "sample")
 
 # Isotope Sig acetate
 filename=paste("Figures/Fig2-S1-CO2-VOCs/Fig2D-acetate.png", sep = "")
@@ -84,10 +85,12 @@ ggsave("./Figures/Fig2-S1-CO2-VOCs/01_Pyruvate_acetate_C2_Plotwise.png")
 ####statistical analysis
 #Flux - Condition, in C1 and C2 separated
 data_c1 <- data_sub %>%
- filter(Pyruv == "C1")
+ filter(Pyruv == "C1") %>%
+  filter(Time > 0)
 
 data_c2 <- data_sub %>%
-  filter(Pyruv == "C2")
+  filter(Pyruv == "C2")%>%
+  filter(Time > 0)
 
 
 wilcox.test(Flux ~ Condition, data = data_c1)

@@ -251,25 +251,25 @@ getwd()
 AUC.PD <- AUC %>%
   filter(Cond == "Pre_Drought")
 
-wilcox.test(mass.13C.g ~ Pyr, data = AUC.PD) #4.11e-5
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.PD, paired = TRUE) #4.11e-5, paired 0.003906
 
 # C1 vs C2 during drought
 AUC.D <- AUC %>%
   filter(Cond == "Drought")
 
-wilcox.test(mass.13C.g ~ Pyr, data = AUC.D) #0.00399
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.D, paired = TRUE) #0.00399, paired 0.007812
 
 # pre-drought vs drought (C1)
 AUC.C1 <- AUC %>%
   filter(Pyr == "C1")
 
-wilcox.test(mass.13C.g ~ Cond, data = AUC.C1) #4.94e-4
+wilcox.test(mass.13C.g ~ Cond, data = AUC.C1, paired = TRUE) #4.94e-4, paired .007812
 
 # pre-drought vs drought (C2)
 AUC.C2 <- AUC %>%
   filter(Pyr == "C2")
 
-wilcox.test(mass.13C.g ~ Cond, data = AUC.C2) #2.76e-3
+wilcox.test(mass.13C.g ~ Cond, data = AUC.C2, paired = TRUE) #2.76e-3, paired 0.02734
 
 ```
 
@@ -599,25 +599,25 @@ ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetone-perc-flux-C2.png",units=c('in')
 AUC.aton.PD <- AUC.aton %>%
   filter(Cond == "Pre_Drought")
 
-wilcox.test(mass.13C.g ~ Pyr, data = AUC.aton.PD) #0.0002879
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.aton.PD, paired = TRUE) #0.0002879, paired 0.007812
 
 # C1 vs C2 during drought
 AUC.aton.D <- AUC.aton %>%
   filter(Cond == "Drought")
 
-wilcox.test(mass.13C.g ~ Pyr, data = AUC.aton.D) #4.114e-05
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.aton.D, paired = TRUE) #4.114e-05 paired = 0.003906
 
 # pre-drought vs drought (C1)
 AUC.aton.C1 <- AUC.aton %>%
   filter(Pyr == "C1")
 
-wilcox.test(mass.13C.g ~ Cond, data = AUC.aton.C1) #0.5457
+wilcox.test(mass.13C.g ~ Cond, data = AUC.aton.C1, paired = TRUE) #0.5457, paired = 0.3008
 
 # pre-drought vs drought (C2)
 AUC.aton.C2 <- AUC.aton %>%
   filter(Pyr == "C2")
 
-wilcox.test(mass.13C.g ~ Cond, data = AUC.aton.C2) #8.227e-05
+wilcox.test(mass.13C.g ~ Cond, data = AUC.aton.C2, paired = TRUE) #8.227e-05, paired = 0.003906
 
 ```
 
@@ -972,25 +972,25 @@ ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-diacetyl-perc-flux-c2.png",units=c('in'
 AUC.Diac.PD <- AUC.Diac %>%
   filter(Cond == "Pre_Drought")
 
-wilcox.test(mass.13C.g ~ Pyr, data = AUC.Diac.PD) #0.2973
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.Diac.PD, paired = TRUE) #0.2973, paired 0.25
 
 # C1 vs C2 during drought
 AUC.Diac.D <- AUC.Diac %>%
   filter(Cond == "Drought")
 
-wilcox.test(mass.13C.g ~ Pyr, data = AUC.Diac.D) #0.7304
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.Diac.D, paired = TRUE) #0.7304, paired 0.6523
 
 # pre-drought vs drought (C1)
 AUC.Diac.C1 <- AUC.Diac %>%
   filter(Pyr == "C1")
 
-wilcox.test(mass.13C.g ~ Cond, data = AUC.Diac.C1) #0.2224
+wilcox.test(mass.13C.g ~ Cond, data = AUC.Diac.C1, paired = TRUE) #0.2224, apried 0.1289
 
 # pre-drought vs drought (C2)
 AUC.Diac.C2 <- AUC.Diac %>%
   filter(Pyr == "C2")
 
-wilcox.test(mass.13C.g ~ Cond, data = AUC.Diac.C2) #0.05031
+wilcox.test(mass.13C.g ~ Cond, data = AUC.Diac.C2, paired = TRUE) #0.05031, paired 0.03906
 ```
 
 
@@ -1279,25 +1279,25 @@ ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetate-perc-flux.png",units=c('in'),wi
 AUC.acetate.PD <- AUC.acetate %>%
   filter(Cond == "Pre_Drought")
 
-wilcox.test(mass.13C.g ~ Pyr, data = AUC.acetate.PD) #0.6665
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.acetate.PD, paired = TRUE) #0.6665, paired 0.5703
 
 # C1 vs C2 during drought
 AUC.acetate.D <- AUC.acetate %>%
   filter(Cond == "Drought")
 
-wilcox.test(mass.13C.g ~ Pyr, data = AUC.acetate.D) #0.7962
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.acetate.D, paired = TRUE) #0.7962, paired 0.8203
 
 # pre-drought vs drought (C1)
 AUC.acetate.C1 <- AUC.acetate %>%
   filter(Pyr == "C1")
 
-wilcox.test(mass.13C.g ~ Cond, data = AUC.acetate.C1) #0.002756
+wilcox.test(mass.13C.g ~ Cond, data = AUC.acetate.C1, paired = TRUE) #0.002756, paired = 0.007812
 
 # pre-drought vs drought (C2)
 AUC.acetate.C2 <- AUC.acetate %>%
   filter(Pyr == "C2")
 
-wilcox.test(mass.13C.g ~ Cond, data = AUC.acetate.C2) #0.0001645
+wilcox.test(mass.13C.g ~ Cond, data = AUC.acetate.C2, paired = TRUE) #0.0001645, paired = 0.0039
 ```
 
 
