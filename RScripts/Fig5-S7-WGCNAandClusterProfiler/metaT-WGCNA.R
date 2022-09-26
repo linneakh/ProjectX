@@ -491,7 +491,7 @@ which.module="yellow"
 signif(cor(MEs, use="p"), 2)
 ME.yellow=MEs[, paste("ME",which.module, sep="")]
 par(mar=c(5, 4.2, 0, 0.7))
-barplot(ME.yelow, col=which.module, main="", cex.main=2,
+barplot(ME.yellow, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
@@ -758,7 +758,7 @@ ggplot(ME.green.m, aes(x=Time, y= ME.green)) +
 dev.off()
 
 ##statistics on eigenggene expression
-pairwise.wilcox.test(ME.pink.m$ME.pink, ME.pink.m$Condition_Time, p.adjust.method = "none")
+pairwise.wilcox.test(ME.pink.m$ME.pink, ME.pink.m$Condition_Time, p.adjust.method = "BH")
 #data:  ME.pink.m$ME.pink and ME.pink.m$Condition_Time 
 
 #              PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
@@ -770,6 +770,17 @@ pairwise.wilcox.test(ME.pink.m$ME.pink, ME.pink.m$Condition_Time, p.adjust.metho
 
 #P value adjustment method: none 
 
+#data:  ME.pink.m$ME.pink and ME.pink.m$Condition_Time 
+
+#               PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
+#PreDrought_6hr  0.045          -              -               -           -          
+#  PreDrought_48hr 0.127          0.931          -               -           -          
+#  Drought_0hr     0.013          0.019          0.019           -           -          
+#  Drought_6hr     0.013          0.045          0.152           0.032       -          
+#  Drought_48hr    0.013          0.013          0.013           0.152       0.192      
+
+# P value adjustment method: BH 
+
 pairwise.wilcox.test(ME.pink.m$ME.pink, ME.pink.m$Condition, p.adjust.method = "none")
 #data:  ME.pink.m$ME.pink and ME.pink.m$Condition 
 
@@ -778,7 +789,7 @@ pairwise.wilcox.test(ME.pink.m$ME.pink, ME.pink.m$Condition, p.adjust.method = "
 
 #P value adjustment method: none 
 
-pairwise.wilcox.test(ME.black.m$ME.black, ME.black.m$Condition_Time, p.adjust.method = "none")
+pairwise.wilcox.test(ME.black.m$ME.black, ME.black.m$Condition_Time, p.adjust.method = "BH")
 #data:  ME.black.m$ME.black and ME.black.m$Condition_Time 
 
 #                  PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
@@ -790,6 +801,17 @@ pairwise.wilcox.test(ME.black.m$ME.black, ME.black.m$Condition_Time, p.adjust.me
 
 #P value adjustment method: none 
 
+#Data:  ME.black.m$ME.black and ME.black.m$Condition_Time 
+
+#            PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
+#PreDrought_6hr  0.73           -              -               -           -          
+#  PreDrought_48hr 1.00           0.73           -               -           -          
+#  Drought_0hr     0.73           0.86           0.73            -           -          
+#  Drought_6hr     0.73           1.00           0.73            0.73        -          
+#  Drought_48hr    0.73           0.73           0.73            0.91        0.73       
+
+#P value adjustment method: BH 
+
 pairwise.wilcox.test(ME.black.m$ME.black, ME.black.m$Condition, p.adjust.method = "none")
 #data:  ME.black.m$ME.black and ME.black.m$Condition 
 
@@ -798,7 +820,7 @@ pairwise.wilcox.test(ME.black.m$ME.black, ME.black.m$Condition, p.adjust.method 
 
 #P value adjustment method: none 
 
-pairwise.wilcox.test(ME.red.m$ME.red, ME.red.m$Condition_Time, p.adjust.method = "none")
+pairwise.wilcox.test(ME.red.m$ME.red, ME.red.m$Condition_Time, p.adjust.method = "BH")
 #data:  ME.red.m$ME.red and ME.red.m$Condition_Time 
 
 #PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
@@ -809,6 +831,16 @@ pairwise.wilcox.test(ME.red.m$ME.red, ME.red.m$Condition_Time, p.adjust.method =
 #  Drought_48hr    0.0087         0.1255         0.2403          0.1255      0.1797     
 
 #P value adjustment method: none 
+#data:  ME.red.m$ME.red and ME.red.m$Condition_Time 
+
+#             PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
+#PreDrought_6hr  0.34           -              -               -           -          
+#  PreDrought_48hr 0.34           0.85           -               -           -          
+#  Drought_0hr     0.93           0.34           0.54            -           -          
+#  Drought_6hr     0.34           0.54           0.81            0.49        -          
+#  Drought_48hr    0.13           0.34           0.40            0.34        0.34       
+
+#P value adjustment method: BH 
 
 pairwise.wilcox.test(ME.red.m$ME.red, ME.red.m$Condition, p.adjust.method = "none")
 #data:  ME.red.m$ME.red and ME.red.m$Condition 
@@ -819,7 +851,7 @@ pairwise.wilcox.test(ME.red.m$ME.red, ME.red.m$Condition, p.adjust.method = "non
 #P value adjustment method: none 
 
 
-pairwise.wilcox.test(ME.brown.m$ME.brown, ME.brown.m$Condition_Time, p.adjust.method = "none")
+pairwise.wilcox.test(ME.brown.m$ME.brown, ME.brown.m$Condition_Time, p.adjust.method = "BH")
 #data:  ME.brown.m$ME.brown and ME.brown.m$Condition_Time 
 
 #               PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
@@ -831,6 +863,17 @@ pairwise.wilcox.test(ME.brown.m$ME.brown, ME.brown.m$Condition_Time, p.adjust.me
 
 #P value adjustment method: none
 
+#data:  ME.brown.m$ME.brown and ME.brown.m$Condition_Time 
+
+#             PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
+#PreDrought_6hr  0.016          -              -               -           -          
+#  PreDrought_48hr 0.022          0.792          -               -           -          
+#  Drought_0hr     0.016          0.022          0.269           -           -          
+#  Drought_6hr     0.016          0.032          0.422           0.671       -          
+#  Drought_48hr    0.016          0.032          0.269           0.710       0.679      
+
+#P value adjustment method: BH 
+
 pairwise.wilcox.test(ME.brown.m$ME.brown, ME.brown.m$Condition, p.adjust.method = "none")
 #data:  ME.brown.m$ME.brown and ME.brown.m$Condition 
 
@@ -839,7 +882,7 @@ pairwise.wilcox.test(ME.brown.m$ME.brown, ME.brown.m$Condition, p.adjust.method 
 
 #P value adjustment method: none 
 
-pairwise.wilcox.test(ME.green.m$ME.green, ME.green.m$Condition_Time, p.adjust.method = "none")
+pairwise.wilcox.test(ME.green.m$ME.green, ME.green.m$Condition_Time, p.adjust.method = "BH")
 #data:  ME.green.m$ME.green and ME.green.m$Condition_Time 
 
 #               PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
@@ -851,6 +894,17 @@ pairwise.wilcox.test(ME.green.m$ME.green, ME.green.m$Condition_Time, p.adjust.me
 
 #P value adjustment method: none 
 
+#data:  ME.green.m$ME.green and ME.green.m$Condition_Time 
+
+#            PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
+#PreDrought_6hr  0.17           -              -               -           -          
+#  PreDrought_48hr 0.39           0.24           -               -           -          
+#  Drought_0hr     0.21           0.59           0.24            -           -          
+#  Drought_6hr     0.17           0.49           0.17            0.79        -          
+#  Drought_48hr    0.17           0.17           0.17            0.17        0.17       
+
+#P value adjustment method: BH
+
 pairwise.wilcox.test(ME.green.m$ME.green, ME.green.m$Condition, p.adjust.method = "none")
 #data: ME.green.m$ME.green and ME.green.m$Condition
 
@@ -859,7 +913,7 @@ pairwise.wilcox.test(ME.green.m$ME.green, ME.green.m$Condition, p.adjust.method 
 
 #P value adjustment method: none 
 
-pairwise.wilcox.test(ME.blue.m$ME.blue, ME.blue.m$Condition_Time, p.adjust.method = "none")
+pairwise.wilcox.test(ME.blue.m$ME.blue, ME.blue.m$Condition_Time, p.adjust.method = "BH")
 #data:  ME.blue.m$ME.blue and ME.blue.m$Condition_Time 
 
 #                PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
@@ -871,6 +925,17 @@ pairwise.wilcox.test(ME.blue.m$ME.blue, ME.blue.m$Condition_Time, p.adjust.metho
 
 #P value adjustment method: none 
 
+#data:  ME.blue.m$ME.blue and ME.blue.m$Condition_Time 
+
+#          PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
+#PreDrought_6hr  0.195          -              -               -           -          
+#  PreDrought_48hr 0.736          0.705          -               -           -          
+#  Drought_0hr     0.736          0.065          0.705           -           -          
+#  Drought_6hr     0.749          0.152          0.749           0.705       -          
+#  Drought_48hr    0.937          0.065          0.736           0.736       0.736      
+
+#P value adjustment method: BH 
+
 pairwise.wilcox.test(ME.blue.m$ME.blue, ME.blue.m$Condition, p.adjust.method = "none")
 #data:  ME.blue.m$ME.blue and ME.blue.m$Condition 
 
@@ -879,7 +944,7 @@ pairwise.wilcox.test(ME.blue.m$ME.blue, ME.blue.m$Condition, p.adjust.method = "
 
 #P value adjustment method: none 
 
-pairwise.wilcox.test(ME.magenta.m$ME.magenta, ME.magenta.m$Condition_Time, p.adjust.method = "none")
+pairwise.wilcox.test(ME.magenta.m$ME.magenta, ME.magenta.m$Condition_Time, p.adjust.method = "BH")
 #data:  ME.magenta.m$ME.magenta and ME.magenta.m$Condition_Time 
 
 #               PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
@@ -890,6 +955,17 @@ pairwise.wilcox.test(ME.magenta.m$ME.magenta, ME.magenta.m$Condition_Time, p.adj
 #  Drought_48hr    0.699          0.931          0.093           0.126       0.589      
 
 #P value adjustment method: none 
+
+#data:  ME.magenta.m$ME.magenta and ME.magenta.m$Condition_Time 
+
+#PreDrought_0hr PreDrought_6hr PreDrought_48hr Drought_0hr Drought_6hr
+#PreDrought_6hr  0.73           -              -               -           -          
+#  PreDrought_48hr 0.29           0.33           -               -           -          
+#  Drought_0hr     0.33           0.29           0.29            -           -          
+#  Drought_6hr     0.75           0.49           0.29            0.41        -          
+#  Drought_48hr    0.75           0.93           0.29            0.31        0.74       
+
+#P value adjustment method: BH 
 
 pairwise.wilcox.test(ME.magenta.m$ME.magenta, ME.magenta.m$Condition, p.adjust.method = "none")
 #data:  ME.magenta.m$ME.magenta and ME.magenta.m$Condition 

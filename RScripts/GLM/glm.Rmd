@@ -1,0 +1,566 @@
+---
+title: "glm"
+author: "Linnea Honeker"
+date: "9/20/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(phyloseq)
+
+library(vegan)
+
+library(ggplot2)
+
+library(rms)
+
+library(reshape2)
+
+library(coefplot)
+
+library(MASS)
+
+library(dplyr)
+
+library(lme4)
+
+library(MASS)
+
+library(leaps)
+
+library(car)
+
+library(relaimpo)
+
+library(nlme)
+
+library(lmerTest)
+
+
+
+```
+
+## generalized linear model for acetate
+# load data tables 1) KO of interest and 2) gene transcript copies. Clean up data times for purposes of this analysis.
+
+```{r load_format_data}
+#KO_interest <- read.csv("../../Data/Deseq2/KO_interest.csv")
+KO_interest <- read.csv("../../Data/Deseq2/VOC-KO-interest-from-ML.csv")
+metaT <- read.csv("../../Output/WGCNA/vst-metaT.csv")
+metadata <- read.csv("../../Data/Deseq2/metaT-metadata.csv")
+acetate_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/acetic-acid-for-ggplot.csv")
+acetone_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/acetone-for-ggplot.ccsv")
+diacetyl_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/diacetyl-for-ggplot.csv")
+
+#remove "KO:" from metaT data table and C1/C2 from diacetyl data table
+#KO_interest$KO <- sub("KO:", "", KO_interest$KO)
+metaT$X <- sub("KO:", "", metaT$X)
+diacetyl_flux$Sample <- sub("_C1", "", diacetyl_flux$Sample)
+diacetyl_flux$Sample <- sub("_C2", "", diacetyl_flux$Sample)
+
+#filter metaT data to acetate kos
+KO_acetate <- KO_interest %>%
+  filter(Compound == "Acetate") %>%
+  merge(., metaT, by.x = "KO", by.y="X", all.x = FALSE, all.y = FALSE)
+
+#transpose for glm
+KO_acetate.t <- t(KO_acetate)
+
+#further format KO_acetate.t for glm. Assign column headers and remove rows containing metadata
+colnames(KO_acetate.t) <- KO_acetate.t[1,]
+KO_acetate.t.f <- KO_acetate.t[-(1:3),]
+KO_acetate.t.f <- as.data.frame(KO_acetate.t.f)
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+acetate_flux_proc <- acetate_flux %>%
+  filter (Type == "sample") %>%
+  filter (Pyruv == "C2") %>%
+  mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d))
+
+#sample names are different in the flux and expression tables, so need to make them the same
+KO_acetate.t.f[,28] <- rownames(KO_acetate.t.f)
+KO_acetate.t.f_new_id <- KO_acetate.t.f %>%
+  mutate(Sample = case_when(
+  startsWith(V28, "X3300044942") ~ "S3P4",
+  startsWith(V28, "X3300044943") ~ "S3P4",
+  startsWith(V28, "X3300044944") ~ "S3P4",
+  startsWith(V28, "X3300044945") ~ "S3P4",
+  startsWith(V28, "X3300045458") ~ "S1P5",
+  startsWith(V28, "X3300045459") ~ "S1P5",
+  startsWith(V28, "X3300045460") ~ "S1P5",
+  startsWith(V28, "X3300045461") ~ "S2P4",
+  startsWith(V28, "X3300045462") ~ "S2P4",
+  startsWith(V28, "X3300045463") ~ "S2P4",
+  startsWith(V28, "X3300045464") ~ "S2P4",
+  startsWith(V28, "X3300045465") ~ "S2P4",
+  startsWith(V28, "X3300045466") ~ "S2P6",
+  startsWith(V28, "X3300045467") ~ "S2P6",
+  startsWith(V28, "X3300045468") ~ "S2P6",
+  startsWith(V28, "X3300045469") ~ "S2P6",
+  startsWith(V28, "X3300045470") ~ "S2P6",
+  startsWith(V28, "X3300045471") ~ "S3P5",
+  startsWith(V28, "X3300045472") ~ "S3P5",
+  startsWith(V28, "X3300045473") ~ "S2P6",
+  startsWith(V28, "X3300048051") ~ "S1P5",
+  startsWith(V28, "X3300048052") ~ "S3P5",
+  startsWith(V28, "X3300048053") ~ "S3P5",
+  startsWith(V28, "X3300048054") ~ "S3P5",
+  startsWith(V28, "X3300048092") ~ "S1P1",
+  startsWith(V28, "X3300048093") ~ "S1P1",
+  startsWith(V28, "X3300048094") ~ "S1P1",
+  startsWith(V28, "X3300048095") ~ "S1P1",
+  startsWith(V28, "X3300048096") ~ "S1P1",
+  startsWith(V28, "X3300048099") ~ "S1P5",
+  startsWith(V28, "X3300048100") ~ "S1P5",
+  startsWith(V28, "X3300049511") ~ "S2P4",
+  startsWith(V28, "X3300049512") ~ "S3P4",
+  startsWith(V28, "X3300049557") ~ "S3P4",
+  startsWith(V28, "X3300049628") ~ "S3P5"
+  )) %>%
+  mutate(Time.d = case_when(
+    endsWith(V28, "6hr") ~ "6",
+    endsWith(V28, "0hr") ~ "0",
+    endsWith(V28, "48hr") ~ "48",
+    endsWith(V28, "48_hr") ~ "48"
+  )) %>%
+  mutate(Condition = case_when(
+    grepl("PreDrought", V28) ~ "pre-drought",
+    grepl("Drought", V28) ~ "drought",
+    grepl("Pre_drought", V28) ~ "pre-drought"
+  )) %>%
+  select(-V28)
+
+#merge all VOC and KO tables
+merged <- KO_acetate.t.f_new_id %>%
+  merge(.,acetate_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample", "Time.d"),
+        all.x = FALSE, all.y = FALSE) %>%
+  mutate_at(c(4:30), as.numeric) %>%
+  mutate(Flux = as.numeric(Flux))%>%
+  mutate(log.flux = log(Flux+abs(min(Flux))+1, base = exp(2)))
+
+merged
+
+```
+
+## redo with all the VOCs
+```{r}
+KO_interest <- read.csv("../../Data/Deseq2/VOC-KO-interest-from-ML.csv")
+metaT <- read.csv("../../Output/WGCNA/vst-metaT.csv")
+metadata <- read.csv("../../Data/Deseq2/metaT-metadata.csv")
+acetate_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/acetic-acid-for-ggplot.csv")
+acetone_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/acetone-for-ggplot.csv")
+diacetyl_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/diacetyl-for-ggplot.csv")
+
+#remove "KO:"
+metaT$X <- sub("KO:", "", metaT$X)
+diacetyl_flux$Sample <- sub("_C1", "", diacetyl_flux$Sample)
+diacetyl_flux$Sample <- sub("_C2", "", diacetyl_flux$Sample)
+
+#merge  all VOC
+KO_VOC <- KO_interest %>%
+  merge(., metaT, by.x = "KO", by.y="X", all.x = FALSE, all.y = FALSE)
+
+#transpose for glm
+KO_VOC.t <- t(KO_VOC)
+
+#further format KO_acetate.t for glm. Assign column headers and remove rows containing metadata
+colnames(KO_VOC.t) <- KO_VOC.t[1,]
+KO_VOC.t.f <- KO_VOC.t[-(1:3),]
+KO_VOC.t.f <- as.data.frame(KO_VOC.t.f)
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+acectate_flux_proc <- acetate_flux %>%
+  filter (Type == "sample") %>%
+    filter (Pyruv == "C2") %>%
+     mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.acetate = Flux) %>%
+  select(-c("Pyruv", "Type", "Flux", "Time", "Time.hr"))
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+acetone_flux_proc <- acetone_flux %>%
+  filter (Type == "sample") %>%
+  filter (Pyruv == "C2") %>%
+  mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.acetone = Flux)%>%
+  select(-c("Pyruv", "Type", "Flux", "Time", "Time.hr", "Site"))
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+diacetyl_flux_proc <- diacetyl_flux %>%
+  filter (Type == "sample") %>%
+  filter (Pyruv == "C2") %>%
+  mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.diacetyl = Flux) %>%
+  select(-c("Pyruv", "Type", "Flux", "Time", "Time.hr", "Site"))
+
+#sample names are different in the flux and expression tables, so need to make them the same
+KO_VOC.t.f[,37] <- rownames(KO_VOC.t.f)
+KO_VOC.t.f_new_id <- KO_VOC.t.f %>%
+  mutate(Sample = case_when(
+  startsWith(V37, "X3300044942") ~ "S3P4",
+  startsWith(V37, "X3300044943") ~ "S3P4",
+  startsWith(V37, "X3300044944") ~ "S3P4",
+  startsWith(V37, "X3300044945") ~ "S3P4",
+  startsWith(V37, "X3300045458") ~ "S1P5",
+  startsWith(V37, "X3300045459") ~ "S1P5",
+  startsWith(V37, "X3300045460") ~ "S1P5",
+  startsWith(V37, "X3300045461") ~ "S2P4",
+  startsWith(V37, "X3300045462") ~ "S2P4",
+  startsWith(V37, "X3300045463") ~ "S2P4",
+  startsWith(V37, "X3300045464") ~ "S2P4",
+  startsWith(V37, "X3300045465") ~ "S2P4",
+  startsWith(V37, "X3300045466") ~ "S2P6",
+  startsWith(V37, "X3300045467") ~ "S2P6",
+  startsWith(V37, "X3300045468") ~ "S2P6",
+  startsWith(V37, "X3300045469") ~ "S2P6",
+  startsWith(V37, "X3300045470") ~ "S2P6",
+  startsWith(V37, "X3300045471") ~ "S3P5",
+  startsWith(V37, "X3300045472") ~ "S3P5",
+  startsWith(V37, "X3300045473") ~ "S2P6",
+  startsWith(V37, "X3300048051") ~ "S1P5",
+  startsWith(V37, "X3300048052") ~ "S3P5",
+  startsWith(V37, "X3300048053") ~ "S3P5",
+  startsWith(V37, "X3300048054") ~ "S3P5",
+  startsWith(V37, "X3300048092") ~ "S1P1",
+  startsWith(V37, "X3300048093") ~ "S1P1",
+  startsWith(V37, "X3300048094") ~ "S1P1",
+  startsWith(V37, "X3300048095") ~ "S1P1",
+  startsWith(V37, "X3300048096") ~ "S1P1",
+  startsWith(V37, "X3300048099") ~ "S1P5",
+  startsWith(V37, "X3300048100") ~ "S1P5",
+  startsWith(V37, "X3300049511") ~ "S2P4",
+  startsWith(V37, "X3300049512") ~ "S3P4",
+  startsWith(V37, "X3300049557") ~ "S3P4",
+  startsWith(V37, "X3300049628") ~ "S3P5"
+  )) %>%
+  mutate(Time.d = case_when(
+    endsWith(V37, "6hr") ~ "6",
+    endsWith(V37, "0hr") ~ "0",
+    endsWith(V37, "48hr") ~ "48",
+    endsWith(V37, "48_hr") ~ "48"
+  )) %>%
+  mutate(Condition = case_when(
+    grepl("PreDrought", V37) ~ "pre-drought",
+    grepl("Drought", V37) ~ "drought",
+    grepl("Pre_drought", V37) ~ "pre-drought"
+  )) %>%
+  select(-V37)
+
+#merge VOC and KO tables
+merged <- KO_VOC.t.f_new_id %>%
+  merge(., acectate_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample","Time.d"),all.x = FALSE, all.y = FALSE) %>%
+  mutate_at(c(4:39), as.numeric) %>%
+  mutate(flux.acetate = as.numeric(flux.acetate)) %>%
+  mutate(log.flux.acetate = log(flux.acetate+abs(min(flux.acetate))+1, base = exp(2))) %>%
+  merge(.,acetone_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample", "Time.d"),all.x = FALSE, all.y = FALSE) %>%
+  mutate(flux.acetone = as.numeric(flux.acetone)) %>%
+  mutate(log.flux.acetone = log(flux.acetone+abs(min(flux.acetone))+1, base = exp(2))) %>%
+  merge(.,diacetyl_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample", "Time.d"),all.x = FALSE, all.y = FALSE) %>%
+  mutate(flux.diacetyl = as.numeric(flux.diacetyl)) %>%
+  mutate(log.flux.diacetyl = log(flux.diacetyl+abs(min(flux.diacetyl))+1, base = exp(2))) 
+  
+
+merged
+
+```
+
+```{r correlation-plots}
+#make subset of numerical data
+merged.num <- merged %>%
+  select(-c(Sample, Condition, Time.d, Site, Site.y, Site.x))
+
+z = merged$Condition
+y = merged$flux.acetone
+colNames <- names(merged)[4:39]
+for (i in colNames) {
+  p <- ggplot(merged, aes_string(x=i, y=y)) +
+  geom_point() +
+  geom_smooth(method=lm, se=TRUE) +
+  ggtitle (aes_string(i))
+  print(p)
+}
+
+
+cor(merged$K10856, merged$flux.acetone)
+
+summary(lm(merged$flux.acetone ~ merged$K10856))
+
+```
+
+
+You can also embed plots, for example:
+K00158 + K00156 + K00925 + K01026 + K01067 + K01512 + K01895 + K18118
+```{r acetate glm}
+
+fit <- lm(flux.acetate ~ K00128 + K00138 + K00156 + K00925 + K01026 + K01034 + K01035 + K01039 +
+           K01040 +K01060 + K01067 + K01438 + K01443 + K01512 + K01640 + K01644 + K01738 +
+           K01739 + K01740 + K01895 + K02535 + K12339 + K16363 + K18118 + K18122 + K19670, data=merged)
+summary(fit)
+coefficients(fit)
+fitted(fit)
+anova(fit)
+vcov(fit)
+influence(fit)
+
+
+fit <- lm(flux.acetate ~ K00128 + K00156 + K01026 + K01034 + K01040 + K01438 + 
+    K01443 + K01640 + K01738 + K01740 + K01895 + K12339 + K18118 + 
+    K18122, data = merged)
+
+summary(fit)
+coefficients(fit)
+fitted(fit)
+anova(fit)
+vcov(fit)
+influence(fit)
+
+attach(merged)
+leaps <- regsubsets (flux.acetate ~ K00128 + K00138 + K00156 + K00925 + K01026 + K01034 + K01035 + K01039 +
+           K01040 +K01060 + K01067 + K01438 + K01443 + K01512 + K01640 + K01644 + K01738 +
+           K01739 + K01740 + K01895 + K02535 + K12339 + K16363 + K18118 + K18122 + K19670, data = merged, nbest = 10)
+
+summary(leaps)
+plot(leaps, scale = "r2")
+
+
+
+#multivariate multiple regression
+summary(merged.num)
+
+mlml <- lm(cbind(log.flux.acetate, log.flux.acetone) ~ K00128 + K00138 + K00156 + K00925 + K01026 +
+            + K01067 +K01512 + 
+           K01739 +  K01895 +   K18118 + K18122 + K19670 +
+             K01574 +  K10856 + K18371 + K18382,  data = merged.num)
+summary(mlml)
+vcov(mlml)
+Anova(mlml)
+
+mlm2 <- update(mlml, . ~ . - K01644 - K19670 - K18382)
+anova(mlml, mlm2)
+summary(mlm2)
+
+#glm on acetate
+
+glm1 <- glm(log.flux.acetate ~ K00128 + K00138 + K00156 + K00925 + K01026 +
+           K01039 + K01040  + K01067 + K01438 + K01443 + K01512 + K01640  + K01738 +
+           K01739 + K01740 + K01895 + K12339 +  K18118 + K18122 + 
+             K01574 + K10855 + K10856 + K18371, family = gaussian, data = merged.num)
+summary(glm1)
+Anova(glm1)
+
+glm2 <- update(glm1, . ~ . - K01067 - K01738)
+Anova(glm2)
+
+anova(glm1, glm2)
+
+
+#glm on acetone
+
+glm1 <- glm(log.flux.acetone ~ K00128 + K00138 + K00156 + K00925 + K01026 +
+           K01039 + K01040  + K01067 + K01438 + K01443 + K01512 + K01640  + K01738 +
+           K01739 + K01740 + K01895 + K12339 +  K18118 + K18122 + 
+             K01574 + K10855 + K10856 + K18371, family = gaussian, data = merged.num)
+summary(glm1)
+Anova(glm1)
+
+glm2 <- update(glm1, . ~ . - K00128 - K01026 - K01738 - K01895 - K18118 - K10856 - K18371)
+Anova(glm2)
+coefplot(glm1)
+
+anova(glm1, glm2)
+```
+
+```{r acetone glm}
+r <- glm(flux.acetone ~ K01574 + K10854 + K10855 + K10856 + K18369 + K18371 + K18382, family = gaussian, data = 
+           merged)
+
+print(anova(r, test = "Chisq"))
+print(summary(r))
+
+r2 <- lmer(flux.acetone ~ K01574 + K10854 + K10855 + K10856 + K18369 + K18371 + K18382 + (1|Site), data = merged)
+
+print(anova(r2, test = "Chisq"))
+print(summary(r2))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+res_aov <- aov(K00004 ~ Site, data = merged)
+
+
+par(mfrow = c(1, 2)) # combine plots
+
+# histogram
+hist(res_aov$residuals)
+hist(merged$K00004)
+
+# QQ-plot
+qqPlot(res_aov$residuals,
+  id = FALSE) # id = FALSE to remove point identification
+  
+fit <- lm(flux.acetone ~ K01574 + K10854 + K10855 + K10856 + K18369 + K18371 + K18382, data = 
+           merged) 
+summary(fit)
+
+```
+
+theme_set(theme_bw())
+
+setwd("C:/Users/Linnea Honeker/Documents/R/glm")
+
+
+data = read.table("for_GLM_2.txt", header = T, sep="\t")
+dd=datadist(data)
+sink('analysis-output5.txt', append=TRUE)
+
+for (i in 2:136) {
+r <- glm(data[,i] ~  AHR + Il13 + Prg3, 
+          family = poisson, data = data )
+print(colnames(data[i]))
+print(anova(r, test = 'Chisq'))
+print(summary(r))
+png(file = paste(colnames(data[i]),"png",sep="."))
+print(coefplot(r,coefficients = c("AHR" , "Il13" , 
+                                 "Prg3"), 
+         title=colnames(data[i])))
+dev.off()
+}
+sink()
+
+```{r acetate-glm-filtered}
+KO_acetate <- KO_interest %>%
+  filter(Compound  == "Acetate")
+
+KO_acetate_list <- KO_acetate$KO
+
+merged.num.acetate <- merged.num %>%
+  select(any_of(KO_acetate_list), log.flux.acetate, flux.acetate)
+
+merged.acetate <- merged %>%
+  select(any_of(KO_acetate_list), log.flux.acetate, flux.acetate)
+
+
+glm1 <- glm(log.flux.acetate ~ K00128 + K00156 + K00925 +
+            K01040  + K01067 + K01438 + K01443 + K01512 + K01640  + K01738 +
+           K01739 + K01740 + K01895 + K12339 +  K18118 + K18122, 
+           family = gaussian, data = merged.num.acetate)
+summary(glm1)
+Anova(glm1)
+
+glm2 <- update(glm1, . ~ . - K01040 - K01067 - K01438 - K01512 - K01738 - K01739 - K12339 - 
+                 K18122 - K01443)
+summary(glm2)
+Anova(glm2)
+
+anova(glm1, glm2, test = "Chisq")
+
+
+lme1 <- lmer(log.flux.acetate ~ K00128 + K00156 + K00925 +
+            K01040  + K01067 + K01438 + K01443 + K01512 + K01640  + K01738 +
+           K01739 + K01740 + K01895 + K12339 +  K18118 + K18122 + (1|Site),
+              data = merged.acetate)
+
+summary(lme1)
+anova(lme1)
+
+lme2 <- update(lme1, . ~ . - K10856 - K18369 - K01574 - K10855)
+summary(lme2)
+Anova(lme2)
+
+coefplot(lme2, coefficients = c("K10854", "K18371", "K18382"))
+
+
+anova(lme1, lme2, test = "Chisq")
+
+```
+
+```{r}
+KO_acetone <- KO_interest %>%
+  filter(Compound  == "Acetone")
+
+KO_acetone_list <- KO_acetone$KO
+
+merged.num.acetone <- merged.num %>%
+  select(any_of(KO_acetone_list), log.flux.acetone, flux.acetone)
+
+merged.acetone <- merged %>%
+  select(c(any_of(KO_acetone_list), log.flux.acetone, flux.acetone, Site))
+
+glm1 <- glm(log.flux.acetone ~ K01574 + K10854 + K10855 + K10856 + K18369 + K18371 + K18382,
+           family = gaussian, data = merged.num.acetone)
+summary(glm1)
+Anova(glm1)
+
+glm2 <- update(glm1, . ~ . - K10856 - K18369 - K01574 - K10855)
+summary(glm2)
+Anova(glm2)
+
+
+anova(glm1, glm2, test = "Chisq")
+
+lme1 <- lmer(log.flux.acetone ~ K01574 + K10854 + K10855 + K10856 + K18369 + K18371 + K18382 + (1|Site),
+              data = merged.acetone)
+
+summary(lme1)
+anova(lme1)
+
+lme2 <- update(lme1, . ~ . - K10856 - K18369 - K01574 - K10855)
+summary(lme2)
+Anova(lme2)
+
+coefplot(lme2, coefficients = c("K10854", "K18371", "K18382"))
+
+
+anova(lme1, lme2, test = "Chisq")
+```
+
