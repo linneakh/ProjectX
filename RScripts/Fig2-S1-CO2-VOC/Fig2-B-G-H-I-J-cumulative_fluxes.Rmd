@@ -17,6 +17,15 @@ library(flux)
 library(dplyr)
 library(data.table)
 library(janitor)
+library(performance)
+library(lme4)
+library(MASS)
+library(leaps)
+library(car)
+library(relaimpo)
+library(nlme)
+library(lmerTest)
+library(see)
 
 theme_custom <- theme_few()
 
@@ -33,22 +42,22 @@ colors = c("#2ECC71" ,"#F39C12")
 
 #load data
 data <- read.csv("../../Data/CO2-VOCs/01_raw/S3_PyruvateLabeling_qc.csv") %>% 
-  select(-X)
+  dplyr::select(-X)
 
 #add timestanp, however, this hasn't been working and not needed
 data <- data %>% 
   mutate(Timestamp = lubridate::ymd_hms(Timestamp_MST, tz = "America/Phoenix"), 
          Timestamp_Label_MST = lubridate::ymd_hms(Timestamp_Label_MST, tz = "America/Phoenix")) %>% 
-  select(-Timestamp_MST)
+  dplyr::select(-Timestamp_MST)
 
 # Quickview
 data <- data %>% 
-  select(Label, Condition, Pyruv, Trel, Flux, D13C, Qc_iso, Qc_flux, AtF)
+  dplyr::select(Label, Condition, Pyruv, Trel, Flux, D13C, Qc_iso, Qc_flux, AtF)
 
 # quality control filtering
 data_sub <- data %>% 
   filter(Qc_flux == 1, Qc_iso == 1)  %>% 
-  select(-Qc_iso, -Qc_flux) %>% 
+  dplyr::select(-Qc_iso, -Qc_flux) %>% 
   filter(Trel > -10, Trel < 50, Flux > 0, D13C > -100) %>%
   mutate(Flux.h = Flux * 3600) 
 
@@ -191,16 +200,12 @@ AUC_summary.CO2 <- AUC %>%
 
 # total C for biosynthesis during drought
 AUC_summary_wide <- AUC_summary.CO2 %>%
-  select(-c(AUC_name, perc.mass_name,mass.13C.g_name )) %>%
+  dplyr::select(-c(AUC_name, perc.mass_name,mass.13C.g_name )) %>%
   pivot_wider(names_from = c(Pyr, Cond), values_from = umol_name) %>%
   mutate(Biosynthesis.D = C1_Drought - C2_Drought) %>%
   mutate(Biosynthesis.PD = C1_Pre_Drought - C2_Pre_Drought) %>%
   mutate(TCA_cycle.D = C1_Drought - Biosynthesis.D) %>%
   mutate(TCA_cycle.PD = C1_Pre_Drought - Biosynthesis.PD) 
-
-
-
-
 
 # plot mmol of 13C pyruvate
 plot <- AUC %>%
@@ -220,7 +225,7 @@ plot <- AUC %>%
       axis.title.x = element_blank(),
       legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2b-total-C-CO2-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2b-total-C-CO2-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 # plot % of 13C pyruvate
 plot <- AUC %>%
@@ -240,13 +245,14 @@ plot <- AUC %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-CO2-per-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-CO2-per-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
 
-getwd()
+
 ```
 
+# CO2 cummulative efflux statistics (wilcoxon and lme)
 ```{r CO2 cumulative efflux statistics, echo = FALSE}
-# statistics
+# statistics - Wilcoxon texts
 # C1 vs C2 during pre-drought
 AUC.PD <- AUC %>%
   filter(Cond == "Pre_Drought")
@@ -271,12 +277,46 @@ AUC.C2 <- AUC %>%
 
 wilcox.test(mass.13C.g ~ Cond, data = AUC.C2, paired = TRUE) #2.76e-3, paired 0.02734
 
+## linear mixed effect model
+# subset to C1 and CO2.
+statdat <- AUC %>%
+  filter(Pyr == "C1") %>%
+  separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+co2.c1 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          Label =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(co2.c1)
+
+# check model assumptions
+check_model(co2.c1)
+
+# subset to C2 and CO2.
+statdat <- AUC %>%
+  filter(Pyr == "C2") %>%
+   separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+co2.c2 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          Label =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(co2.c2)
+
+# check model assumptions
+check_model(co2.c2)
+
+
 ```
 
 
 ## cummulative efflux: Acetone
-
-
 ```{r acetone, echo=FALSE}
 #Load 13C data
 data.13.P <- read.csv("../../Data/CO2-VOCs/voc_raw/acetone-pre-drought-13C.csv") 
@@ -366,7 +406,7 @@ NP <- mean(NP_pre, NP_water)
 # filter time points to between 0 and 48 hrs
 df.acetone.f <- df.acetone %>%
   mutate(Time.h = Time * 48) %>%
-  select(-Time) %>%
+  dplyr::select(-Time) %>%
   filter(Time.h < 48 &
            Time.h > 0)
 
@@ -405,16 +445,15 @@ for (i in Label.C1a) {
   x <- df.acetone.f.p %>%
     filter(Label == i &
              Pyr != "W")
-  i.AUC.aton <- AUC(x$Time.h, x$Flux) 
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
   AUC.aton_list_PD_C1[[i]] <- i.AUC.aton
 }
-
 
 for (i in Label.C2b) {
   x <- df.acetone.f.p %>%
     filter(Label == i &
       Pyr != "W")
-  i.AUC.aton <- AUC(x$Time.h, x$Flux) 
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
   AUC.aton_list_PD_C2[[i]] <- i.AUC.aton
 }
 
@@ -423,7 +462,7 @@ for (i in Label.C1b) {
   x <- df.acetone.f.d %>%
     filter(Label == i &
       Pyr != "W")
-  i.AUC.aton <- AUC(x$Time.h, x$Flux) 
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
   AUC.aton_list_D_C1[[i]] <- i.AUC.aton
 }
 
@@ -432,7 +471,7 @@ for (i in Label.C2a) {
   x <- df.acetone.f.d %>%
     filter(Label == i &
              Pyr != "W")
-  i.AUC.aton <- AUC(x$Time.h, x$Flux) 
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
   AUC.aton_list_D_C2[[i]] <- i.AUC.aton
 }
 
@@ -440,7 +479,7 @@ for (i in Label.W) {
   x <- df.acetone.f.d %>%
     filter(Label == i &
              Pyr == "W")
-  i.AUC.aton <- AUC(x$Time.h, x$Flux) 
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
   AUC.aton_list_D_W[[i]] <- i.AUC.aton
 }
 
@@ -530,7 +569,7 @@ plot <- AUC.aton %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-acetone-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-acetone-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate
 plot <- AUC.aton %>%
@@ -549,7 +588,7 @@ plot <- AUC.aton %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetone-perc-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetone-perc-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
 
 # plot cummalative flux of 13C pyruvate for just C2, because only C2 showed enrichment
 plot <- AUC.aton %>%
@@ -569,7 +608,7 @@ plot <- AUC.aton %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2H-total-C-acetone-flux-C2.png",units=c('in'),width=2, height = 4,dpi=300,plot)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2H-total-C-acetone-flux-C2.png",units=c('in'),width=2, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate
 plot <- AUC.aton %>%
@@ -588,7 +627,7 @@ plot <- AUC.aton %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetone-perc-flux-C2.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetone-perc-flux-C2.png",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 ```
 
@@ -618,6 +657,41 @@ AUC.aton.C2 <- AUC.aton %>%
   filter(Pyr == "C2")
 
 wilcox.test(mass.13C.g ~ Cond, data = AUC.aton.C2, paired = TRUE) #8.227e-05, paired = 0.003906
+
+## linear mixed effect model
+# subset to C1. Add column for site so we can add this as a random variable.
+statdat <- AUC.aton %>%
+  filter(Pyr == "C1") %>%
+  separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+aton.c1 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          Label =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(aton.c1)
+
+# check model assumptions
+check_model(aton.c1)
+
+# subset to C2 and CO2.
+statdat <- AUC.aton %>%
+  filter(Pyr == "C2") %>%
+ separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+aton.c2 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          Label =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(aton.c2)
+
+# check model assumptions
+check_model(aton.c2)
 
 ```
 
@@ -733,7 +807,7 @@ NP.diac <- mean(NP_pre.diac, NP_water.diac)
 # filter time points to between 0 and 48 hrs
 df.diacetyl.f <- df.diacetyl %>%
   mutate(Time.h = Time * 24) %>%
-  select(-Time) %>%
+  dplyr::select(-Time) %>%
   filter(Time.h < 48 &
            Time.h > 0)
 
@@ -903,7 +977,7 @@ plot.Diac <- AUC.Diac %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot.Diac
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-diacetyl-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot.Diac)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-diacetyl-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot.Diac)
 
 # plot cummalative percentage of of 13C pyruvate
 plot.Diac <- AUC.Diac %>%
@@ -942,7 +1016,7 @@ plot.Diac <- AUC.Diac %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot.Diac
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2I-total-C-diacetyl-flux-c2.png",units=c('in'),width=2, height = 4,dpi=300,plot.Diac)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2I-total-C-diacetyl-flux-c2.png",units=c('in'),width=2, height = 4,dpi=300,plot.Diac)
 
 # plot cummalative percentage of of 13C pyruvate
 plot.Diac <- AUC.Diac %>%
@@ -961,7 +1035,7 @@ plot.Diac <- AUC.Diac %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot.Diac
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-diacetyl-perc-flux-c2.png",units=c('in'),width=4, height = 4,dpi=300,plot.Diac)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-diacetyl-perc-flux-c2.png",units=c('in'),width=4, height = 4,dpi=300,plot.Diac)
 
 
 ```
@@ -991,7 +1065,46 @@ AUC.Diac.C2 <- AUC.Diac %>%
   filter(Pyr == "C2")
 
 wilcox.test(mass.13C.g ~ Cond, data = AUC.Diac.C2, paired = TRUE) #0.05031, paired 0.03906
+
+## linear mixed effect model
+# subset to C1. Add column for site so we can add this as a random variable.
+statdat <- AUC.Diac %>%
+  filter(Pyr == "C1") %>%
+  separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+diac.c1 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          Label =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(diac.c1)
+
+# check model assumptions
+check_model(diac.c1)
+
+# subset to C2 and CO2.
+statdat <- AUC.aton %>%
+  filter(Pyr == "C2") %>%
+ separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+diac.c2 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          Label =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(diac.c2)
+
+# check model assumptions
+check_model(diac.c2)
+
 ```
+
+
+
 
 
 ## Cummulative Effluxes: Acetic acid
@@ -1084,7 +1197,7 @@ NP <- mean(NP_pre, NP_water)
 # filter time points to between 0 and 48 hrs
 df.acetate.f <- df.acetate %>%
   mutate(Time.h = Time * 24) %>%
-  select(-Time) %>%
+  dplyr::select(-Time) %>%
   filter(Time.h < 48 &
            Time.h > 0)
 
@@ -1249,7 +1362,7 @@ plot <- AUC.acetate %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2G-total-C-acetate-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2G-total-C-acetate-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate
 plot <- AUC.acetate %>%
@@ -1268,7 +1381,7 @@ plot <- AUC.acetate %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetate-perc-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetate-perc-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
 ```
 
 
@@ -1298,6 +1411,41 @@ AUC.acetate.C2 <- AUC.acetate %>%
   filter(Pyr == "C2")
 
 wilcox.test(mass.13C.g ~ Cond, data = AUC.acetate.C2, paired = TRUE) #0.0001645, paired = 0.0039
+
+## linear mixed effect model
+# subset to C1. Add column for site so we can add this as a random variable.
+statdat <- AUC.acetate %>%
+  filter(Pyr == "C1") %>%
+  separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+acetate.c1 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          Label =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(acetate.c1)
+
+# check model assumptions
+check_model(acetate.c1)
+
+# subset to C2 and CO2.
+statdat <- AUC.acetate %>%
+  filter(Pyr == "C2") %>%
+ separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+acetate.c2 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          Label =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(acetate.c2)
+
+# check model assumptions
+check_model(acetate.c2)
 ```
 
 
@@ -1309,14 +1457,14 @@ wilcox.test(mass.13C.g ~ Cond, data = AUC.acetate.C2, paired = TRUE) #0.0001645,
 # create summary of umol and perc
 summary.1 <- rbind(AUC_summary.acetate, AUC_summary.acetone)
 summary.2 <- AUC_summary.CO2 %>%
-  select(-mass.13C.g_name) %>% #remove column that doesn't match with diacetyl summary table
+  dplyr::select(-mass.13C.g_name) %>% #remove column that doesn't match with diacetyl summary table
   rbind(AUC_summary.Diac)
 summary.total <- rbind(summary.1, summary.2)
 summary.total
 
 # spread c1 and C2 across value columns (umol and perc)
 summary.umol <- summary.total %>%
-  select(-c(AUC_name)) %>% #remove columns that we don't want to include in final summary table
+  dplyr::select(-c(AUC_name)) %>% #remove columns that we don't want to include in final summary table
   pivot_wider(names_from = Pyr, values_from = c("umol_name", "perc.mass_name")) %>%
   mutate(diff.umol = umol_name_C1 - umol_name_C2) %>% #calculate C1 - C2 so we know how much 13C within 13C-co2 goes towards biosynthesis 
   mutate(sum.umol = umol_name_C1 + umol_name_C2) %>%
@@ -1331,7 +1479,7 @@ summary.allocation.d <- summary.umol %>%
   filter(compound == "CO2" &
            Cond == "Drought") %>%
   mutate(other = 100 - (perc.mass_name_C1)) %>%
-  select(perc.mass_name_C2, diff.perc, other)
+  dplyr::select(perc.mass_name_C2, diff.perc, other)
 
 summary.allocation.d.t <- t(summary.allocation.d)
 colnames(summary.allocation.d.t) <- summary.allocation.d.t[1,]
@@ -1358,7 +1506,7 @@ summary.allocation.p <- summary.umol %>%
   filter(compound == "CO2" &
            Cond == "Pre_Drought") %>%
   mutate(other = 100 - (perc.mass_name_C1)) %>%
-  select(perc.mass_name_C2, diff.perc, other)
+  dplyr::select(perc.mass_name_C2, diff.perc, other)
 
 summary.allocation.p.t <- t(summary.allocation.p)
 colnames(summary.allocation.p.t) <- summary.allocation.p.t[1,]
