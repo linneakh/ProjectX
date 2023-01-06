@@ -11,8 +11,11 @@ library(PCAtest)
 library(MASS)
 library(factoextra)
 library(corrplot)
+library(pls)
 
 source('./RScripts/GeneFlux/extra_functions.R')
+source('./RScripts/plsdepot/R/print.plsreg1.R')
+source('./RScripts/plsdepot/R/print.plsreg2.R')
 
 # PCA on full KO list--------------------------------------------------------------------
 #####acetaet###############
@@ -430,4 +433,47 @@ fviz_pca_biplot(PCAdata,
                 legend.title = "Condition",
                 repel = TRUE
 )
+
+## pls
+# PCA on original (subset) KO list
+#####acetaet###############
+###subset to only acetate cycling genes. KO_interest object created in glm.Rmd
+KO_acetate <- KO_interest_subset %>%
+  filter(VOC == "Acetate") 
+
+KO_acetate_list <- KO_acetate$KO
+flux_list <- c("flux.acetate", "flux.acetone", "flux.diacetyl", "Condition", "Site")
+
+idx <- match(c(KO_acetate_list,flux_list), names(merged_subset))
+idx <- idx[!is.na(idx)]
+
+
+sub_acetate <- merged_subset[,idx]
+
+sub_acetate2 <- sub_acetate %>%
+  mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+pca <- plsr (flux.acetate ~ K00158 + K01026 + K18118 + K01512 + K01895 + K00925, ncomp = 2, data = sub_acetate2, validation = "CV")
+pca$coefficients
+summary(pca)
+plot(pca, ncomp = 2, asp = 1, line = TRUE)
+explvar(pca)
+
+#only the top 3 genes with highest coefficients from above along first component
+pca <- plsr (flux.acetate ~ K00158 + K01026 + K18118 , ncomp = 2, data = sub_acetate2, validation = "CV")
+pca$coefficients
+summary(pca)
+plot(pca, asp = 1, ncomp = 2, line = TRUE)
+explvar(pca)
+
+#only the top 3 genes with highest coefficients from above along first component
+pca <- plsr (flux.acetate ~ K00158 + K01026 , ncomp = 2, data = sub_acetate2, validation = "CV")
+pca$coefficients
+summary(pca)
+plot(pca, asp = 1, ncomp = 2, line = TRUE)
+explvar(pca)
+
+
+
 

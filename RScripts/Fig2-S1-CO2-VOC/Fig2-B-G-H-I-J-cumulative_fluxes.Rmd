@@ -286,7 +286,7 @@ statdat <- AUC %>%
 # lme model
 co2.c1 <- lme(mass.13C.g ~ Cond,
             random = list(Site = ~1,
-                          Label =  ~1),
+                          ID =  ~1),
             data = statdat,
             weights =  varIdent(form = ~1|Cond)
             )
@@ -303,7 +303,7 @@ statdat <- AUC %>%
 # lme model
 co2.c2 <- lme(mass.13C.g ~ Cond,
             random = list(Site = ~1,
-                          Label =  ~1),
+                          ID =  ~1),
             data = statdat,
             weights =  varIdent(form = ~1|Cond)
             )
@@ -324,29 +324,25 @@ data.13.D <- read.csv("../../Data/CO2-VOCs/voc_raw/acetone-drought-13C.csv")
 
 # process pre-drought dataset
 # gather dataframe 
+
 data.13.P.long <- data.13.P %>%
   pivot_longer(cols = contains("P"),
               names_to = c("Label","Time"),
               names_sep = "_",
               values_to= "Time_Flux") %>%
-  drop_na(Time_Flux) %>%
-  mutate(Time = ifelse(is.na(Time), "flux", Time))
+  drop_na()
+
+data.13.P.long$Time <- data.13.P.long$Time %>% replace_na('Flux')
 
 # since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
-# here we will loop through each pair of rows and spread the data so flux and time become separate rows
+# here we will spread each pair of rows and spread the data so flux and time become separate rows
+df.p <- data.13.D.long %>%
+  group_by(Label, Time) %>%
+  mutate(rn = row_number()) %>%
+  ungroup %>%
+  spread(Time, Time_Flux) %>%
+  select(c(-rn, -Time)) 
 
-df.p.0 = data.frame(matrix (NA, ncol = 3, nrow = 1))
-
-for (i in 1:nrow(data.13.P.long)) {
-  if (isTRUE(data.13.P.long[i,1] == data.13.P.long[(i+1),1]) == TRUE) 
-  {df.p.0[i,] <- spread(data.13.P.long[i:(i+1),], Time, Time_Flux)[1,]
-  }
-}
-
-# erase rows with NA and name columns
-df.p <- df.p.0 %>%
-  rename(Label = X1, Flux = X2, Time = X3) %>%
-  filter(Label != "NA")
 
 #Add column for pyruvate label and add column for pre-drought
 df.p.f <- df.p %>% 
@@ -362,24 +358,20 @@ data.13.D.long <- data.13.D %>%
                names_sep = "_",
                values_to= "Time_Flux") %>%
   drop_na(Time_Flux) %>%
-  mutate(Time = ifelse(is.na(Time), "flux", Time))
+  mutate(Time = ifelse(is.na(Time), "Flux", Time))
 
 data.13.D.long$Label
 
 # since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
-# here we will loop through each pair of rows and spread the data so flux and time become separate rows
-df.d.0 = data.frame(matrix (NA, ncol = 3, nrow = 1))
+# here we will spread each pair of rows and spread the data so flux and time become separate rows
+df.d <- data.13.D.long %>%
+  group_by(Label, Time) %>%
+  mutate(rn = row_number()) %>%
+  ungroup %>%
+  spread(Time, Time_Flux) %>%
+  select(-c(Time, rn))%>%
+  drop_na()
 
-for (i in 1:nrow(data.13.D.long)) {
-  if (isTRUE(data.13.D.long[i,1] == data.13.D.long[(i+1),1]) == TRUE) 
-  {df.d.0[i,] <- spread(data.13.D.long[i:(i+1),], Time, Time_Flux)[1,]
-  }
-}
-
-# erase rows with NA and name columns
-df.d <- df.d.0 %>%
-  rename(Label = X1, Flux = X2, Time = X3) %>%
-  filter(Label != "NA")
 
 #Add column for pyruvate label and add column for pre-drought
 df.d.f <- df.d %>% 
@@ -391,22 +383,22 @@ df.d.f <- df.d %>%
 df.acetone <- rbind(df.p.f, df.d.f)
 
 # calculate "pre" and "water" labeling 13C flux, so that we can calcualte 13C flux from pyruvate
-data_sub_pre <- df.acetone %>%
-  filter(Time <= 0)
+data_sub_pre.aton <- df.acetone %>%
+  filter(time <= 0)
 
-NP_pre <- mean(data_sub_pre$Flux)
+NP_pre.aton <- mean(data_sub_pre.aton$Flux)
 
-data_sub_water <- df.acetone %>%
-  filter(Pyr == "W")
+data_sub_water.aton <- df.acetone %>%
+  filter(Pyr == "W") 
 
-NP_water <- mean(data_sub_water$Flux)
+NP_water.aton <- mean(data_sub_water.aton$Flux)
 
-NP <- mean(NP_pre, NP_water)
+NP.aton <- mean(NP_pre.aton, NP_water.aton)
 
 # filter time points to between 0 and 48 hrs
 df.acetone.f <- df.acetone %>%
-  mutate(Time.h = Time * 48) %>%
-  dplyr::select(-Time) %>%
+  mutate(Time.h = time * 48) %>%
+  dplyr::select(-time) %>%
   filter(Time.h < 48 &
            Time.h > 0)
 
@@ -427,11 +419,11 @@ df.acetone.f.p <- df.acetone.f %>%
 
 
 #Define samples that are either C1 or C2 labeled
-Label.C1a = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3", "S2P7", "S3P1", "S3P3", "S3P5")
-Label.C1b = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3", "S2P5", "S3P1", "S3P3", "S3P5")
+Label.C1a = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P5", "S3P1","S3P3", "S3P5")
+Label.C1b = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P5", "S3P1", "S3P3", "S3P5")
 Label.C2a = c("S1P2", "S1P4", "S1P6", "S2P2", "S2P4", "S2P6", "S3P2", "S3P4", "S3P6")
 Label.C2b = c("S1P2", "S1P4", "S1P6", "S2P4", "S2P6", "S2P8", "S3P2", "S3P4", "S3P6")
-Label.W = c("S1P2", "S1P4")
+Label.W = c("S1P2.W", "S1P4.W")
 
 #create empty lists for each category
 AUC.aton_list_PD_C1 <- list()
@@ -440,6 +432,7 @@ AUC.aton_list_D_C1 <- list()
 AUC.aton_list_D_C2 <- list()
 AUC.aton_list_D_W <- list()
 
+df.acetone.f.d$Label
 
 for (i in Label.C1a) {
   x <- df.acetone.f.p %>%
@@ -667,7 +660,7 @@ statdat <- AUC.aton %>%
 # lme model
 aton.c1 <- lme(mass.13C.g ~ Cond,
             random = list(Site = ~1,
-                          Label =  ~1),
+                          ID =  ~1),
             data = statdat,
             weights =  varIdent(form = ~1|Cond)
             )
@@ -684,7 +677,7 @@ statdat <- AUC.aton %>%
 # lme model
 aton.c2 <- lme(mass.13C.g ~ Cond,
             random = list(Site = ~1,
-                          Label =  ~1),
+                          ID =  ~1),
             data = statdat,
             weights =  varIdent(form = ~1|Cond)
             )
@@ -714,23 +707,18 @@ data.13.P.long.diac <- data.13.P.diac %>%
                names_sep = "_",
                values_to= "Time_Flux") %>%
   drop_na(Time_Flux) %>%
-  mutate(Time = ifelse(is.na(Time), "flux", Time))
+  mutate(Time = ifelse(is.na(Time), "Flux", Time))
 
 # since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
-# here we will loop through each pair of rows and spread the data so flux and time become separate rows
+# here we will spread each pair of rows and spread the data so flux and time become separate rows
+df.p.diac <- data.13.P.long.diac %>%
+  group_by(Label, Time) %>%
+  mutate(rn = row_number()) %>%
+  ungroup %>%
+  spread(Time, Time_Flux) %>%
+  select(-c(Time, rn))%>%
+  drop_na()
 
-df.p.0.diac = data.frame(matrix (NA, ncol = 3, nrow = 1))
-
-for (i in 1:nrow(data.13.P.long.diac)) {
-  if (isTRUE(data.13.P.long.diac[i,1] == data.13.P.long.diac[(i+1),1]) == TRUE) 
-  {df.p.0.diac[i,] <- spread(data.13.P.long.diac[i:(i+1),], Time, Time_Flux)[1,]
-  }
-}
-
-# erase rows with NA and name columns
-df.p.diac <- df.p.0.diac %>%
-  rename(Label = X1, Flux = X2, Time = X3) %>%
-  filter(Label != "NA")
 
 #Add column for pyruvate label and add column for pre-drought
 df.p.f.diac <- df.p.diac %>% 
@@ -747,30 +735,28 @@ data.13.D.long.diac <- data.13.D.diac %>%
                names_sep = "_",
                values_to= "Time_Flux") %>%
   drop_na(Time_Flux) %>%
-  mutate(Time = ifelse(is.na(Time), "flux", Time))
+  mutate(Time = ifelse(is.na(Time), "Flux", Time))
+
 
 data.13.D.long.diac$Label
+
 # since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
-# here we will loop through each pair of rows and spread the data so flux and time become separate rows
-df.d.0.diac = data.frame(matrix (NA, ncol = 3, nrow = 1))
+# here we will spread each pair of rows and spread the data so flux and time become separate rows
+df.d.diac <- data.13.D.long.diac %>%
+  group_by(Label, Time) %>%
+  mutate(rn = row_number()) %>%
+  ungroup %>%
+  spread(Time, Time_Flux) %>%
+  select(-c(Time, rn)) 
 
-for (i in 1:nrow(data.13.D.long.diac)) {
-  if (isTRUE(data.13.D.long.diac[i,1] == data.13.D.long.diac[(i+1),1]) == TRUE) 
-  {df.d.0.diac[i,] <- spread(data.13.D.long.diac[i:(i+1),], Time, Time_Flux)[1,]
-  }
-}
-
-# erase rows with NA and name columns
-df.d.diac <- df.d.0.diac %>%
-  rename(Label = X1, Flux = X2, Time = X3) %>%
-  filter(Label != "NA")
 
 #Add column for pyruvate label and add column for pre-drought, then plot on continuous scale
 df.d.f.diac <- df.d.diac %>% 
   mutate_at("Label", str_replace, ".C", "_C") %>%
   mutate_at("Label", str_replace, ".W", "_W") %>%
   separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
-  mutate(Condition = "Drought") 
+  mutate(Condition = "Drought") %>%
+  drop_na()
 
 
 plot <- ggplot(df.d.f.diac, aes(x = Time, y = Flux, color = Pyr)) +
@@ -793,12 +779,12 @@ df.diacetyl <- rbind(df.p.f.diac, df.d.f.diac)
 
 # calculate "pre" and "water" labeling 13C flux, so that we can calcualte 13C flux from pyruvate
 data_sub_pre.diac <- df.diacetyl %>%
-  filter(Time <= 0)
+  filter(time <= 0)
 
 NP_pre.diac <- mean(data_sub_pre.diac$Flux)
 
 data_sub_water.diac <- df.diacetyl %>%
-  filter(Pyr == "W")
+  filter(Pyr == "W") 
 
 NP_water.diac <- mean(data_sub_water.diac$Flux)
 
@@ -806,8 +792,8 @@ NP.diac <- mean(NP_pre.diac, NP_water.diac)
 
 # filter time points to between 0 and 48 hrs
 df.diacetyl.f <- df.diacetyl %>%
-  mutate(Time.h = Time * 24) %>%
-  dplyr::select(-Time) %>%
+  mutate(Time.h = time * 24) %>%
+  dplyr::select(-time) %>%
   filter(Time.h < 48 &
            Time.h > 0)
 
@@ -825,11 +811,11 @@ df.diacetyl.f.d <- df.diacetyl.f %>%
 df.diacetyl.f.p <- df.diacetyl.f %>%
   filter(Condition == "Pre-Drought") 
 
-
+df.diacetyl.f.p$Label
 
 #Define samples that are either C1 or C2 labeled
-Label.C1a = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3", "S2P7", "S3P1", "S3P3", "S3P5")
-Label.C1b = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3", "S2P5", "S3P1", "S3P3", "S3P5")
+Label.C1a = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P7", "S3P1","S3P3", "S3P5")
+Label.C1b = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P5", "S3P1", "S3P3", "S3P5")
 Label.C2a = c("S1P2", "S1P4", "S1P6", "S2P2", "S2P4", "S2P6", "S3P2", "S3P4", "S3P6")
 Label.C2b = c("S1P2", "S1P4", "S1P6", "S2P4", "S2P6", "S2P8", "S3P2", "S3P4", "S3P6")
 Label.W = c("S1P2", "S1P4")
@@ -841,6 +827,7 @@ AUC_list_D_C1_Diac <- list()
 AUC_list_D_C2_Diac <- list()
 AUC_list_D_W_Diac <- list()
 
+df.diacetyl.f.p$Label
 
 for (i in Label.C1a) {
   x <- df.diacetyl.f.p %>%
@@ -1075,7 +1062,7 @@ statdat <- AUC.Diac %>%
 # lme model
 diac.c1 <- lme(mass.13C.g ~ Cond,
             random = list(Site = ~1,
-                          Label =  ~1),
+                          ID =  ~1),
             data = statdat,
             weights =  varIdent(form = ~1|Cond)
             )
@@ -1085,14 +1072,14 @@ summary(diac.c1)
 check_model(diac.c1)
 
 # subset to C2 and CO2.
-statdat <- AUC.aton %>%
+statdat <- AUC.Diac %>%
   filter(Pyr == "C2") %>%
  separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
 
 # lme model
 diac.c2 <- lme(mass.13C.g ~ Cond,
             random = list(Site = ~1,
-                          Label =  ~1),
+                          ID =  ~1),
             data = statdat,
             weights =  varIdent(form = ~1|Cond)
             )
@@ -1421,7 +1408,7 @@ statdat <- AUC.acetate %>%
 # lme model
 acetate.c1 <- lme(mass.13C.g ~ Cond,
             random = list(Site = ~1,
-                          Label =  ~1),
+                          ID =  ~1),
             data = statdat,
             weights =  varIdent(form = ~1|Cond)
             )
@@ -1438,7 +1425,7 @@ statdat <- AUC.acetate %>%
 # lme model
 acetate.c2 <- lme(mass.13C.g ~ Cond,
             random = list(Site = ~1,
-                          Label =  ~1),
+                          ID =  ~1),
             data = statdat,
             weights =  varIdent(form = ~1|Cond)
             )

@@ -468,27 +468,58 @@ merged_subset <- KO_VOC.t.f_new_id %>%
 merged_subset
 ```
 
-
+### correlations between each gene and acetone
 ```{r correlation-plots}
 #make subset of numerical data
-merged.num <- merged %>%
+merged_subset.num <- merged_subset %>%
    dplyr::select(-c(Sample, Condition, Time.d, Site, Site.y, Site.x))
 
-z = merged$Condition
-y = merged$flux.acetone
-colNames <- names(merged)[4:39]
+sub_col <- c(4:28, 31, 34, 37)
+z = merged_subset$Condition
+y = merged_subset$log.flux.acetone
+colNames <- names(merged_subset)[sub_col]
 for (i in colNames) {
-  p <- ggplot(merged, aes_string(x=i, y=y)) +
-  geom_point() +
-  geom_smooth(method=lm, se=TRUE) +
+  p <- ggplot(merged_subset, aes_string(x=i, y=y)) +
+  geom_point(aes(color=Condition, shape = Time.d)) +
+  geom_smooth(method=lm, se=TRUE)
   ggtitle (aes_string(i))
   print(p)
 }
 
 
-cor(merged$K10856, merged$flux.acetone)
+cor(merged_subset$K01574, merged_subset$log.flux.acetone)
 
-summary(lm(merged$flux.acetone ~ merged$K10856))
+summary(lm(merged_subset$K01574 ~ merged_subset$log.flux.acetone))
+
+```
+
+
+
+### correlations between each gene and acetate
+
+```{r correlation-plots}
+#make subset of numerical data
+merged_subset.num <- merged_subset %>%
+   dplyr::select(-c(Sample, Condition, Time.d, Site, Site.y, Site.x))
+
+sub_col <- c(4:28, 31, 34, 37)
+z = merged_subset$Condition
+y = merged_subset$log.flux.acetate
+colNames <- names(merged_subset)[sub_col]
+for (i in colNames) {
+  p <- ggplot(merged_subset, aes_string(x=i, y=y)) +
+  geom_point(aes(color=Condition, shape = Time.d)) +
+  geom_smooth(method=lm, se=TRUE)
+  ggtitle (aes_string(i))
+  print(p)
+}
+
+
+cor(merged_subset$log.flux.acetone, merged_subset$log.flux.acetate)
+summary(lm(merged_subset$log.flux.acetone ~ merged_subset$log.flux.acetate))
+
+cor(merged_subset$log.flux.acetone, merged_subset$log.flux.diacetyl)
+summary(lm(merged_subset$log.flux.acetone ~ merged_subset$log.flux.diacetyl))
 
 ```
 

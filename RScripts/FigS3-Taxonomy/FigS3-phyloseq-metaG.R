@@ -76,13 +76,17 @@ SP
 
 taxa(SP)
 
+#filter unknowns
+SP = subset_taxa(SP, Phylum != "unknown")
+
+
 #filter to leave Bacteria Kingdom
 SPb = subset_taxa(SP, Kingdom == "Bacteria" |
                     Kingdom == "Archaea")
 SPb
 
-
-
+#filter to fungal kingdom
+SPf = subset_taxa(SP, Kingdom == "Eukaryota")
 
 #taxonomy--------------------------------------------------------
 #prune out phyla below 2% in each sample for all experiments
@@ -92,7 +96,7 @@ k.dat <- psmelt(k.glom)
 k.dat$Kingdom <- as.character(k.dat$Kingdom) #convert to character vector from factor
 
 
-#prune out phyla below 2% in each sample for all experiments
+#prune out phyla below 2% in each sample for all experiments for bacteria/archaea
 SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
 P.glom <- tax_glom(SPb.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
 P.dat <- psmelt(P.glom)
@@ -117,26 +121,92 @@ G.dat <- psmelt(G.glom)
 G.dat$Genus <- as.character(G.dat$Genus) #convert to character vector from factor
 G.dat$Genus[G.dat$Abundance < 0.035] <- "Genus < 3.5%"
 
+#prune out phyla below 2% in each sample for all experiments for eukaryota
+SPf.rel.abun <- transform_sample_counts(SPf, function(x) x/sum(x)) #convert counts to relative abundances
+Pf.glom <- tax_glom(SPf.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
+Pf.dat <- psmelt(Pf.glom)
+Pf.dat$Phylum <- as.character(Pf.dat$Phylum) #convert to character vector from factor
+Pf.dat$Phylum[Pf.dat$Abundance < 0.02] <- "Phylum < 2%"
 
-#####################taxonomy plots- condition and time#########################
-#######plot kingdom######################################
-k.dat$Condition <- factor(k.dat$Condition, c("PreDrought", "Drought"))
-k.dat$Time <- factor(k.dat$Time, c("0hr", "6hr", "48hr"))
+SPf.rel.abun <- transform_sample_counts(SPf, function(x) x/sum(x)) #convert counts to relative abundances
+Cf.glom <- tax_glom(SPf.rel.abun, taxrank = "Class") #agglomerate taxa to Phylum-level
+Cf.dat <- psmelt(Cf.glom)
+Cf.dat$Class <- as.character(Cf.dat$Class) #convert to character vector from factor
+Cf.dat$Class[Cf.dat$Abundance < 0.02] <- "Class < 2%"
+
+SPf.rel.abun <- transform_sample_counts(SPf, function(x) x/sum(x)) #convert counts to relative abundances
+Ff.glom <- tax_glom(SPf.rel.abun, taxrank = "Family") #agglomerate taxa to Phylum-level
+Ff.dat <- psmelt(Ff.glom)
+Ff.dat$Family <- as.character(Ff.dat$Family) #convert to character vector from factor
+Ff.dat$Family[Ff.dat$Abundance < 0.035] <- "Family < 3.5%"
+
+SPf.rel.abun <- transform_sample_counts(SPf, function(x) x/sum(x)) #convert counts to relative abundances
+Gf.glom <- tax_glom(SPf.rel.abun, taxrank = "Genus") #agglomerate taxa to Phylum-level
+Gf.dat <- psmelt(Gf.glom)
+Gf.dat$Genus <- as.character(Gf.dat$Genus) #convert to character vector from factor
+Gf.dat$Genus[Gf.dat$Abundance < 0.035] <- "Genus < 3.5%"
+
+#####################taxonomy plots- condition and time for eukaryota#########################
+
+#######plot Phylum######################################
+Pf.dat$Condition <- factor(Pf.dat$Condition, c("PreDrought", "Drought"))
+Pf.dat$Time <- factor(Pf.dat$Time, c("0hr", "6hr", "48hr"))
 
 
-p <- ggplot(k.dat, aes(x=Time, y=Abundance, fill=Kingdom)) 
+p <- ggplot(Pf.dat, aes(x=Time, y=Abundance, fill=Phylum)) 
 
-K_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
   facet_wrap(~ Condition, scales="free") +
-  scale_fill_manual(values=colors_very_short) +
+  scale_fill_manual(values=colors_short) +
   theme_bw() +
   theme(text = element_text(size = 11),
         axis.text.x=element_text(hjust =0.5, vjust=0.2),
         legend.title = element_blank()
   )
-        
-filename <- paste0("./Figures/FigS3-Taxonomy/FigS3-metaG-Kingdom.png")
-ggsave(filename,width=4,height=5,dpi=1000,K_barplot)
+
+filename <- paste0("./Figures/FigS3-Taxonomy/FigS3-metaG-Phylum.png")
+ggsave(filename,width=5,height=5,dpi=1000,p_barplot)
+
+#######plot Classes######################################
+C.dat$Condition <- factor(C.dat$Condition, c("PreDrought", "Drought"))
+C.dat$Time <- factor(C.dat$Time, c("0hr", "6hr", "48hr"))
+
+
+p <- ggplot(C.dat, aes(x=Time, y=Abundance, fill=Class)) 
+
+c_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors_long) +
+  theme_bw() +
+  theme(text = element_text(size = 14),
+        axis.text.x=element_text(size=14, angle=90,hjust =1, vjust=0.2),
+        #legend.position = "bottom",
+        legend.title = element_blank(),
+        legend.text = element_text(size = 12),
+  )
+
+filename <- paste0("./Figures/FigS3-Taxonomy/metaG-class.png")
+ggsave(filename,width=6,height=6,dpi=1000,c_barplot)
+
+#######plot family######################################
+F.dat$Condition <- factor(F.dat$Condition, c("PreDrought", "Drought"))
+F.dat$Time <- factor(F.dat$Time, c("0hr", "6hr", "48hr"))
+
+
+p <- ggplot(F.dat, aes(x=Time, y=Abundance, fill=Family)) 
+
+f_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors_long) +
+  theme_bw() +
+  theme(text = element_text(size = 14),
+        axis.text.x=element_text(size=14, angle=90,hjust =1, vjust=0.2),
+        #legend.position = "bottom",
+        legend.title = element_blank(),
+        legend.text = element_text(size = 12),
+  )
+filename <- paste0("./Figures/FigS3-Taxonomy/metaG-family.png")
+ggsave(filename,width=6,height=6,dpi=1000,f_barplot)
 
 #######plot Phylum######################################
 P.dat$Condition <- factor(P.dat$Condition, c("PreDrought", "Drought"))

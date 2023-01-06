@@ -29,8 +29,8 @@ col_list2 = c("#2ECC71" ,"#F39C12")
 
 ```{r load_data}
 #import count data, transform to matrix, import column metadata, check that its a data.frame
-cts.0 <- read.csv("../Data/Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE, sep =",")
-coldata <- read.csv("../Data/Deseq2/metaT-metadata.csv", header = TRUE, sep = ",")
+cts.0 <- read.csv("../../Data/Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE, sep =",")
+coldata <- read.csv("../../Data/Deseq2/metaT-metadata.csv", header = TRUE, sep = ",")
 cts.02 <- as.matrix(cts.0)
 row.names(cts.02) <- cts.02[,1]
 cts.02 <- cts.02[,-1]
@@ -1259,6 +1259,30 @@ ggplot(d, aes(x=Time, y=count, fill = Condition)) +
   scale_fill_manual (values = col_list2) +
   #scale_x_discrete(labels = c("0", "6", "48")) +
   labs(title = "K10856:acxC") +
+  theme_bw() +
+  theme(text = element_text(size = 16,
+                            family = "Arial",
+                            color = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
+        axis.text.y = element_text(color = "black"))
+dev.off()
+
+
+##playing around
+d <- plotCounts(dds, gene="KO:K00399", intgroup=c("Condition", "Time"), 
+                returnData=TRUE)
+
+filename=paste("../Figures/Fig3-S4-S5-Deseq2/methanogenesis-K10399.png", sep = "")
+png(filename ,width=6, height=5, unit='in', res = 1000)
+ggplot(d, aes(x=Time, y=count, fill = Condition)) + 
+  geom_point() + geom_boxplot() + 
+  facet_grid(~Condition) +
+  scale_y_log10() +
+  scale_fill_manual (values = col_list2) +
+  #scale_x_discrete(labels = c("0", "6", "48")) +
+  labs(title = "K00399-methanogensis") +
   theme_bw() +
   theme(text = element_text(size = 16,
                             family = "Arial",

@@ -28,7 +28,7 @@ ratios_per_set <- data_sub_13C_flux %>%  #data_sun_13C_flux object created in Fi
   mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
   filter(label_state == "post") %>%
   filter(Pyruv != "W") %>%
-  select(-label_state) %>%
+  dplyr::select(-label_state) %>%
   filter(Label != "S2.P2") %>%
   mutate(Site = case_when(
     startsWith(Label, "S1") ~ "Site1",
@@ -57,7 +57,7 @@ ratios_per_set <- data_sub_13C_flux %>%  #data_sun_13C_flux object created in Fi
     (Trel > 42 & Trel <= 100) ~ "48"
   )) %>%
   mutate(Time=factor(Time, levels = c("3", "6", "12", "18", "24", "30", "36", "42", "48"))) %>%
-  select(-c(Trel, D13C, Flux, AtF, AtFe, Flux.h, Label)) %>%
+  dplyr::select(-c(Trel, D13C, Flux, AtF, AtFe, Flux.h, Label)) %>%
   group_by(Condition, Site, Set, Pyruv, Time) %>%
   summarise_all(funs(mean)) %>%
   pivot_wider(names_from = Pyruv, values_from = c(fCO2_13, fCO2_13_py)) %>%
@@ -81,7 +81,7 @@ ratios_per_set %>%
                             color = "black"),
         legend.position = "bottom",
         legend.title = element_blank())
-ggsave("Figures/Fig2-S1-CO2-VOCs/Fig2C-C1-C2-difference-13C-CO2-py-w-set4.png", width = 4, height = 4, dpi = 1000)
+#ggsave("Figures/Fig2-S1-CO2-VOCs/Fig2C-C1-C2-difference-13C-CO2-py-w-set4.png", width = 4, height = 4, dpi = 1000)
 
 # graph of all ratios (flux 13C from pyruvate, C1/(C1+C2))
 ratios_per_set %>%
@@ -98,47 +98,10 @@ ratios_per_set %>%
                             color = "black"),
         legend.position = "bottom",
         legend.title = element_blank())
-ggsave("Figures/Fig2-S1-CO2-VOCs/FigS1-C1-C2-ratio-sum-13C-CO2-py-w-set4.png", width = 5, height = 4, dpi = 1000)
+#ggsave("Figures/Fig2-S1-CO2-VOCs/FigS1-C1-C2-ratio-sum-13C-CO2-py-w-set4.png", width = 5, height = 4, dpi = 1000)
 
 ####statistical analysis
 # ratios for differences in C1 - C2 deltaC-CO2r - new calculations for 13C-CO2 from pyruvate
-#t-test
-ratios_per_set_3hr<- ratios_per_set %>%
-  filter(Time == "3" )
-t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_3hr )
-
-ratios_per_set_6hr<- ratios_per_set %>%
-  filter(Time == "6" )
-t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_6hr ) #p = 0.004931
-
-ratios_per_set_12hr<- ratios_per_set %>%
-  filter(Time == "12" )
-t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_12hr ) #p=0.001838
-
-ratios_per_set_18hr<- ratios_per_set %>%
-  filter(Time == "18" )
-t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_18hr ) #p=0.0004503
-
-ratios_per_set_24hr<- ratios_per_set %>%
-  filter(Time == "24" )
-t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_24hr ) #0.03411
-
-ratios_per_set_30hr<- ratios_per_set %>%
-  filter(Time == "30" )
-t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_30hr )
-
-ratios_per_set_36hr<- ratios_per_set %>%
-  filter(Time == "36" )
-t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_36hr )
-
-ratios_per_set_42hr<- ratios_per_set %>%
-  filter(Time == "42" )
-t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_42hr )
-
-ratios_per_set_48hr<- ratios_per_set %>%
-  filter(Time == "48" )
-t.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_48hr )
-
 #wilcoxan test
 ratios_per_set_3hr<- ratios_per_set %>%
   filter(Time == "3" )
@@ -176,43 +139,116 @@ ratios_per_set_48hr<- ratios_per_set %>%
   filter(Time == "48" )
 wilcox.test(C1_C2_diff_fCO2_13_py ~ Condition, data = ratios_per_set_48hr )
 
+#linear mixed effect
+# subset to time = 3. (DF = 6, t-value = -2.40, p = 0.0533)
+statdat.3 <- ratios_per_set %>%
+  filter(Time == "3") 
+lme.3 <- lme(C1_C2_diff_fCO2_13_py ~ Condition,
+                  random = list(Site = ~1,
+                                Set =  ~1),
+                  data = statdat.3,
+                  weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.3)
+
+# subset to time = 6. (DF=6, t-value=-3.52, p=0.0124)
+statdat.6 <- ratios_per_set %>%
+  filter(Time == "6") 
+lme.6 <- lme(C1_C2_diff_fCO2_13_py ~ Condition,
+             random = list(Site = ~1,
+                           Set =  ~1),
+             data = statdat.6,
+             weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.6)
+
+# subset to time = 12. (t-value = -4.26, p = 0.0053)
+statdat.12 <- ratios_per_set %>%
+  filter(Time == "12") 
+lme.12 <- lme(C1_C2_diff_fCO2_13_py ~ Condition,
+             random = list(Site = ~1,
+                           Set =  ~1),
+             data = statdat.12,
+             weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.12)
+
+# subset to time = 18. (t=-4.90, p = 0.0027)
+statdat.18 <- ratios_per_set %>%
+  filter(Time == "18") 
+lme.18 <- lme(C1_C2_diff_fCO2_13_py ~ Condition,
+             random = list(Site = ~1,
+                           Set =  ~1),
+             data = statdat.18,
+             weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.18)
+
+# subset to time = 24. (t=-2.4, p=0.0533)
+statdat.24 <- ratios_per_set %>%
+  filter(Time == "24") 
+lme.24 <- lme(C1_C2_diff_fCO2_13_py ~ Condition,
+             random = list(Site = ~1,
+                           Set =  ~1),
+             data = statdat.3,
+             weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.24)
+
+# subset to time = 30. (t=00.88, p = 0.4116)
+statdat.30 <- ratios_per_set %>%
+  filter(Time == "30") 
+lme.30 <- lme(C1_C2_diff_fCO2_13_py ~ Condition,
+             random = list(Site = ~1,
+                           Set =  ~1),
+             data = statdat.30,
+             weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.30)
+
+# subset to time = 36. (t=-0.64, p=0.5506)
+statdat.36 <- ratios_per_set %>%
+  filter(Time == "36") 
+lme.36 <- lme(C1_C2_diff_fCO2_13_py ~ Condition,
+             random = list(Site = ~1,
+                           Set =  ~1),
+             data = statdat.36,
+             weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.36)
+
+# subset to time = 42. (t=-0.15, p = 0.885)
+statdat.42 <- ratios_per_set %>%
+  filter(Time == "42") 
+lme.42<- lme(C1_C2_diff_fCO2_13_py ~ Condition,
+              random = list(Site = ~1,
+                            Set =  ~1),
+              data = statdat.42,
+              weights =  varIdent(form = ~1|Condition),
+              na.action=na.omit
+)
+summary(lme.42)
+
+# subset to time = 48. (t=0.400, p=0.7056)
+statdat.48 <- ratios_per_set %>%
+  filter(Time == "48") 
+lme.48 <- lme(C1_C2_diff_fCO2_13_py ~ Condition,
+              random = list(Site = ~1,
+                            Set =  ~1),
+              data = statdat.48,
+              weights =  varIdent(form = ~1|Condition),
+              na.action=na.omit
+)
+summary(lme.48)
+
 # C1/(1 + C2) ratios of 13C-CO2-from-pyruvate- statistical tests
-#t-test
-ratios_per_set_3hr<- ratios_per_set %>%
-  filter(Time == "3" )
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_3hr )
-
-ratios_per_set_6hr<- ratios_per_set %>%
-  filter(Time == "6" )
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_6hr ) #p = 0.004931
-
-ratios_per_set_12hr<- ratios_per_set %>%
-  filter(Time == "12" )
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_12hr ) #p=0.001838
-
-ratios_per_set_18hr<- ratios_per_set %>%
-  filter(Time == "18" )
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_18hr ) #p=0.0004503
-
-ratios_per_set_24hr<- ratios_per_set %>%
-  filter(Time == "24" )
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_24hr ) #0.03411
-
-ratios_per_set_30hr<- ratios_per_set %>%
-  filter(Time == "30" )
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_30hr )
-
-ratios_per_set_36hr<- ratios_per_set %>%
-  filter(Time == "36" )
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_36hr )
-
-ratios_per_set_42hr<- ratios_per_set %>%
-  filter(Time == "42" )
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_42hr )
-
-ratios_per_set_48hr<- ratios_per_set %>%
-  filter(Time == "48" )
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_48hr )
 
 #wilcoxan test
 ratios_per_set_3hr<- ratios_per_set %>%
@@ -251,137 +287,116 @@ ratios_per_set_48hr<- ratios_per_set %>%
   filter(Time == "48" )
 wilcox.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_48hr )
 
+#linear mixed effect
+# subset to time = 3. (0.57789  0.5844)
+statdat.3 <- ratios_per_set %>%
+  filter(Time == "3") 
+lme.3 <- lme(C1_C2_ratio_sum_fCO2_13_py ~ Condition,
+             random = list(Site = ~1,
+                           Set =  ~1),
+             data = statdat.3,
+             weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.3)
+
+# subset to time = 6. (-0.89921  0.4032)
+statdat.6 <- ratios_per_set %>%
+  filter(Time == "6") 
+lme.6 <- lme(C1_C2_ratio_sum_fCO2_13_py ~ Condition,
+             random = list(Site = ~1,
+                           Set =  ~1),
+             data = statdat.6,
+             weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.6)
+
+# subset to time = 12. (-1.47846  0.1898)
+statdat.12 <- ratios_per_set %>%
+  filter(Time == "12") 
+lme.12 <- lme(C1_C2_ratio_sum_fCO2_13_py ~ Condition,
+              random = list(Site = ~1,
+                            Set =  ~1),
+              data = statdat.12,
+              weights =  varIdent(form = ~1|Condition),
+              na.action=na.omit
+)
+summary(lme.12)
+
+# subset to time = 18. (-1.35718  0.2236)
+statdat.18 <- ratios_per_set %>%
+  filter(Time == "18") 
+lme.18 <- lme(C1_C2_ratio_sum_fCO2_13_py ~ Condition,
+              random = list(Site = ~1,
+                            Set =  ~1),
+              data = statdat.18,
+              weights =  varIdent(form = ~1|Condition),
+              na.action=na.omit
+)
+summary(lme.18)
+
+# subset to time = 24. (0.57789  0.5844)
+statdat.24 <- ratios_per_set %>%
+  filter(Time == "24") 
+lme.24 <- lme(C1_C2_ratio_sum_fCO2_13_py ~ Condition,
+              random = list(Site = ~1,
+                            Set =  ~1),
+              data = statdat.3,
+              weights =  varIdent(form = ~1|Condition),
+              na.action=na.omit
+)
+summary(lme.24)
+
+# subset to time = 30. (-0.623992  0.5556)
+statdat.30 <- ratios_per_set %>%
+  filter(Time == "30") 
+lme.30 <- lme(C1_C2_ratio_sum_fCO2_13_py ~ Condition,
+              random = list(Site = ~1,
+                            Set =  ~1),
+              data = statdat.30,
+              weights =  varIdent(form = ~1|Condition),
+              na.action=na.omit
+)
+summary(lme.30)
+
+# subset to time = 36. (-0.203234   0.847)
+statdat.36 <- ratios_per_set %>%
+  filter(Time == "36") 
+lme.36 <- lme(C1_C2_ratio_sum_fCO2_13_py ~ Condition,
+              random = list(Site = ~1,
+                            Set =  ~1),
+              data = statdat.36,
+              weights =  varIdent(form = ~1|Condition),
+              na.action=na.omit
+)
+summary(lme.36)
+
+# subset to time = 42. (0.503519  0.6360)
+statdat.42 <- ratios_per_set %>%
+  filter(Time == "42") 
+lme.42<- lme(C1_C2_ratio_sum_fCO2_13_py ~ Condition,
+             random = list(Site = ~1,
+                           Set =  ~1),
+             data = statdat.42,
+             weights =  varIdent(form = ~1|Condition),
+             na.action=na.omit
+)
+summary(lme.42)
+
+# subset to time = 48. (1.147460  0.3031)
+statdat.48 <- ratios_per_set %>%
+  filter(Time == "48") 
+lme.48 <- lme(C1_C2_ratio_sum_fCO2_13_py ~ Condition,
+              random = list(Site = ~1,
+                            Set =  ~1),
+              data = statdat.48,
+              weights =  varIdent(form = ~1|Condition),
+              na.action=na.omit
+)
+summary(lme.48)
+
 # C1/(1 + C2) ratios of 13C-CO2-from-pyruvate- statistical tests by site
-#t-test Site 1
-ratios_per_set_3hr_Site1<- ratios_per_set %>%
-  filter(Time == "3" &
-           Site == "Site1")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_3hr_Site1)
-
-ratios_per_set_6hr_Site1<- ratios_per_set %>%
-  filter(Time == "6" &
-           Site == "Site1")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_6hr_Site1)
-
-ratios_per_set_12hr_Site1<- ratios_per_set %>%
-  filter(Time == "12" &
-           Site == "Site1")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_12hr_Site1)
-
-ratios_per_set_18hr_Site1<- ratios_per_set %>%
-  filter(Time == "18" &
-           Site == "Site1")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_18hr_Site1)
-
-ratios_per_set_24hr_Site1<- ratios_per_set %>%
-  filter(Time == "24" &
-           Site == "Site1")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_24hr_Site1)
-
-ratios_per_set_30hr_Site1<- ratios_per_set %>%
-  filter(Time == "30" &
-           Site == "Site1")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_30hr_Site1)
-
-ratios_per_set_36hr_Site1<- ratios_per_set %>%
-  filter(Time == "36" &
-           Site == "Site1")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_36hr_Site1)
-
-ratios_per_set_42hr_Site1<- ratios_per_set %>%
-  filter(Time == "42" &
-           Site == "Site1")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_42hr_Site1)
-
-ratios_per_set_48hr_Site1<- ratios_per_set %>%
-  filter(Time == "48" &
-           Site == "Site1")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_48hr_Site1)
-
-ratios_per_set_3hr_Site3<- ratios_per_set %>%
-  filter(Time == "3" &
-           Site == "Site3")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_3hr_Site3)
-
-ratios_per_set_6hr_Site3<- ratios_per_set %>%
-  filter(Time == "6" &
-           Site == "Site3")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_6hr_Site3)
-
-ratios_per_set_12hr_Site3<- ratios_per_set %>%
-  filter(Time == "12" &
-           Site == "Site3")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_12hr_Site3)
-
-ratios_per_set_18hr_Site3<- ratios_per_set %>%
-  filter(Time == "18" &
-           Site == "Site3")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_18hr_Site3)
-
-ratios_per_set_24hr_Site3<- ratios_per_set %>%
-  filter(Time == "24" &
-           Site == "Site3")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_24hr_Site3)
-
-ratios_per_set_30hr_Site3<- ratios_per_set %>%
-  filter(Time == "30" &
-           Site == "Site3")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Condition, data = ratios_per_set_30hr_Site3)
-
-## C1/C1+C2 are sites different
-ratios_per_set_3hr_D<- ratios_per_set %>%
-  filter(Time == "3" &
-           Condition == "drought" &
-           Site != "Site2")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Site, data = ratios_per_set_3hr_D)
-
-ratios_per_set_6hr_D<- ratios_per_set %>%
-  filter(Time == "6" &
-           Condition == "drought" &
-           Site != "Site2")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Site, data = ratios_per_set_6hr_D)
-
-ratios_per_set_12hr_D<- ratios_per_set %>%
-  filter(Time == "12" &
-           Condition == "drought" &
-           Site != "Site2")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Site, data = ratios_per_set_12hr_D)
-
-ratios_per_set_18hr_D<- ratios_per_set %>%
-  filter(Time == "18" &
-           Condition == "drought" &
-           Site != "Site2")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Site, data = ratios_per_set_18hr_D)
-
-ratios_per_set_24hr_D<- ratios_per_set %>%
-  filter(Time == "24" &
-           Condition == "drought" &
-           Site != "Site2")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Site, data = ratios_per_set_24hr_D)
-
-ratios_per_set_30hr_D<- ratios_per_set %>%
-  filter(Time == "30" &
-           Condition == "drought" &
-           Site != "Site2")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Site, data = ratios_per_set_30hr_D)
-
-ratios_per_set_36hr_D<- ratios_per_set %>%
-  filter(Time == "36" &
-           Condition == "drought" &
-           Site != "Site2")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Site, data = ratios_per_set_36hr_D)
-
-ratios_per_set_42hr_D<- ratios_per_set %>%
-  filter(Time == "42" &
-           Condition == "drought" &
-           Site != "Site2")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Site, data = ratios_per_set_42hr_D)
-
-ratios_per_set_48hr_D<- ratios_per_set %>%
-  filter(Time == "48" &
-           Condition == "drought" &
-           Site != "Site2")
-t.test(C1_C2_ratio_sum_fCO2_13_py ~ Site, data = ratios_per_set_48hr_D)
 
 ## C1/C1+C2 are sites different wilcoxan test
 ratios_per_set_3hr_D<- ratios_per_set %>%

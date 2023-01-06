@@ -16,7 +16,6 @@ K01027,consume,Acetoacetate,Acetoacetate,OXCT,no
 K01034,consume,Acetoacetate,Acetoacetate,atoD,no
 K01574,produce,Acetone,Acetone,adc,yes
 K18371,consume,Acetone,Acetone,acmA,yes
-K18382,consume,Acetone,Acetone,adh1,yes
 K01652,produce,Diacetyl,Diacetyl,ilvB,yes
 K03366,consume,Diacetyl,Diacetyl,butA,yes
 K00004,consume,Diacetyl,Diacetyl,BDH,yes
@@ -25,3 +24,5 @@ K10854,consume,Acetone,Acetone,acxB,yes
 K10855,consume,Acetone,Acetone,acxA,yes
 K10856,consume,Acetone,Acetone,acxC,yes
 K00656,produce,Acetyl.CoA,Acetone,pflD,no
+K18372,produce,Acetate,Acetate,acmB,yes
+K18382,consume,Acetone,Acetone,ald1,yes

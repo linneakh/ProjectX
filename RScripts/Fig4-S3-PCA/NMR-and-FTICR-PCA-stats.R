@@ -297,8 +297,8 @@ ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 df.s <- df %>%
   rownames_to_column(., var = "sampleID") %>%
   separate(., sampleID, into = c('unique','Condition',	'Time',	'Site',	'Label'), sep = "_", remove = T) %>%
-  rename ('Oxoisocaproate' = '2.Oxoisocaproate') %>%
-  rename('Hydroxybutyrate' = '3.Hydroxybutyrate')
+  dplyr::rename ('Oxoisocaproate' = '2.Oxoisocaproate') %>%
+  dplyr::rename('Hydroxybutyrate' = '3.Hydroxybutyrate')
 
 modelList <- list()
 for(i in 6:29) {
@@ -308,6 +308,23 @@ for(i in 6:29) {
 modelList
 
 sink("./Output/PCA_meta/Wilcox-results.txt")
+print(modelList)
+sink()
+
+#linear mixed effects
+modelList <- list()
+for(i in 6:29) {
+  fmla <- formula(paste(names(df.s) [i]," ~ Condition"))
+  lme<- lme(fmla,
+                        random = list(Site = ~1),
+                        data = df.s,
+                        #weights =  varIdent(form = ~1|Condition),
+                        na.action=na.omit)
+  modelList[[i]] <- summary(lme)
+}
+modelList
+
+sink("./Output/PCA_meta/NMR-LME.txt")
 print(modelList)
 sink()
 
@@ -326,6 +343,9 @@ df.f.s <- df.f %>%
 dist <- dist(df.f)
 adonis(dist~Condition, df.f.s)
 
+#linear mixed effects
+
+
 ##FTICR classes###
 #wilcoxan
 
@@ -341,6 +361,23 @@ for(i in 6:14) {
 modelList
 
 sink("./Output/PCA_meta/Wilcox-results-FTICR-class.txt")
+print(modelList)
+sink()
+
+#linear mixed effects
+modelList <- list()
+for(i in 6:14) {
+  fmla <- formula(paste(names(df.c.s) [i]," ~ Condition"))
+  lme<- lme(fmla,
+            random = list(Site = ~1),
+            data = df.c.s,
+            #weights =  varIdent(form = ~1|Condition),
+            na.action=na.omit)
+  modelList[[i]] <- summary(lme)
+}
+modelList
+
+sink("./Output/PCA_meta/FTICR-class-LME.txt")
 print(modelList)
 sink()
 
