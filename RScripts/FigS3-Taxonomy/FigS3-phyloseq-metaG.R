@@ -20,16 +20,18 @@ library(knitr)
 library(plyr)
 
 #set colors
-colors_very_short <- c("black", "red", "blue", "green")
-colors_short <- c("black","gray",
-                 "darkred", "darksalmon", "green4",
-                 "greenyellow", "lightslateblue","orange",
-                 "moccasin", "lightpink", "lightsteelblue1", "navy", "blue4",
-                 "darkgray", "black","brown", "cornflowerblue","darkgoldenrod",
-                 "brown3","white","aliceblue","aquamarine","azure",
-                 "beige","bisque","blue2","blueviolet","cyan","darkblue",
-                 "chocolate","coral","coral4","aquamarine3","darkcyan","deeppink",
-                 "darkred","darkslateblue")
+colors_very_short <- c("black", "red", "blue", "green", "orange")
+colors_phylum <- c("black","gray","coral4","chartreuse3",
+              
+                   "yellow4", "yellow", "plum2",
+                 "darksalmon", "green4",
+                   "greenyellow", "orange",
+                   "moccasin", "hotpink4", "lightpink", "lightblue4", "lightcyan3",  "lightslateblue", "lightsteelblue1", "navy", "blue4",
+                   "darkgray", "black","brown", "cornflowerblue","darkgoldenrod",
+                   "brown3","white","aliceblue","aquamarine","azure",
+                   "beige","bisque","blue2","blueviolet","cyan","darkblue",
+                   "chocolate","aquamarine3","darkcyan","deeppink",
+                   "darkred","darkslateblue")
 
 colors_long <- c("black","gray","coral4","coral",
                 "chartreuse3", "darkseagreen1","blue","lightblue",
@@ -85,8 +87,17 @@ SPb = subset_taxa(SP, Kingdom == "Bacteria" |
                     Kingdom == "Archaea")
 SPb
 
-#filter to fungal kingdom
-SPf = subset_taxa(SP, Kingdom == "Eukaryota")
+#filter to eurykoyota
+
+#filter to leave fungi 
+SPf = subset_taxa(SP, Phylum == "Chytridiomycota" |
+                    Phylum == "Blastocladiomycota" |
+                    Phylum == "Neocallimastigomycota" |
+                    Phylum == "Microsporidia" |
+                    #Phlyum == "Glomeromycota") |
+                    Phylum == "Ascomycota" |
+                    Phylum == "Basidiomycota")
+SPf
 
 #taxonomy--------------------------------------------------------
 #prune out phyla below 2% in each sample for all experiments
@@ -157,56 +168,17 @@ p <- ggplot(Pf.dat, aes(x=Time, y=Abundance, fill=Phylum))
 
 p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
   facet_wrap(~ Condition, scales="free") +
-  scale_fill_manual(values=colors_short) +
+  scale_fill_manual(values=colors_very_short) +
   theme_bw() +
   theme(text = element_text(size = 11),
         axis.text.x=element_text(hjust =0.5, vjust=0.2),
         legend.title = element_blank()
   )
 
-filename <- paste0("./Figures/FigS3-Taxonomy/FigS3-metaG-Phylum.png")
+filename <- paste0("./Figures/FigS3-Taxonomy/FigS3-metaG-Phylum-fungi.png")
 ggsave(filename,width=5,height=5,dpi=1000,p_barplot)
 
-#######plot Classes######################################
-C.dat$Condition <- factor(C.dat$Condition, c("PreDrought", "Drought"))
-C.dat$Time <- factor(C.dat$Time, c("0hr", "6hr", "48hr"))
-
-
-p <- ggplot(C.dat, aes(x=Time, y=Abundance, fill=Class)) 
-
-c_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
-  facet_wrap(~ Condition, scales="free") +
-  scale_fill_manual(values=colors_long) +
-  theme_bw() +
-  theme(text = element_text(size = 14),
-        axis.text.x=element_text(size=14, angle=90,hjust =1, vjust=0.2),
-        #legend.position = "bottom",
-        legend.title = element_blank(),
-        legend.text = element_text(size = 12),
-  )
-
-filename <- paste0("./Figures/FigS3-Taxonomy/metaG-class.png")
-ggsave(filename,width=6,height=6,dpi=1000,c_barplot)
-
-#######plot family######################################
-F.dat$Condition <- factor(F.dat$Condition, c("PreDrought", "Drought"))
-F.dat$Time <- factor(F.dat$Time, c("0hr", "6hr", "48hr"))
-
-
-p <- ggplot(F.dat, aes(x=Time, y=Abundance, fill=Family)) 
-
-f_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
-  facet_wrap(~ Condition, scales="free") +
-  scale_fill_manual(values=colors_long) +
-  theme_bw() +
-  theme(text = element_text(size = 14),
-        axis.text.x=element_text(size=14, angle=90,hjust =1, vjust=0.2),
-        #legend.position = "bottom",
-        legend.title = element_blank(),
-        legend.text = element_text(size = 12),
-  )
-filename <- paste0("./Figures/FigS3-Taxonomy/metaG-family.png")
-ggsave(filename,width=6,height=6,dpi=1000,f_barplot)
+###########taxonomy plots - condition and time for archaea / bacteria##############
 
 #######plot Phylum######################################
 P.dat$Condition <- factor(P.dat$Condition, c("PreDrought", "Drought"))
@@ -217,7 +189,7 @@ p <- ggplot(P.dat, aes(x=Time, y=Abundance, fill=Phylum))
 
 p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
   facet_wrap(~ Condition, scales="free") +
-  scale_fill_manual(values=colors_short) +
+  scale_fill_manual(values=colors_phylum) +
   theme_bw() +
   theme(text = element_text(size = 11),
         axis.text.x=element_text(hjust =0.5, vjust=0.2),
@@ -267,6 +239,9 @@ f_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
   )
 filename <- paste0("./Figures/FigS3-Taxonomy/metaG-family.png")
 ggsave(filename,width=6,height=6,dpi=1000,f_barplot)
+
+
+
 
 #####################taxonomy plots- condition and site#########################
 #######plot kingdom######################################

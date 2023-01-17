@@ -252,6 +252,13 @@ plot
 
 # CO2 cummulative efflux statistics (wilcoxon and lme)
 ```{r CO2 cumulative efflux statistics, echo = FALSE}
+# data summary
+
+AUC_sumary <- AUC %>%
+  dplyr::group_by(Cond, Pyr) %>%
+  dplyr::summarize(mean_c_flux = mean(mass.13C.g),
+                   sd = sd(mass.13C.g))
+
 # statistics - Wilcoxon texts
 # C1 vs C2 during pre-drought
 AUC.PD <- AUC %>%
@@ -312,6 +319,40 @@ summary(co2.c2)
 # check model assumptions
 check_model(co2.c2)
 
+# subset to pre-drought and CO2.
+statdat <- AUC %>%
+  filter(Cond == "Pre_Drought") %>%
+   separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+co2.preD <- lme(mass.13C.g ~ Pyr,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Pyr)
+            )
+summary(co2.preD)
+
+# check model assumptions
+check_model(co2.preD)
+
+# subset to drought and CO2.
+statdat <- AUC %>%
+  filter(Cond == "Drought") %>%
+   separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+co2.D <- lme(mass.13C.g ~ Pyr,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Pyr)
+            )
+summary(co2.D)
+
+# check model assumptions
+check_model(co2.D)
+
 
 ```
 
@@ -335,7 +376,6 @@ data.13.P.long <- data.13.P %>%
 
 data.13.P.long$Time <- data.13.P.long$Time %>% replace_na('Flux')
 
-write.csv(data.13.P.long, "../../Output/CO2-VOCs/data.13.Plong.acetone.csv")
 
 # since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
 # here we will spread each pair of rows and spread the data so flux and time become separate rows
@@ -346,20 +386,17 @@ for (i in 1:nrow(data.13.P.long)) {
   {df.p.0[i,] <- spread(data.13.P.long[i:(i+1),], Time, Time_Flux)#[1,]
  }
 }
-write.csv(df.p.0, "../../Output/CO2-VOCs/df.p.0.acetone.csv")
 
 # erase rows with NA and name columns
 df.p <- df.p.0 %>%
   dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
   filter(Label != "NA")
-write.csv(df.p, "../../Output/CO2-VOCs/df.p.acetone.csv")
 
 #Add column for pyruvate label and add column for pre-drought
 df.p.f <- df.p %>% 
   mutate_at("Label", str_replace, ".C", "_C") %>%
   separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
   mutate(Condition = "Pre-Drought")
-write.csv(df.p.f, "../../Output/CO2-VOCs/df.p.f.acetone.csv")
 
 ### process drought dataset
 # gather dataframe 
@@ -372,7 +409,7 @@ data.13.D.long <- data.13.D %>%
 
 data.13.D.long$Time <- data.13.D.long$Time %>% replace_na('Flux')
 
-write.csv(data.13.D.long, "../../Output/CO2-VOCs/data.13.D.long.acetone.csv")
+#write.csv(data.13.D.long, "../../Output/CO2-VOCs/data.13.D.long.acetone.csv")
 
 # since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
 # here we will spread each pair of rows and spread the data so flux and time become separate rows
@@ -384,14 +421,14 @@ for (i in 1:nrow(data.13.D.long)) {
  }
 }
 
-write.csv(df.d.0, "../../Output/CO2-VOCs/df.d.0.acetone.csv")
+#write.csv(df.d.0, "../../Output/CO2-VOCs/df.d.0.acetone.csv")
 
 # erase rows with NA and name columns
 df.d <- df.d.0 %>%
   dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
   filter(Label != "NA")
 
-write.csv(df.d, "../../Output/CO2-VOCs/df.d.acetone.csv")
+#write.csv(df.d, "../../Output/CO2-VOCs/df.d.acetone.csv")
 
 #Add column for pyruvate label and add column for drought
 df.d.f <- df.d %>% 
@@ -400,12 +437,12 @@ df.d.f <- df.d %>%
   separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
   mutate(Condition = "Drought") 
 
-write.csv(df.d.f, "../../Output/CO2-VOCs/df.d.f.acetone.csv")
+#write.csv(df.d.f, "../../Output/CO2-VOCs/df.d.f.acetone.csv")
 
 df.acetone <- rbind(df.p.f, df.d.f) %>%
   na.omit()
 
-write.csv(df.acetone, "../../Output/CO2-VOCs/df.acetone.csv")
+#write.csv(df.acetone, "../../Output/CO2-VOCs/df.acetone.csv")
 
 # calculate "pre" and "water" labeling 13C flux, so that we can calcualte 13C flux from pyruvate
 data_sub_pre.aton <- df.acetone %>%
@@ -622,14 +659,14 @@ plot <- AUC.aton %>%
                     labels = c("Pre Drought", "Drought")) +
   scale_x_discrete(labels = c("P", "D")) +
   labs(y = expression(""^13*"C-acetone ("*mu*"mol)")) +
-  theme(text = element_text(size = 12,
+  theme(text = element_text(size = 14,
                             family = "Arial",
                             color = "black"),
         legend.position = "bottom",
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2H-total-C-acetone-flux-C2.png",units=c('in'),width=2, height = 4,dpi=300,plot)
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2H-total-C-acetone-flux-C2.png",units=c('in'),width=2, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate
 plot <- AUC.aton %>%
@@ -654,6 +691,12 @@ plot
 
 
 ```{r acetone cumulative efflux statistics, echo = FALSE}
+# data summary
+
+AUC.sumary.aton <- AUC.aton %>%
+  dplyr::group_by(Cond, Pyr) %>%
+  dplyr::summarize(mean_c_flux = mean(mass.13C.g),
+                   sd = sd(mass.13C.g))
 # statistics
 # C1 vs C2 during pre-drought
 AUC.aton.PD <- AUC.aton %>%
@@ -741,7 +784,7 @@ data.13.P.diac.long <- data.13.P.diac %>%
 
 data.13.P.diac.long$Time <- data.13.P.diac.long$Time %>% replace_na('Flux')
 
-write.csv(data.13.P.diac.long, "../../Output/CO2-VOCs/data.13.Plong.diacetl.csv")
+#write.csv(data.13.P.diac.long, "../../Output/CO2-VOCs/data.13.Plong.diacetl.csv")
 
 # since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
 # here we will spread each pair of rows and spread the data so flux and time become separate rows
@@ -752,20 +795,20 @@ for (i in 1:nrow(data.13.P.diac.long)) {
   {df.p.0.diac[i,] <- spread(data.13.P.diac.long[i:(i+1),], Time, Time_Flux)#[1,]
  }
 }
-write.csv(df.p.0.diac, "../../Output/CO2-VOCs/df.p.0.diac.csv")
+#write.csv(df.p.0.diac, "../../Output/CO2-VOCs/df.p.0.diac.csv")
 
 # erase rows with NA and name columns
 df.p.diac <- df.p.0.diac %>%
   dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
   filter(Label != "NA")
-write.csv(df.p.diac, "../../Output/CO2-VOCs/df.p.diac.csv")
+#write.csv(df.p.diac, "../../Output/CO2-VOCs/df.p.diac.csv")
 
 #Add column for pyruvate label and add column for pre-drought
 df.p.f.diac <- df.p.diac %>% 
   mutate_at("Label", str_replace, ".C", "_C") %>%
   separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
   mutate(Condition = "Pre-Drought")
-write.csv(df.p.f.diac, "../../Output/CO2-VOCs/df.p.f.diacetl.csv")
+#write.csv(df.p.f.diac, "../../Output/CO2-VOCs/df.p.f.diacetl.csv")
 
 ### process drought dataset
 # gather dataframe 
@@ -778,7 +821,7 @@ data.13.D.diac.long <- data.13.D.diac %>%
 
 data.13.D.diac.long$Time <- data.13.D.diac.long$Time %>% replace_na('Flux')
 
-write.csv(data.13.D.diac.long, "../../Output/CO2-VOCs/data.13.D.long.diacetyl.csv")
+#write.csv(data.13.D.diac.long, "../../Output/CO2-VOCs/data.13.D.long.diacetyl.csv")
 
 # since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
 # here we will spread each pair of rows and spread the data so flux and time become separate rows
@@ -790,14 +833,14 @@ for (i in 1:nrow(data.13.D.diac.long)) {
  }
 }
 
-write.csv(df.d.0.diac, "../../Output/CO2-VOCs/df.d.0.diacetyl.csv")
+#write.csv(df.d.0.diac, "../../Output/CO2-VOCs/df.d.0.diacetyl.csv")
 
 # erase rows with NA and name columns
 df.d.diac <- df.d.0.diac %>%
   dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
   filter(Label != "NA")
 
-write.csv(df.d.diac, "../../Output/CO2-VOCs/df.d.diacetyl.csv")
+#write.csv(df.d.diac, "../../Output/CO2-VOCs/df.d.diacetyl.csv")
 
 #Add column for pyruvate label and add column for drought
 df.d.f.diac <- df.d.diac %>% 
@@ -806,12 +849,12 @@ df.d.f.diac <- df.d.diac %>%
   separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
   mutate(Condition = "Drought") 
 
-write.csv(df.d.f.diac, "../../Output/CO2-VOCs/df.d.f.diacetyl.csv")
+#write.csv(df.d.f.diac, "../../Output/CO2-VOCs/df.d.f.diacetyl.csv")
 
 df.diacetyl <- rbind(df.p.f.diac, df.d.f.diac) %>%
   na.omit()
 
-write.csv(df.diacetyl, "../../Output/CO2-VOCs/df.diacetyl.csv")
+#write.csv(df.diacetyl, "../../Output/CO2-VOCs/df.diacetyl.csv")
 
 # calculate "pre" and "water" labeling 13C flux, so that we can calcualte 13C flux from pyruvate
 data_sub_pre.diac <- df.diacetyl %>%
@@ -1032,14 +1075,14 @@ plot.Diac <- AUC.Diac %>%
                     labels = c("Pre Drought", "Drought")) +
   scale_x_discrete(labels = c("P", "D")) +
   labs(y = expression(""^13*"C-diacetyl ("*mu*"mol)")) +
-  theme(text = element_text(size = 12,
+  theme(text = element_text(size = 14,
                             family = "Arial",
                             color = "black"),
         legend.position = "bottom",
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot.Diac
-#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2I-total-C-diacetyl-flux-c2.png",units=c('in'),width=2, height = 4,dpi=300,plot.Diac)
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2I-total-C-diacetyl-flux-c2.png",units=c('in'),width=2, height = 4,dpi=300,plot.Diac)
 
 # plot cummalative percentage of of 13C pyruvate
 plot.Diac <- AUC.Diac %>%
@@ -1064,6 +1107,13 @@ plot.Diac
 ```
 
 ```{r diacetyl statistics for AUC, echo = FALSE}
+# data summary
+
+AUC.sumary.diac <- AUC.Diac %>%
+  dplyr::group_by(Cond, Pyr) %>%
+  dplyr::summarize(mean_c_flux = mean(mass.13C.g),
+                   sd = sd(mass.13C.g))
+AUC.sumary.diac
 # statistics
 # C1 vs C2 during pre-drought
 AUC.Diac.PD <- AUC.Diac %>%
@@ -1377,15 +1427,15 @@ plot <- AUC.acetate %>%
                     breaks = c("Pre_Drought", "Drought"),
                     labels = c("P", "D")) +
   scale_x_discrete(labels = c("P", "D")) +
-  labs(y = expression(""^13*"C-acetic acid (umol)")) +
-  theme(text = element_text(size = 12,
+  labs(y = expression(""^13*"C-acetic acid ("*mu*"mol)")) +
+  theme(text = element_text(size = 14,
                             family = "Arial",
                             color = "black"),
         legend.position = "bottom",
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2G-total-C-acetate-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2G-total-C-acetate-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate
 plot <- AUC.acetate %>%
@@ -1410,6 +1460,13 @@ plot
 
 
 ```{r statistics acetate for AUC, echo = FALSE}
+# data summary
+AUC.sumary.acetate<- AUC.acetate %>%
+  dplyr::group_by(Cond, Pyr) %>%
+  dplyr::summarize(mean_c_flux = mean(mass.13C.g),
+                   sd = sd(mass.13C.g))
+AUC.sumary.acetate
+
 # statistics
 # C1 vs C2 during pre-drought
 AUC.acetate.PD <- AUC.acetate %>%

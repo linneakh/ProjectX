@@ -25,6 +25,7 @@ library(microbiome)
 library(knitr)
 library(plyr)
 library(cowplot)
+library(genefilter)
 
 #set colors
 
@@ -79,14 +80,20 @@ tax=tax_table(taxmat)
 SP= merge_phyloseq(otu, tax,map)
 SP
 
+#filter to taxa > 0.001% and in > or = to 2 samples
+total_counts <-sum(taxa_sums(SP))
+threshold <- 0.000001*total_counts
+SP.f <- filter_taxa(SP, function(x) sum(x) > threshold, TRUE)
+
+#SP.f <- filter_taxa(SP, flist, TRUE)
 
 #filter to Bacteria and Archaea Kingdoms
-SPb = subset_taxa(SP, Kingdom == "Bacteria" |
+SPb = subset_taxa(SP.f, Kingdom == "Bacteria" |
                     Kingdom == "Archaea")
 SPb
 
 #filter to leave fungi 
-SPf = subset_taxa(SP, Phylum == "Chytridiomycota" |
+SPf = subset_taxa(SP.f, Phylum == "Chytridiomycota" |
                     Phylum == "Blastocladiomycota" |
                     Phylum == "Neocallimastigomycota" |
                     Phylum == "Microsporidia" |
@@ -95,19 +102,58 @@ SPf = subset_taxa(SP, Phylum == "Chytridiomycota" |
                     Phylum == "Basidiomycota")
 SPf
 
+#filter to leave eukaryota
+SPe = subset_taxa(SP.f, Kingdom == "Eukaryota")
+
+SPe
+
 #taxonomy--------------------------------------------------------
-SP.rel.abun <- transform_sample_counts(SP, function(x) x/sum(x)) #convert counts to relative abundances
+SP.rel.abun <- transform_sample_counts(SP.f, function(x) x/sum(x)) #convert counts to relative abundances
 k.glom <- tax_glom(SP.rel.abun, taxrank = "Kingdom") #agglomerate taxa to Phylum-level
 k.dat <- psmelt(k.glom)
 k.dat$Kingdom <- as.character(k.dat$Kingdom) #convert to character vector from factor
 
+#specify fungal relative abundance from all kingdoms
+SP.rel.abun <- transform_sample_counts(SP.f, function(x) x/sum(x)) #convert counts to relative abundances
+p.glom <- tax_glom(SP.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
+p.dat <- psmelt(p.glom)
+p.dat$Phylum <- as.character(p.dat$Phylum) #convert to character vector from factor
 
-#prune out phyla below 2% in each sample for all experiments
+#add sub_kingdom to all phya table
+p.dat2 <- p.dat %>%
+  dplyr::mutate(sub_kingdom = ifelse(Phylum == "Chytridiomycota" |
+                    Phylum == "Blastocladiomycota" |
+                    Phylum == "Neocallimastigomycota" |
+                    Phylum == "Microsporidia" |
+                    Phylum == "Ascomycota" |
+                    Phylum == "Basidiomycota",
+                    "fungi", "other"))
+#calculate means and standard deviations for fungal abundances within eukaryota
+p.dat2.p <- p.dat2 %>% 
+  dplyr::filter(Condition == "PreDrought" &
+           sub_kingdom == "fungi") 
+
+p.dat2.p.m <- mean(p.dat2.p$Abundance)
+p.dat2.p.se <- sd(p.dat2.p$Abundance)
+
+p.dat2.d <- p.dat2 %>% 
+  dplyr::filter(Condition == "Drought" &
+           sub_kingdom == "fungi") 
+
+p.dat2.d.m <- mean(p.dat2.d$Abundance)
+p.dat2.d.se <- sd(p.dat2.d$Abundance)
+p.dat2.p.m
+p.dat2.p.se
+p.dat2.d.m
+p.dat2.d.se
+
+
+#prune out phyla below 2% in each sample for all experiments (bacteria/archaea)
 SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
-P.glom <- tax_glom(SPb.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
-P.dat <- psmelt(P.glom)
-P.dat$Phylum <- as.character(P.dat$Phylum) #convert to character vector from factor
-P.dat$Phylum[P.dat$Abundance < 0.02] <- "Phylum < 2%"
+P.glomb <- tax_glom(SPb.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
+P.datb <- psmelt(P.glom)
+P.datb$Phylum <- as.character(P.datb$Phylum) #convert to character vector from factor
+P.datb$Phylum[P.datb$Abundance < 0.02] <- "Phylum < 2%"
 
 SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
 C.glom <- tax_glom(SPb.rel.abun, taxrank = "Class") #agglomerate taxa to Phylum-level
@@ -121,7 +167,7 @@ F.dat <- psmelt(F.glom)
 F.dat$Family <- as.character(F.dat$Family) #convert to character vector from factor
 F.dat$Family[F.dat$Abundance < 0.035] <- "Family < 3.5%"
 
-#prune out phyla below 2% in each sample for all experiments for eukaryota
+#prune out phyla below 2% in each sample for all experiments for fungi
 SPf.rel.abun <- transform_sample_counts(SPf, function(x) x/sum(x)) #convert counts to relative abundances
 Pf.glom <- tax_glom(SPf.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
 Pf.dat <- psmelt(Pf.glom)
@@ -145,6 +191,41 @@ Gf.glom <- tax_glom(SPf.rel.abun, taxrank = "Genus") #agglomerate taxa to Phylum
 Gf.dat <- psmelt(Gf.glom)
 Gf.dat$Genus <- as.character(Gf.dat$Genus) #convert to character vector from factor
 Gf.dat$Genus[Gf.dat$Abundance < 0.05] <- "Genus < 3.5%"
+
+#prune out phyla below 2% in each sample for all experiments for eukaryota
+SPe.rel.abun <- transform_sample_counts(SPe, function(x) x/sum(x)) #convert counts to relative abundances
+Pe.glom <- tax_glom(SPe.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
+Pe.dat <- psmelt(Pe.glom)
+Pe.dat$Phylum <- as.character(Pe.dat$Phylum) #convert to character vector from factor
+Pe.dat$Phylum[Pe.dat$Abundance < 0.02] <- "Phylum < 2%"
+
+#add sub_kingdom to eukaryota table
+Pe.dat2 <- Pe.dat %>%
+  mutate(sub_kingdom = ifelse(Phylum == "Chytridiomycota" |
+                    Phylum == "Blastocladiomycota" |
+                    Phylum == "Neocallimastigomycota" |
+                    Phylum == "Microsporidia" |
+                    Phylum == "Ascomycota" |
+                    Phylum == "Basidiomycota",
+                    "fungi", "other"))
+
+#calculate means and standard deviations for fungal abundances within eukaryota
+Pe.dat2.p <- Pe.dat2 %>% 
+  dplyr::filter(Condition == "PreDrought" &
+           sub_kingdom == "fungi") 
+
+Pe.dat2.p.m <- mean(Pe.dat2.p$Abundance)
+Pe.dat2.p.se <- sd(Pe.dat2.p$Abundance)
+
+Pe.dat2.d <- Pe.dat2 %>% 
+  dplyr::filter(Condition == "Drought" &
+           sub_kingdom == "fungi") 
+
+Pe.dat2.d.m <- mean(Pe.dat2.d$Abundance)
+Pe.dat2.d.se <- sd(Pe.dat2.d$Abundance)
+
+
+
 ```
 
 # Taxonomic profiles
@@ -170,11 +251,11 @@ filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Kingdom.png")
 ggsave(filename,width=4,height=5,dpi=1000,K_barplot)
 
 #######plot Phylum bacteria######################################
-P.dat$Condition <- factor(P.dat$Condition, c("PreDrought", "Drought"))
-P.dat$Time <- factor(P.dat$Time, c("0hr", "6hr", "48hr"))
+P.datb$Condition <- factor(P.datb$Condition, c("PreDrought", "Drought"))
+P.datb$Time <- factor(P.datb$Time, c("0hr", "6hr", "48hr"))
 
 
-p <- ggplot(P.dat, aes(x=Time, y=Abundance, fill=Phylum)) 
+p <- ggplot(P.datb, aes(x=Time, y=Abundance, fill=Phylum)) 
 
 p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
   facet_wrap(~ Condition, scales="free") +
@@ -186,7 +267,7 @@ p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
   )
 
 filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum.png")
-ggsave(filename,width=5,height=5,dpi=1000,p_barplot)
+ggsave(filename,width=5,height=6,dpi=1000,p_barplot)
 
 #######plot Classes bacteria######################################
 C.dat$Condition <- factor(C.dat$Condition, c("PreDrought", "Drought"))
@@ -219,7 +300,7 @@ f_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         legend.text = element_text(size = 10),
   )
 
-#######plot Phylum eukaryota######################################
+#######plot Phylum fungi######################################
 Pf.dat$Condition <- factor(Pf.dat$Condition, c("PreDrought", "Drought"))
 Pf.dat$Time <- factor(Pf.dat$Time, c("0hr", "6hr", "48hr"))
 
@@ -235,7 +316,7 @@ pf_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         legend.title = element_blank()
   )
 
-filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-fungi.png")
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-fingi.png")
 ggsave(filename,width=5,height=5,dpi=1000,pf_barplot)
 
 #######plot Classes eukaryota######################################
@@ -285,6 +366,44 @@ Gf_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
 
 filename <- paste0("../../Figures/FigS3-Taxonomy/metaT-genus-fungi.png")
 ggsave(filename,width=12,height=5,dpi=1000,Gf_barplot)
+
+#######plot phyla eukaryota######################################
+Pe.dat$Condition <- factor(Pe.dat$Condition, c("PreDrought", "Drought"))
+Pe.dat$Time <- factor(Pe.dat$Time, c("0hr", "6hr", "48hr"))
+
+
+p <- ggplot(Pe.dat, aes(x=Time, y=Abundance, fill=Phylum)) 
+
+pf_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors_long) +
+  theme_bw() +
+  theme(text = element_text(size = 11),
+        axis.text.x=element_text(hjust =0.5, vjust=0.2),
+        legend.title = element_blank()
+  )
+
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-eurkaryota.png")
+ggsave(filename,width=5,height=5,dpi=1000,pf_barplot)
+
+#######plot fungi vs other in eukaryota######################################
+Pe.dat2$Condition <- factor(Pe.dat2$Condition, c("PreDrought", "Drought"))
+Pe.dat2$Time <- factor(Pe.dat2$Time, c("0hr", "6hr", "48hr"))
+
+
+p <- ggplot(Pe.dat2, aes(x=Condition, y=Abundance, fill=sub_kingdom)) 
+
+pf_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  #facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors_short) +
+  theme_bw() +
+  theme(text = element_text(size = 6),
+        axis.text.x=element_text(hjust =0.5, vjust=0.2),
+        legend.title = element_blank()
+  )
+
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-eurkaryota-fungi-other.png")
+ggsave(filename,width=2,height=2,dpi=1000,pf_barplot)
 ```
 
 ## Kingdom     
@@ -400,4 +519,170 @@ plot_grid (p1, p2,
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## statistical analysis of taxonomy - bacteria/archaea
+```{r}
+####phlya across all kingdoms that are in tableS4 (removed some phyla that were in only 1 or 2 samples)
+phyla = c("Proteobacteria", "Acidobacteria", "Actinobacteria", "Bacteroidetes",
+          "Chloroflexi","Cyanobacteria",  "Firmicutes", 
+          "Gemmatimonadetes",  "Planctomycetes",
+          "Thaumarchaeota", "Verrucomicrobia")
+for (p in phyla)
+{
+p.P.datb <- P.datb %>%
+  dplyr::filter(Phylum == p)
+
+lme.p.P.dat <- lme(Abundance ~ Condition,
+                 random = list(Site = ~1),
+                 data = p.P.datb,
+                 weights = varIdent(form = ~1|Condition)
+)
+
+sum <- summary(lme.p.P.dat)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+# Condition - Drought
+phyla = c("Proteobacteria", "Acidobacteria", "Actinobacteria", "Bacteroidetes",
+          "Chloroflexi","Cyanobacteria",  "Firmicutes",
+          "Planctomycetes",
+          "Thaumarchaeota", "Verrucomicrobia")
+for (p in phyla)
+{
+p.P.datb <- P.datb %>%
+  dplyr::filter(Phylum == p) %>%
+  dplyr::filter(Condition == "Drought")
+
+lme.p.P.dat <- lme(Abundance ~ Time,
+                 random = list(Site = ~1),
+                 data = p.P.datb,
+                 weights = varIdent(form = ~1|Time)
+)
+sum <- summary(lme.p.P.dat)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+# Condition - Pre-Drought
+phyla = c("Proteobacteria", "Acidobacteria", "Actinobacteria", "Bacteroidetes",
+          "Firmicutes", 
+          "Gemmatimonadetes",  "Planctomycetes",
+          "Verrucomicrobia")
+for (p in phyla)
+{
+p.P.datb <- P.datb %>%
+  dplyr::filter(Phylum == p) %>%
+  dplyr::filter(Condition == "PreDrought")
+
+lme.p.P.dat <- lme(Abundance ~ Time,
+                 random = list(Site = ~1),
+                 data = p.P.datb,
+                 weights = varIdent(form = ~1|Time)
+)
+sum <- summary(lme.p.P.dat)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+```
+## statistical analysis of taxonomy - fungi
+```{r}
+####phlya across all kingdoms that are in tableS4 (removed some phyla that were in only 1 or 2 samples)
+phyla = c("Chytridiomycota", "Blastocladiomycota" ,"Ascomycota",     
+          "Basidiomycota")
+for (p in phyla)
+{
+p.Pf.dat <- Pf.dat %>%
+  dplyr::filter(Phylum == p)
+
+lme.p.Pf.dat <- lme(Abundance ~ Condition,
+                 random = list(Site = ~1),
+                 data = p.Pf.dat,
+                 weights = varIdent(form = ~1|Condition)
+)
+
+sum <- summary(lme.p.Pf.dat)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+# Condition - Drought
+phyla = c("Chytridiomycota", "Blastocladiomycota" ,"Ascomycota",     
+          "Basidiomycota")
+for (p in phyla)
+{
+p.Pf.dat <- Pf.dat %>%
+  dplyr::filter(Phylum == p) %>%
+  dplyr::filter(Condition == "Drought")
+
+lme.p.Pf.dat <- lme(Abundance ~ Time,
+                 random = list(Site = ~1),
+                 data = p.Pf.dat,
+                 weights = varIdent(form = ~1|Time)
+)
+sum <- summary(lme.p.Pf.dat)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+# Condition - Pre-Drought
+phyla = c("Chytridiomycota", "Blastocladiomycota" ,"Ascomycota",     
+          "Basidiomycota")
+for (p in phyla)
+{
+p.Pf.dat <- Pf.dat %>%
+  dplyr::filter(Phylum == p) %>%
+  dplyr::filter(Condition == "PreDrought")
+
+lme.p.Pf.dat <- lme(Abundance ~ Time,
+                 random = list(Site = ~1),
+                 data = p.Pf.datb,
+                 weights = varIdent(form = ~1|Time)
+)
+sum <- summary(lme.p.Pf.dat)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+```
+
+## statistical analysis of taxonomy - total fungi, archaea, bacteria
+```{r}
+####phlya across all kingdoms that are in tableS4 (removed some phyla that were in only 1 or 2 samples)
+##fungi
+f.p.dat2 <- p.dat2 %>%
+  dplyr::filter(sub_kingdom == "fungi")
+  
+lme.f.p.dat2 <- lme(Abundance ~ Condition,
+                 random = list(Site = ~1),
+                 data = f.p.dat2,
+                 weights = varIdent(form = ~1|Condition)
+)
+
+
+sum <- summary(lme.f.p.dat2)
+tabl = sum$tTable
+tabl
+
+# archaea
+a.p.dat2 <- p.dat2 %>%
+  dplyr::filter(Kingdom == "Archaea")
+  
+lme.a.p.dat2 <- lme(Abundance ~ Condition,
+                 random = list(Site = ~1),
+                 data = a.p.dat2,
+                 weights = varIdent(form = ~1|Condition)
+)
+
+
+sum <- summary(lme.a.p.dat2)
+tabl = sum$tTable
+tabl
+

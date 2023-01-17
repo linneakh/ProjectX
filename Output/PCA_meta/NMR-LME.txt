@@ -1,639 +1,96 @@
-[[1]]
-NULL
-
-[[2]]
-NULL
-
-[[3]]
-NULL
-
-[[4]]
-NULL
-
-[[5]]
-NULL
-
-[[6]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  38.15636 38.94526 -15.07818
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 4.222395e-05 1.069787
-
-Fixed effects:  list(fmla) 
-             Value Std.Error DF  t-value p-value
-(Intercept)    1.5 0.4367388  7 3.434547  0.0109
-Conditionpre   3.3 0.6477883  7 5.094257  0.0014
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--0.7478123 -0.4673827 -0.4673827  0.1869531  2.3369136 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[7]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-      AIC     BIC   logLik
-  34.9338 35.7227 -13.4669
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept)  Residual
-StdDev: 5.109688e-05 0.8944272
-
-Fixed effects:  list(fmla) 
-             Value Std.Error DF  t-value p-value
-(Intercept)    1.0 0.3651484  7 2.738613  0.0290
-Conditionpre   0.6 0.5416026  7 1.107823  0.3045
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-          Min            Q1           Med            Q3           Max 
--6.708204e-01 -6.708204e-01  7.297660e-10  1.824415e-09  2.683282e+00 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[8]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  80.07634 80.86524 -36.03817
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 0.0003665496 10.98298
-
-Fixed effects:  list(fmla) 
-                 Value Std.Error DF  t-value p-value
-(Intercept)  25.166667  4.483784  7 5.612818  0.0008
-Conditionpre  9.033333  6.650527  7 1.358288  0.2165
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.2898742 -0.6540421 -0.1062249  0.5311247  1.8938388 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[9]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  45.30791 46.09681 -18.65396
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 3.769495e-05 1.591645
-
-Fixed effects:  list(fmla) 
-             Value Std.Error DF   t-value p-value
-(Intercept)    2.0 0.6497863  7 3.0779351  0.0179
-Conditionpre   0.2 0.9637888  7 0.2075143  0.8415
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--0.7539370 -0.6911089 -0.6282809  1.1309056  1.2565617 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[10]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  60.97719 61.76609 -26.48859
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 0.0001357301 3.801072
-
-Fixed effects:  list(fmla) 
-                 Value Std.Error DF  t-value p-value
-(Intercept)  10.833333  1.551781  7 6.981225  0.0002
-Conditionpre  8.566667  2.301663  7 3.721946  0.0074
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.1575682 -0.5568605 -0.4823201  0.4954743  1.8854330 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[11]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-      AIC     BIC   logLik
-  34.9338 35.7227 -13.4669
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept)  Residual
-StdDev: 5.105788e-05 0.8944272
-
-Fixed effects:  list(fmla) 
-             Value Std.Error DF  t-value p-value
-(Intercept)    1.0 0.3651484  7 2.738613  0.0290
-Conditionpre   0.6 0.5416026  7 1.107823  0.3045
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-          Min            Q1           Med            Q3           Max 
--6.708204e-01 -6.708204e-01  7.286520e-10  1.821631e-09  2.683282e+00 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[12]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  39.26009 40.04899 -15.63004
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:   0.4912686 1.070915
-
-Fixed effects:  list(fmla) 
-                  Value Std.Error DF   t-value p-value
-(Intercept)   1.9166610 0.5289111  7  3.623787  0.0085
-Conditionpre -0.8440508 0.6648636  7 -1.269510  0.2448
- Correlation: 
-             (Intr)
-Conditionpre -0.58 
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.1949712 -0.6448620  0.0601096  0.1432967  1.6063722 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[13]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  67.25465 68.04355 -29.62732
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 0.0002641646 5.387228
-
-Fixed effects:  list(fmla) 
-             Value Std.Error DF   t-value p-value
-(Intercept)   20.0  2.199327  7  9.093693  0.0000
-Conditionpre  -2.6  3.262128  7 -0.797026  0.4516
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.4849938 -0.5383103  0.2969988  0.5197478  1.4849938 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[14]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  70.20315 70.99205 -31.10157
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:    6.221671 5.214637
-
-Fixed effects:  list(fmla) 
-                 Value Std.Error DF  t-value p-value
-(Intercept)   7.925071  4.223411  7 1.876462  0.1027
-Conditionpre 20.749979  3.319245  7 6.251416  0.0004
- Correlation: 
-             (Intr)
-Conditionpre -0.369
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.4620653 -0.6617003  0.3259434  0.5320141  1.0788634 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[15]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  51.32331 52.11221 -21.66166
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:    1.287853 2.017896
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF  t-value p-value
-(Intercept)  8.704375  1.128068  7 7.716179  0.0001
-Conditionpre 1.024455  1.265204  7 0.809715  0.4448
- Correlation: 
-             (Intr)
-Conditionpre -0.521
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.2880909 -0.9388627  0.4014969  0.7502332  0.8849436 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[16]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  38.61072 39.39962 -15.30536
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 2.790761e-05 1.097134
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF   t-value p-value
-(Intercept)  6.166667 0.4479032  7 13.767856    0.00
-Conditionpre 0.833333 0.6643478  7  1.254363    0.25
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.0633763 -0.9114654 -0.1519109  0.8355100  1.6710200 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[17]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  47.53459 48.32349 -19.76729
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 5.603201e-05 1.801234
-
-Fixed effects:  list(fmla) 
-             Value Std.Error DF  t-value p-value
-(Intercept)    5.0 0.7353508  7 6.799476  0.0003
-Conditionpre   3.4 1.0907014  7 3.117260  0.0169
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.3324198 -0.5551749 -0.2220700  0.4441399  1.9986297 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[18]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  38.54981 39.33871 -15.27491
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:   0.3010366 1.064385
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF  t-value p-value
-(Intercept)  3.954869 0.4723034  7 8.373578  0.0001
-Conditionpre 1.268307 0.6528046  7 1.942859  0.0931
- Correlation: 
-             (Intr)
-Conditionpre -0.633
-
-Standardized Within-Group Residuals:
-        Min          Q1         Med          Q3         Max 
--1.18584759 -0.53506224 -0.06647140  0.09683715  1.63268252 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[19]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  56.04665 56.83555 -24.02333
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:    1.076273 2.758692
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF  t-value p-value
-(Intercept)  5.876449  1.303233  7 4.509131  0.0028
-Conditionpre 1.196729  1.704894  7 0.701937  0.5054
- Correlation: 
-             (Intr)
-Conditionpre -0.602
-
-Standardized Within-Group Residuals:
-        Min          Q1         Med          Q3         Max 
--1.11745300 -0.45033539 -0.25293070  0.07544549  1.85378398 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[20]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  47.63829 48.42719 -19.81914
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:    1.157389 1.619374
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF  t-value p-value
-(Intercept)  5.533833  0.955316  7 5.792672  0.0007
-Conditionpre 3.222022  1.018653  7 3.163021  0.0159
- Correlation: 
-             (Intr)
-Conditionpre -0.496
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.2315307 -0.6333417  0.1406182  0.3614941  1.5221132 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[21]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  119.5645 120.3534 -55.78223
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev: 0.003880762 98.50738
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF   t-value p-value
-(Intercept)  350.6667  40.21547  7  8.719696  0.0001
-Conditionpre -62.6667  59.64918  7 -1.050587  0.3284
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.4990417 -0.4805055  0.1962628  0.5938641  1.5971731 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[22]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  38.58298 39.37188 -15.29149
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 2.604627e-05 1.095445
-
-Fixed effects:  list(fmla) 
-             Value Std.Error DF  t-value p-value
-(Intercept)    1.0 0.4472136  7 2.236068  0.0604
-Conditionpre   1.8 0.6633250  7 2.713602  0.0300
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-          Min            Q1           Med            Q3           Max 
--1.643168e+00 -4.644751e-10  4.644735e-10  5.477226e-01  1.095445e+00 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[23]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  63.15506 63.94396 -27.57753
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 0.0001976002 4.289954
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF  t-value p-value
-(Intercept)  7.166667  1.751366  7 4.092043  0.0046
-Conditionpre 8.033333  2.597696  7 3.092484  0.0175
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.4452370 -0.5050559  0.1864822  0.5400214  1.5850987 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[24]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  46.01391 46.80281 -19.00696
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:   0.6723284 1.567916
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF  t-value p-value
-(Intercept)  5.748527 0.7592569  7 7.571254  0.0001
-Conditionpre 5.163378 0.9715274  7 5.314701  0.0011
- Correlation: 
-             (Intr)
-Conditionpre -0.59 
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--0.8342583 -0.7781120 -0.1964692  0.5514862  1.8251445 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[25]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  39.53123 40.32013 -15.76561
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:  2.6501e-05 1.154701
-
-Fixed effects:  list(fmla) 
-             Value Std.Error DF   t-value p-value
-(Intercept)      2 0.4714045  7  4.242641  0.0038
-Conditionpre    -1 0.6992059  7 -1.430194  0.1957
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-          Min            Q1           Med            Q3           Max 
--8.660254e-01 -8.660254e-01 -4.561591e-10  4.561592e-10  1.732051e+00 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[26]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  35.88204 36.67094 -13.94102
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 0.0001362726 0.942809
-
-Fixed effects:  list(fmla) 
-             Value Std.Error DF   t-value p-value
-(Intercept)      4 0.3849002  7 10.392305  0.0000
-Conditionpre     1 0.5708992  7  1.751623  0.1233
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-          Min            Q1           Med            Q3           Max 
--1.060660e+00 -5.303301e-01 -1.107940e-08  2.215879e-08  2.121320e+00 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[27]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  62.80606 63.59495 -27.40303
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:   0.0154481 4.207555
-
-Fixed effects:  list(fmla) 
-                 Value Std.Error DF   t-value p-value
-(Intercept)   8.666636  1.717754  7  5.045329  0.0015
-Conditionpre -7.666612  2.547808  7 -3.009101  0.0197
- Correlation: 
-             (Intr)
-Conditionpre -0.674
-
-Standardized Within-Group Residuals:
-          Min            Q1           Med            Q3           Max 
--1.109137e+00 -5.149255e-01  8.115679e-06  9.183843e-06  2.218210e+00 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[28]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  39.76097 40.54986 -15.88048
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:   0.5593445 1.088867
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF  t-value p-value
-(Intercept)  2.114750 0.5581315  7 3.788981  0.0068
-Conditionpre 1.996528 0.6782836  7 2.943501  0.0216
- Correlation: 
-             (Intr)
-Conditionpre -0.562
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.2062723 -0.6163662 -0.3270992  0.4694481  1.5488860 
-
-Number of Observations: 11
-Number of Groups: 3 
-
-[[29]]
-Linear mixed-effects model fit by REML
-  Data: df.s 
-       AIC      BIC    logLik
-  52.29418 53.08308 -22.14709
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:    1.000235 2.212138
-
-Fixed effects:  list(fmla) 
-                Value Std.Error DF  t-value p-value
-(Intercept)  6.124041  1.087783  7 5.629837  0.0008
-Conditionpre 4.586568  1.372799  7 3.341035  0.0124
- Correlation: 
-             (Intr)
-Conditionpre -0.583
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.2929904 -0.6068758 -0.1904633  0.6891995  1.6890200 
-
-Number of Observations: 11
-Number of Groups: 3 
-
+[1] "Oxoisocaproate"
+             Value Std.Error DF  t-value     p-value
+(Intercept)    1.5 0.4367388  7 3.434547 0.010917631
+Conditionpre   3.3 0.6477883  7 5.094257 0.001408479
+[1] "Hydroxybutyrate"
+             Value Std.Error DF  t-value    p-value
+(Intercept)    1.0 0.3651484  7 2.738613 0.02897613
+Conditionpre   0.6 0.5416026  7 1.107823 0.30454614
+[1] "Acetate"
+                 Value Std.Error DF  t-value      p-value
+(Intercept)  25.166667  4.483784  7 5.612818 0.0008050878
+Conditionpre  9.033333  6.650527  7 1.358288 0.2165212035
+[1] "Acetone"
+             Value Std.Error DF   t-value    p-value
+(Intercept)    2.0 0.6497863  7 3.0779351 0.01786714
+Conditionpre   0.2 0.9637888  7 0.2075143 0.84151611
+[1] "Alanine"
+                 Value Std.Error DF  t-value      p-value
+(Intercept)  10.833333  1.551781  7 6.981225 0.0002151176
+Conditionpre  8.566667  2.301663  7 3.721946 0.0074370248
+[1] "Benzoate"
+             Value Std.Error DF  t-value    p-value
+(Intercept)    1.0 0.3651484  7 2.738613 0.02897613
+Conditionpre   0.6 0.5416026  7 1.107823 0.30454614
+[1] "Betaine"
+                  Value Std.Error DF   t-value     p-value
+(Intercept)   1.9166610 0.5289111  7  3.623787 0.008467458
+Conditionpre -0.8440508 0.6648636  7 -1.269510 0.244834041
+[1] "Ethanol"
+             Value Std.Error DF    t-value      p-value
+(Intercept)   20.0  2.199327  7  9.0936930 3.987629e-05
+Conditionpre  -2.6  3.262128  7 -0.7970257 4.516187e-01
+[1] "Formate"
+                 Value Std.Error DF  t-value     p-value
+(Intercept)   7.925071  4.223411  7 1.876462 0.102698331
+Conditionpre 20.749979  3.319245  7 6.251416 0.000423571
+[1] "Glutamate"
+                Value Std.Error DF   t-value      p-value
+(Intercept)  8.704375  1.128068  7 7.7161791 0.0001147101
+Conditionpre 1.024455  1.265204  7 0.8097154 0.4447523603
+[1] "Glycerol"
+                 Value Std.Error DF   t-value      p-value
+(Intercept)  6.1666667 0.4479032  7 13.767856 2.515917e-06
+Conditionpre 0.8333333 0.6643478  7  1.254363 2.499711e-01
+[1] "Glycine"
+             Value Std.Error DF  t-value      p-value
+(Intercept)    5.0 0.7353508  7 6.799476 0.0002533271
+Conditionpre   3.4 1.0907014  7 3.117260 0.0169084290
+[1] "Isoleucine"
+                Value Std.Error DF  t-value    p-value
+(Intercept)  3.954869 0.4723034  7 8.373578 0.00006803
+Conditionpre 1.268307 0.6528046  7 1.942859 0.09314202
+[1] "Lactate"
+                Value Std.Error DF   t-value   p-value
+(Intercept)  5.876449  1.303233  7 4.5091310 0.0027679
+Conditionpre 1.196729  1.704894  7 0.7019374 0.5053803
+[1] "Leucine"
+                Value Std.Error DF  t-value      p-value
+(Intercept)  5.533833  0.955316  7 5.792672 0.0006685275
+Conditionpre 3.222022  1.018653  7 3.163021 0.0158613594
+[1] "Methanol"
+                 Value Std.Error DF   t-value      p-value
+(Intercept)  350.66667  40.21547  7  8.719696 5.237976e-05
+Conditionpre -62.66667  59.64918  7 -1.050587 3.283590e-01
+[1] "Phenylalanine"
+             Value Std.Error DF  t-value    p-value
+(Intercept)    1.0 0.4472136  7 2.236068 0.06042742
+Conditionpre   1.8 0.6633250  7 2.713602 0.03004214
+[1] "Pyroglutamate"
+                Value Std.Error DF  t-value     p-value
+(Intercept)  7.166667  1.751366  7 4.092043 0.004619061
+Conditionpre 8.033333  2.597696  7 3.092484 0.017505868
+[1] "Pyruvate"
+                Value Std.Error DF  t-value      p-value
+(Intercept)  5.748527 0.7592569  7 7.571254 0.0001293444
+Conditionpre 5.163378 0.9715274  7 5.314701 0.0011056002
+[1] "Succinate"
+             Value Std.Error DF   t-value     p-value
+(Intercept)      2 0.4714045  7  4.242641 0.003827788
+Conditionpre    -1 0.6992059  7 -1.430194 0.195742231
+[1] "Threonine"
+             Value Std.Error DF   t-value      p-value
+(Intercept)      4 0.3849002  7 10.392305 1.659148e-05
+Conditionpre     1 0.5708992  7  1.751623 1.233008e-01
+[1] "Trehalose"
+                 Value Std.Error DF   t-value     p-value
+(Intercept)   8.666636  1.717754  7  5.045329 0.001487577
+Conditionpre -7.666612  2.547808  7 -3.009101 0.019687144
+[1] "Uracil"
+                Value Std.Error DF  t-value    p-value
+(Intercept)  2.114750 0.5581315  7 3.788981 0.00681195
+Conditionpre 1.996528 0.6782836  7 2.943501 0.02160547
+[1] "Valine"
+                Value Std.Error DF  t-value      p-value
+(Intercept)  6.124041  1.087783  7 5.629837 0.0007909137
+Conditionpre 4.586568  1.372799  7 3.341035 0.0124020770

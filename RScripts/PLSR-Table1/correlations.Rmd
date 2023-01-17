@@ -1,0 +1,263 @@
+---
+title: "glm"
+author: "Linnea Honeker"
+date: "9/20/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(phyloseq)
+
+library(vegan)
+
+library(ggplot2)
+
+library(rms)
+
+library(reshape2)
+
+library(coefplot)
+
+library(MASS)
+
+library(dplyr)
+
+library(lme4)
+
+library(MASS)
+
+library(leaps)
+
+library(car)
+
+library(relaimpo)
+
+library(nlme)
+
+library(lmerTest)
+
+
+
+```
+
+## perform pairwise correlations and scatterplots for gene transcript copies and flux data
+# load data tables 1) KO of interest and 2) gene transcript copies. Clean up data times for purposes of this analysis.
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+KO_interest_subset <- read.csv("../../Data/Deseq2/KO_interest.csv")
+metaT <- read.csv("../../Output/WGCNA/vst-metaT.csv")
+metadata <- read.csv("../../Data/Deseq2/metaT-metadata.csv")
+acetate_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/acetic-acid-for-ggplot.csv")
+acetone_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/acetone-for-ggplot.csv")
+diacetyl_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/diacetyl-for-ggplot.csv")
+
+#remove "KO:"
+metaT$X <- sub("KO:", "", metaT$X)
+diacetyl_flux$Sample <- sub("_C1", "", diacetyl_flux$Sample)
+diacetyl_flux$Sample <- sub("_C2", "", diacetyl_flux$Sample)
+
+#merge  all VOC
+KO_VOC <- KO_interest_subset %>%
+  merge(., metaT, by.x = "KO", by.y="X", all.x = FALSE, all.y = FALSE)
+
+#transpose for glm
+KO_VOC.t <- t(KO_VOC)
+
+#further format KO_acetate.t for glm. Assign column headers and remove rows containing metadata
+colnames(KO_VOC.t) <- KO_VOC.t[1,]
+KO_VOC.t.f <- KO_VOC.t[-(1:6),]
+KO_VOC.t.f <- as.data.frame(KO_VOC.t.f)
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+acectate_flux_proc <- acetate_flux %>%
+  filter (Type == "sample") %>%
+    filter (Pyruv == "C2") %>%
+     mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.acetate = Flux) %>%
+  dplyr::select(-c("Pyruv", "Type", "Flux", "Time", "Time.hr"))
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+acetone_flux_proc <- acetone_flux %>%
+  filter (Type == "sample") %>%
+  filter (Pyruv == "C2") %>%
+  mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.acetone = Flux)%>%
+   dplyr::select(-c("Pyruv", "Type", "Flux", "Time", "Time.hr", "Site"))
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+diacetyl_flux_proc <- diacetyl_flux %>%
+  filter (Type == "sample") %>%
+  filter (Pyruv == "C2") %>%
+  mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.diacetyl = Flux) %>%
+   dplyr::select(-c("Pyruv", "Type", "Flux", "Time", "Time.hr", "Site"))
+
+#sample names are different in the flux and expression tables, so need to make them the same
+KO_VOC.t.f[,26] <- rownames(KO_VOC.t.f)
+KO_VOC.t.f_new_id <- KO_VOC.t.f %>%
+  mutate(Sample = case_when(
+  startsWith(V26, "X3300044942") ~ "S3P4",
+  startsWith(V26, "X3300044943") ~ "S3P4",
+  startsWith(V26, "X3300044944") ~ "S3P4",
+  startsWith(V26, "X3300044945") ~ "S3P4",
+  startsWith(V26, "X3300045458") ~ "S1P5",
+  startsWith(V26, "X3300045459") ~ "S1P5",
+  startsWith(V26, "X3300045460") ~ "S1P5",
+  startsWith(V26, "X3300045461") ~ "S2P4",
+  startsWith(V26, "X3300045462") ~ "S2P4",
+  startsWith(V26, "X3300045463") ~ "S2P4",
+  startsWith(V26, "X3300045464") ~ "S2P4",
+  startsWith(V26, "X3300045465") ~ "S2P4",
+  startsWith(V26, "X3300045466") ~ "S2P6",
+  startsWith(V26, "X3300045467") ~ "S2P6",
+  startsWith(V26, "X3300045468") ~ "S2P6",
+  startsWith(V26, "X3300045469") ~ "S2P6",
+  startsWith(V26, "X3300045470") ~ "S2P6",
+  startsWith(V26, "X3300045471") ~ "S3P5",
+  startsWith(V26, "X3300045472") ~ "S3P5",
+  startsWith(V26, "X3300045473") ~ "S2P6",
+  startsWith(V26, "X3300048051") ~ "S1P5",
+  startsWith(V26, "X3300048052") ~ "S3P5",
+  startsWith(V26, "X3300048053") ~ "S3P5",
+  startsWith(V26, "X3300048054") ~ "S3P5",
+  startsWith(V26, "X3300048092") ~ "S1P1",
+  startsWith(V26, "X3300048093") ~ "S1P1",
+  startsWith(V26, "X3300048094") ~ "S1P1",
+  startsWith(V26, "X3300048095") ~ "S1P1",
+  startsWith(V26, "X3300048096") ~ "S1P1",
+  startsWith(V26, "X3300048099") ~ "S1P5",
+  startsWith(V26, "X3300048100") ~ "S1P5",
+  startsWith(V26, "X3300049511") ~ "S2P4",
+  startsWith(V26, "X3300049512") ~ "S3P4",
+  startsWith(V26, "X3300049557") ~ "S3P4",
+  startsWith(V26, "X3300049628") ~ "S3P5"
+  )) %>%
+  mutate(Time.d = case_when(
+    endsWith(V26, "6hr") ~ "6",
+    endsWith(V26, "0hr") ~ "0",
+    endsWith(V26, "48hr") ~ "48",
+    endsWith(V26, "48_hr") ~ "48"
+  )) %>%
+  mutate(Condition = case_when(
+    grepl("PreDrought", V26) ~ "pre-drought",
+    grepl("Drought", V26) ~ "drought",
+    grepl("Pre_drought", V26) ~ "pre-drought"
+  )) %>%
+   dplyr::select(-V26)
+
+#merge VOC and KO tables
+merged_subset <- KO_VOC.t.f_new_id %>%
+  merge(., acectate_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample","Time.d"),all.x = FALSE, all.y = FALSE) %>%
+  mutate_at(c(4:30), as.numeric) %>%
+  mutate(flux.acetate = as.numeric(flux.acetate)) %>%
+  mutate(log.flux.acetate = log(flux.acetate+abs(min(flux.acetate))+1, base = exp(2))) %>%
+  merge(.,acetone_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample", "Time.d"),all.x = FALSE, all.y = FALSE) %>%
+  mutate(flux.acetone = as.numeric(flux.acetone)) %>%
+  mutate(log.flux.acetone = log(flux.acetone+abs(min(flux.acetone))+1, base = exp(2))) %>%
+  merge(.,diacetyl_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample", "Time.d"),all.x = FALSE, all.y = FALSE) %>%
+  mutate(flux.diacetyl = as.numeric(flux.diacetyl)) %>%
+  mutate(log.flux.diacetyl = log(flux.diacetyl+abs(min(flux.diacetyl))+1, base = exp(2))) 
+  
+merged_subset
+```
+
+### correlations between each gene and acetone
+```{r correlation-plots-acetone, echo = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+#make subset of numerical data
+merged_subset.num <- merged_subset %>%
+   dplyr::select(-c(Sample, Condition, Time.d, Site, Site.y, Site.x))
+
+sub_col <- c(4:28, 31, 34, 37)
+z = merged_subset$Condition
+y = merged_subset$log.flux.acetone
+colNames <- names(merged_subset)[sub_col]
+for (i in colNames) {
+  p <- ggplot(merged_subset, aes_string(x=i, y=y)) +
+  geom_point(aes(color=Condition, shape = Time.d)) +
+  geom_smooth(method=lm, se=TRUE)
+  ggtitle (aes_string(i))
+  print(p)
+}
+
+
+cor(merged_subset$K01574, merged_subset$log.flux.acetone)
+
+summary(lm(merged_subset$K01574 ~ merged_subset$log.flux.acetone))
+
+```
+
+
+### correlations between each gene and acetate
+
+```{r correlation-plots-acetate, echo = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+#make subset of numerical data
+merged_subset.num <- merged_subset %>%
+   dplyr::select(-c(Sample, Condition, Time.d, Site, Site.y, Site.x))
+
+sub_col <- c(4:28, 31, 34, 37)
+z = merged_subset$Condition
+y = merged_subset$log.flux.acetate
+colNames <- names(merged_subset)[sub_col]
+for (i in colNames) {
+  p <- ggplot(merged_subset, aes_string(x=i, y=y)) +
+  geom_point(aes(color=Condition, shape = Time.d)) +
+  geom_smooth(method=lm, se=TRUE)
+  ggtitle (aes_string(i))
+  print(p)
+}
+
+
+cor(merged_subset$log.flux.acetone, merged_subset$log.flux.acetate)
+summary(lm(merged_subset$log.flux.acetone ~ merged_subset$log.flux.acetate))
+
+cor(merged_subset$log.flux.acetone, merged_subset$log.flux.diacetyl)
+summary(lm(merged_subset$log.flux.acetone ~ merged_subset$log.flux.diacetyl))
+
+```
+
+
+

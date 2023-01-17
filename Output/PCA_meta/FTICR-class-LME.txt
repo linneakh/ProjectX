@@ -1,249 +1,36 @@
-[[1]]
-NULL
-
-[[2]]
-NULL
-
-[[3]]
-NULL
-
-[[4]]
-NULL
-
-[[5]]
-NULL
-
-[[6]]
-Linear mixed-effects model fit by REML
-  Data: df.c.s 
-       AIC      BIC    logLik
-  115.8147 122.2584 -53.90736
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept)  Residual
-StdDev: 2.638295e-05 0.9586933
-
-Fixed effects:  list(fmla) 
-                       Value Std.Error DF  t-value p-value
-(Intercept)         4.371429  0.209204 35 20.89553   0e+00
-ConditionPreDrought 1.207460  0.307940 35  3.92109   4e-04
- Correlation: 
-                    (Intr)
-ConditionPreDrought -0.679
-
-Standardized Within-Group Residuals:
-        Min          Q1         Med          Q3         Max 
--2.52311026 -0.71078892  0.07417504  0.77039386  2.21250229 
-
-Number of Observations: 39
-Number of Groups: 3 
-
-[[7]]
-Linear mixed-effects model fit by REML
-  Data: df.c.s 
-       AIC      BIC    logLik
-  60.99188 67.43555 -26.49594
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept)  Residual
-StdDev: 9.37335e-06 0.4570176
-
-Fixed effects:  list(fmla) 
-                        Value  Std.Error DF   t-value p-value
-(Intercept)         1.3642857 0.09972942 35 13.679872  0.0000
-ConditionPreDrought 0.0551587 0.14679773 35  0.375746  0.7094
- Correlation: 
-                    (Intr)
-ConditionPreDrought -0.679
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.3554061 -0.6933323 -0.2281875  0.4663604  3.1739598 
-
-Number of Observations: 39
-Number of Groups: 3 
-
-[[8]]
-Linear mixed-effects model fit by REML
-  Data: df.c.s 
-       AIC      BIC    logLik
-  182.7253 189.1689 -87.36263
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:     1.69034 2.236046
-
-Fixed effects:  list(fmla) 
-                        Value Std.Error DF   t-value p-value
-(Intercept)         15.831992 1.0931175 35 14.483339   0e+00
-ConditionPreDrought -3.000325 0.7212918 35 -4.159656   2e-04
- Correlation: 
-                    (Intr)
-ConditionPreDrought -0.308
-
-Standardized Within-Group Residuals:
-        Min          Q1         Med          Q3         Max 
--1.87431512 -0.77140807 -0.06060589  0.82127545  1.98503052 
-
-Number of Observations: 39
-Number of Groups: 3 
-
-[[9]]
-Linear mixed-effects model fit by REML
-  Data: df.c.s 
-       AIC      BIC    logLik
-  200.3538 206.7975 -96.17689
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 0.0001529979 3.004874
-
-Fixed effects:  list(fmla) 
-                       Value Std.Error DF  t-value p-value
-(Intercept)         46.58762 0.6557173 35 71.04833   0e+00
-ConditionPreDrought -4.02651 0.9651898 35 -4.17173   2e-04
- Correlation: 
-                    (Intr)
-ConditionPreDrought -0.679
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.5811348 -0.6127082 -0.1556202  0.3513075  3.7734987 
-
-Number of Observations: 39
-Number of Groups: 3 
-
-[[10]]
-Linear mixed-effects model fit by REML
-  Data: df.c.s 
-       AIC      BIC    logLik
-  114.9877 121.4313 -53.49383
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept)  Residual
-StdDev:   0.1396025 0.9416857
-
-Fixed effects:  list(fmla) 
-                       Value Std.Error DF   t-value p-value
-(Intercept)         3.028842 0.2211951 35 13.693079       0
-ConditionPreDrought 1.647825 0.3028136 35  5.441713       0
- Correlation: 
-                    (Intr)
-ConditionPreDrought -0.633
-
-Standardized Within-Group Residuals:
-         Min           Q1          Med           Q3          Max 
--2.075824926 -0.526391200 -0.005453001  0.435246055  3.140156028 
-
-Number of Observations: 39
-Number of Groups: 3 
-
-[[11]]
-Linear mixed-effects model fit by REML
-  Data: df.c.s 
-        AIC       BIC   logLik
-  -53.70519 -47.26151 30.85259
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept)   Residual
-StdDev: 1.627598e-06 0.09700491
-
-Fixed effects:  list(fmla) 
-                         Value  Std.Error DF  t-value p-value
-(Intercept)         0.09809524 0.02116821 35 4.634083  0.0000
-ConditionPreDrought 0.05634921 0.03115876 35 1.808455  0.0791
- Correlation: 
-                    (Intr)
-ConditionPreDrought -0.679
-
-Standardized Within-Group Residuals:
-        Min          Q1         Med          Q3         Max 
--1.28286746 -0.68315965 -0.08345184  0.29617221  3.76842317 
-
-Number of Observations: 39
-Number of Groups: 3 
-
-[[12]]
-Linear mixed-effects model fit by REML
-  Data: df.c.s 
-       AIC      BIC    logLik
-  199.9558 206.3994 -95.97788
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:   0.2204404  2.98328
-
-Fixed effects:  list(fmla) 
-                        Value Std.Error DF   t-value p-value
-(Intercept)         14.466931 0.6637927 35 21.794349       0
-ConditionPreDrought  5.145292 0.9585746 35  5.367649       0
- Correlation: 
-                    (Intr)
-ConditionPreDrought -0.667
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--2.7266553 -0.4995901  0.1133822  0.7871372  1.6711880 
-
-Number of Observations: 39
-Number of Groups: 3 
-
-[[13]]
-Linear mixed-effects model fit by REML
-  Data: df.c.s 
-       AIC      BIC    logLik
-  145.1538 151.5974 -68.57688
-
-Random effects:
- Formula: ~1 | Site
-         (Intercept) Residual
-StdDev: 4.063159e-05 1.425167
-
-Fixed effects:  list(fmla) 
-                        Value Std.Error DF  t-value p-value
-(Intercept)         13.718095 0.3109970 35 44.11005  0.0000
-ConditionPreDrought -1.113095 0.4577752 35 -2.43153  0.0203
- Correlation: 
-                    (Intr)
-ConditionPreDrought -0.679
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--2.1295745 -0.5915763  0.0526254  0.6293329  2.3098373 
-
-Number of Observations: 39
-Number of Groups: 3 
-
-[[14]]
-Linear mixed-effects model fit by REML
-  Data: df.c.s 
-       AIC      BIC    logLik
-  6.612594 13.05627 0.6937032
-
-Random effects:
- Formula: ~1 | Site
-        (Intercept) Residual
-StdDev:  0.05210644  0.21589
-
-Fixed effects:  list(fmla) 
-                        Value  Std.Error DF  t-value p-value
-(Intercept)         0.2831611 0.05608042 35 5.049197   0e+00
-ConditionPreDrought 0.2773944 0.06949350 35 3.991660   3e-04
- Correlation: 
-                    (Intr)
-ConditionPreDrought -0.575
-
-Standardized Within-Group Residuals:
-       Min         Q1        Med         Q3        Max 
--1.7247778 -0.5173829 -0.1619706  0.4321748  3.1570350 
-
-Number of Observations: 39
-Number of Groups: 3 
-
+[1] "Amino.sugar"
+                       Value Std.Error DF  t-value      p-value
+(Intercept)         4.371429  0.209204 35 20.89553 2.376237e-21
+ConditionPreDrought 1.207460  0.307940 35  3.92109 3.920171e-04
+[1] "Carbohydrate"
+                         Value  Std.Error DF    t-value      p-value
+(Intercept)         1.36428571 0.09972942 35 13.6798721 1.309558e-15
+ConditionPreDrought 0.05515873 0.14679773 35  0.3757465 7.093732e-01
+[1] "Condensed.hydrocarbon"
+                        Value Std.Error DF   t-value      p-value
+(Intercept)         15.831992 1.0931175 35 14.483339 2.378953e-16
+ConditionPreDrought -3.000325 0.7212918 35 -4.159656 1.962310e-04
+[1] "Lignin"
+                        Value Std.Error DF   t-value      p-value
+(Intercept)         46.587619 0.6557173 35 71.048328 1.961166e-39
+ConditionPreDrought -4.026508 0.9651898 35 -4.171727 1.894252e-04
+[1] "Lipid"
+                       Value Std.Error DF   t-value      p-value
+(Intercept)         3.028842 0.2211951 35 13.693079 1.272636e-15
+ConditionPreDrought 1.647825 0.3028136 35  5.441713 4.206789e-06
+[1] "Other"
+                         Value  Std.Error DF  t-value      p-value
+(Intercept)         0.11540630 0.02376461 32 4.856226 3.016715e-05
+ConditionPreDrought 0.03903814 0.03196483 32 1.221284 2.309003e-01
+[1] "Protein"
+                        Value Std.Error DF   t-value      p-value
+(Intercept)         14.466931 0.6637927 35 21.794349 6.028223e-22
+ConditionPreDrought  5.145292 0.9585746 35  5.367649 5.267658e-06
+[1] "Tannin"
+                        Value Std.Error DF   t-value      p-value
+(Intercept)         13.718095 0.3109970 35 44.110054 2.866423e-32
+ConditionPreDrought -1.113095 0.4577752 35 -2.431532 2.029344e-02
+[1] "Unsaturated.hydrocarbon"
+                        Value  Std.Error DF  t-value      p-value
+(Intercept)         0.2831611 0.05608042 35 5.049197 1.382661e-05
+ConditionPreDrought 0.2773944 0.06949350 35 3.991660 3.198240e-04
