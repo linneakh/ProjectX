@@ -1,0 +1,764 @@
+---
+title: "PLS"
+author: "Linnea Honeker"
+date: "11/1/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(phyloseq)
+library(vegan)
+library(ggplot2)
+library(rms)
+library(reshape2)
+library(coefplot)
+library(MASS)
+library(dplyr)
+library(lme4)
+library(MASS)
+library(leaps)
+library(car)
+library(relaimpo)
+library(nlme)
+library(lmerTest)
+library(plsdepot)
+library(pls)
+library(caret)
+library(DESeq2)
+library(tibble)
+
+```
+
+# load metaT data and do variance stabilization tranformation
+```{r load-metaT, echo = FALSE}
+#load metaT gene copy data and column metadata
+datExpr0 <-read.csv("../../Data/Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE)
+rownames(datExpr0) <- datExpr0$Feature
+datExpr0$Feature <- NULL
+
+coldata <- read.csv("../../Data/Deseq2/metaT-metadata.csv", header = TRUE)
+rownames(coldata) <- coldata$SampleID
+coldata$SampleID <- NULL
+row.names(coldata) [7] <- "X3300045460_Site1_Drought_48hr"
+
+#filter features that are not in at least 5 samples
+datExpr.f <- datExpr0 %>%
+  mutate(count = rowSums(. > 0)) %>%
+  filter(count > 5) %>%
+  subset(select = -count )
+
+#normalize filtered gene copy data using deseq2, variance stabilization transformation
+dds <- DESeqDataSetFromMatrix(countData = datExpr.f,
+                              colData = coldata,
+                              design= ~ Condition_Time)
+
+#vst transformation#
+vstcounts <- vst(dds, blind=TRUE)
+vst.export<- assay(vstcounts)
+metaT<- as.data.frame(vst.export)
+metaT$X <- rownames(metaT)
+```
+
+## Subset of KOs originally included in the first manuscript submission
+
+```{r KOs-subset, echo=FALSE}
+KO_interest_subset <- read.csv("../../Data/Deseq2/KO_interest.csv")
+#metaT <- read.csv("../../Output/WGCNA/vst-metaT.csv")
+metadata <- read.csv("../../Data/Deseq2/metaT-metadata.csv")
+acetate_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/acetic-acid-for-ggplot.csv")
+acetone_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/acetone-for-ggplot.csv")
+diacetyl_flux <- read.csv("../../Data/CO2-VOCs/voc_raw/diacetyl-for-ggplot.csv")
+
+#remove "KO:" from metaT and "_C1" and "_C2" from diaceytl flux data
+metaT$X <- sub("KO:", "", metaT$X)
+diacetyl_flux$Sample <- sub("_C1", "", diacetyl_flux$Sample)
+diacetyl_flux$Sample <- sub("_C2", "", diacetyl_flux$Sample)
+
+
+#merge  all VOC
+KO_VOC <- KO_interest_subset %>%
+  merge(., metaT, by.x = "KO", by.y="X", all.x = FALSE, all.y = FALSE)
+
+#transpose for plsr
+KO_VOC.t <- t(KO_VOC)
+
+#further format KO_acetate.t for glm. Assign column headers and remove rows containing metadata
+colnames(KO_VOC.t) <- KO_VOC.t[1,]
+KO_VOC.t.f <- KO_VOC.t[-(1:6),]
+KO_VOC.t.f <- as.data.frame(KO_VOC.t.f)
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+acetate_flux_proc <- acetate_flux %>%
+    filter (Pyruv == "C2") %>%
+     mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.acetate = Flux) %>%
+  dplyr::select(-c("Pyruv", "Flux", "Time", "Time.hr"))
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+acetone_flux_proc <- acetone_flux %>%
+    filter (Pyruv == "C2") %>%
+     mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.acetone = Flux) %>%
+  dplyr::select(-c("Pyruv", "Flux", "Time", "Time.hr"))
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+diacetyl_flux_proc <- diacetyl_flux %>%
+    filter (Pyruv == "C2") %>%
+     mutate(Site = case_when(
+    startsWith(Sample, "S1") ~ "Site1",
+    startsWith(Sample, "S2") ~ "Site2",
+    startsWith(Sample, "S3") ~ "Site3"
+  )) %>%
+  mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.hr > 0 & Time.hr < 2) ~ "0",
+    (Time.hr > 5 & Time.hr < 7) ~ "6",
+    (Time.hr > 46 & Time.hr < 48) ~ "48")) %>%
+  group_by(Condition, Site, Sample, Time.d) %>%
+  summarise_all(funs(mean)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.diacetyl = Flux) %>%
+  dplyr::select(-c("Pyruv", "Flux", "Time", "Time.hr"))
+
+
+#sample names are different in the flux and expression tables, so need to make them the same
+KO_VOC.t.f[,28] <- rownames(KO_VOC.t.f)
+KO_VOC.t.f_new_id <- KO_VOC.t.f %>%
+  mutate(Sample = case_when(
+  startsWith(V28, "X3300044942") ~ "S3P4",
+  startsWith(V28, "X3300044943") ~ "S3P4",
+  startsWith(V28, "X3300044944") ~ "S3P4",
+  startsWith(V28, "X3300044945") ~ "S3P4",
+  startsWith(V28, "X3300045458") ~ "S1P5",
+  startsWith(V28, "X3300045459") ~ "S1P5",
+  startsWith(V28, "X3300045460") ~ "S1P5",
+  startsWith(V28, "X3300045461") ~ "S2P4",
+  startsWith(V28, "X3300045462") ~ "S2P4",
+  startsWith(V28, "X3300045463") ~ "S2P4",
+  startsWith(V28, "X3300045464") ~ "S2P4",
+  startsWith(V28, "X3300045465") ~ "S2P4",
+  startsWith(V28, "X3300045466") ~ "S2P6",
+  startsWith(V28, "X3300045467") ~ "S2P6",
+  startsWith(V28, "X3300045468") ~ "S2P6",
+  startsWith(V28, "X3300045469") ~ "S2P6",
+  startsWith(V28, "X3300045470") ~ "S2P6",
+  startsWith(V28, "X3300045471") ~ "S3P5",
+  startsWith(V28, "X3300045472") ~ "S3P5",
+  startsWith(V28, "X3300045473") ~ "S2P6",
+  startsWith(V28, "X3300048051") ~ "S1P5",
+  startsWith(V28, "X3300048052") ~ "S3P5",
+  startsWith(V28, "X3300048053") ~ "S3P5",
+  startsWith(V28, "X3300048054") ~ "S3P5",
+  startsWith(V28, "X3300048092") ~ "S1P1",
+  startsWith(V28, "X3300048093") ~ "S1P1",
+  startsWith(V28, "X3300048094") ~ "S1P1",
+  startsWith(V28, "X3300048095") ~ "S1P1",
+  startsWith(V28, "X3300048096") ~ "S1P1",
+  startsWith(V28, "X3300048099") ~ "S1P5",
+  startsWith(V28, "X3300048100") ~ "S1P5",
+  startsWith(V28, "X3300049511") ~ "S2P4",
+  startsWith(V28, "X3300049512") ~ "S3P4",
+  startsWith(V28, "X3300049557") ~ "S3P4",
+  startsWith(V28, "X3300049628") ~ "S3P5"
+  )) %>%
+  mutate(Time.d = case_when(
+    endsWith(V28, "6hr") ~ "6",
+    endsWith(V28, "0hr") ~ "0",
+    endsWith(V28, "48hr") ~ "48",
+    endsWith(V28, "48_hr") ~ "48"
+  )) %>%
+  mutate(Condition = case_when(
+    grepl("PreDrought", V28) ~ "pre-drought",
+    grepl("Drought", V28) ~ "drought",
+    grepl("Pre_drought", V28) ~ "pre-drought"
+  )) %>%
+   dplyr::select(-V28)
+
+#merge VOC and KO tables
+merged_subset <- KO_VOC.t.f_new_id %>%
+  merge(., acetate_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample","Time.d"),all.x = FALSE, all.y = FALSE) %>%
+  mutate_at(c(4:31), as.numeric) %>%
+  mutate(flux.acetate = as.numeric(flux.acetate)) %>%
+  mutate(log.flux.acetate = log(flux.acetate+abs(min(flux.acetate))+1, base = exp(2))) %>%
+  merge(.,acetone_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample", "Time.d"),all.x = FALSE, all.y = FALSE) %>%
+  mutate(flux.acetone = as.numeric(flux.acetone)) %>%
+  mutate(log.flux.acetone = log(flux.acetone+abs(min(flux.acetone))+1, base = exp(2))) %>%
+  merge(.,diacetyl_flux_proc, by.x = c("Condition", "Sample", "Time.d"), by.y = c("Condition", "Sample", "Time.d"),all.x = FALSE, all.y = FALSE) %>%
+  mutate(flux.diacetyl = as.numeric(flux.diacetyl)) %>%
+  mutate(log.flux.diacetyl = log(flux.diacetyl+abs(min(flux.diacetyl))+1, base = exp(2))) 
+  
+merged_subset
+
+merged_subet_SM <- merged_subset %>%
+  merge(., data.sm, by = c("Condition", "Site")) %>%
+  mutate(log.SM = log(SM))
+
+
+merged_subet_no_0 <- merged_subset %>%
+  filter(Time.d != "0")
+
+merged_subet_no_0_SM <- merged_subset %>%
+  filter(Time.d != "0")%>%
+  merge(., data.sm, by = c("Condition", "Site")) %>%
+  mutate(log.SM = log(SM))
+```
+
+## Filter to acetate and acetone flux and acetate cycling genes
+```{r}
+KO_acetate <- KO_interest_subset %>%
+  filter(VOC == "Acetate") 
+
+KO_acetate_list <- KO_acetate$KO
+flux_list <- c("log.flux.acetate", "log.flux.acetone", "Condition", "Site")
+
+idx <- match(c(KO_acetate_list,flux_list), names(merged_subset))
+idx <- idx[!is.na(idx)]
+
+sub_acetate_pls <- merged_subset[,idx]
+
+sub_acetate_pls2 <- sub_acetate_pls %>%
+  mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+sub_acetate_pls2
+```
+## Filter to acetone and acetate flux and acetone cycling genes
+```{r}
+KO_acetone <- KO_interest_subset %>%
+  filter(VOC == "Acetone") 
+
+KO_acetone_list <- KO_acetone$KO
+flux_list <- c("log.flux.acetate", "log.flux.acetone", "Condition", "Site")
+
+idx <- match(c(KO_acetone_list,flux_list), names(merged_subset))
+idx <- idx[!is.na(idx)]
+
+sub_acetone_pls <- merged_subset[,idx]
+
+sub_acetone_pls2 <- sub_acetone_pls %>%
+  mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+sub_acetone_pls2
+```
+## Filter to diacetyl flux and diacetyl genes
+```{r}
+KO_diacetyl <- KO_interest_subset %>%
+  filter(VOC == "Diacetyl") 
+
+KO_diacetyl_list <- KO_diacetyl$KO
+flux_list <- c("log.flux.diacetyl", "Condition", "Site")
+
+idx <- match(c(KO_diacetyl_list,flux_list), names(merged_subset))
+idx <- idx[!is.na(idx)]
+
+sub_diacetyl_pls <- merged_subset[,idx]
+
+sub_diacetyl_pls2 <- sub_diacetyl_pls %>%
+  mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+sub_diacetyl_pls2
+```
+
+
+### acetate w/ acetate genes and acetone flux
+```{r}
+res.col.acetate <- c(1:9, 11)
+pls.reg1.acetate <- plsreg1(sub_acetate_pls2[,res.col.acetate], sub_acetate_pls2[,10], comps=2, crosval = TRUE)
+
+pls.reg1.acetate$x.scores
+pls.reg1.acetate$x.loads
+pls.reg1.acetate$y.scores
+pls.reg1.acetate$y.loads
+pls.reg1.acetate$cor.xyt
+pls.reg1.acetate$R2Xy
+pls.reg1.acetate$raw.wgs
+pls.reg1.acetate$mod.wgs
+pls.reg1.acetate$y.pred
+pls.reg1.acetate$std.coefs
+pls.reg1.acetate$reg.coefs
+pls.reg1.acetate$residn
+pls.reg1.acetate$R2
+pls.reg1.acetate$Q2
+pls.reg1.acetate$VIP
+
+plot(pls.reg1.acetate)
+```
+
+#Plsr on acetate with 100 iterations to calculate average q2
+```{r plsr-acetate-100-iterations}
+#create empty data frame 
+cross.val <- data.frame(matrix(ncol = 5, nrow = 1))
+colnames(cross.val) <- c("CV.PRESS", "CV.RSS", "CV.Q2", "CV.LimQ2", "CV.Q2cum")
+
+#set first iteration to 1
+n = 1
+
+#create for loop to repeat plsr 100 times and output r2 and q2 to dataframe
+for (n in 1:2000) {
+   if (n %% 2 == 1) {
+      pls.reg1.acetate <- plsreg1(sub_acetate_pls2[,res.col.acetate], sub_acetate_pls2[,10], comps=2, crosval = TRUE)
+      cross.val[n:(n+1),1:5] <- pls.reg1.acetate$Q2
+    }
+      n = n + 1
+  }
+
+cross.val
+
+q2.scores.v <- as.vector(cross.val$CV.Q2)
+q2.scores <- matrix(q2.scores.v, nrow = 1000, byrow = TRUE)
+q2.scores.df <- as.data.frame(q2.scores)
+colnames(q2.scores.df) <- c("q2.1" , "q2.2")
+
+
+q2.scores
+
+q2.1 <- mean(as.numeric(q2.scores.df$q2.1))
+q2.2 <- mean(as.numeric(q2.scores.df$q2.2))
+
+#show averaged q2 values for 1st and 2nd component
+q2.1
+q2.2
+
+#ifelse(as.integer(rownames(q2.scores)) %% 2, )
+```
+
+
+### acetone w/ acetone genes and acetate flux
+```{r}
+res.col.acetone <- c(1:8)
+pls.reg1.acetone <- plsreg1(sub_acetone_pls2[,res.col.acetone], sub_acetone_pls2[,9], comps=2, crosval = TRUE)
+
+pls.reg1.acetone$x.scores
+pls.reg1.acetone$x.loads
+pls.reg1.acetone$y.scores
+pls.reg1.acetone$y.loads
+pls.reg1.acetone$cor.xyt
+pls.reg1.acetone$R2Xy
+pls.reg1.acetone$raw.wgs
+pls.reg1.acetone$mod.wgs
+pls.reg1.acetone$y.pred
+pls.reg1.acetone$std.coefs
+pls.reg1.acetone$reg.coefs
+pls.reg1.acetone$residn
+pls.reg1.acetone$R2
+pls.reg1.acetone$Q2
+pls.reg1.acetone$VIP
+
+plot(pls.reg1.acetone)
+```
+
+
+```{r plsr-acetone-100-iterations}
+#create empty data frame 
+cross.val <- data.frame(matrix(ncol = 5, nrow = 1))
+colnames(cross.val) <- c("CV.PRESS", "CV.RSS", "CV.Q2", "CV.LimQ2", "CV.Q2cum")
+
+#set first iteration to 1
+n = 1
+
+#create for loop to repeat plsr 100 times and output r2 and q2 to dataframe
+for (n in 1:2000) {
+   if (n %% 2 ==1) {
+    pls.reg1.acetone <- plsreg1(sub_acetone_pls2[,res.col.acetone], sub_acetone_pls2[,9], comps=2, crosval = TRUE)
+      cross.val[n:(n+1),1:5] <- pls.reg1.acetone$Q2
+   }
+      n = n + 1
+
+  }
+
+cross.val
+
+q2.scores.v <- as.vector(cross.val$CV.Q2)
+q2.scores <- matrix(q2.scores.v, nrow = 1000, byrow = TRUE)
+q2.scores.df <- as.data.frame(q2.scores)
+colnames(q2.scores.df) <- c("q2.1" , "q2.2")
+
+
+q2.scores
+
+q2.1 <- mean(as.numeric(q2.scores.df$q2.1))
+q2.2 <- mean(as.numeric(q2.scores.df$q2.2))
+
+#show averaged q2 values for 1st and 2nd component
+q2.1
+q2.2
+
+```
+
+### diacetyl w/ diacetyl genes
+```{r}
+res.col.diacetyl <- c(1:3)
+pls.reg1.diacetyl <- plsreg1(sub_diacetyl_pls2[,res.col.diacetyl], sub_diacetyl_pls2[,4], comps=2, crosval = TRUE)
+
+pls.reg1.diacetyl$x.scores
+pls.reg1.diacetyl$x.loads
+pls.reg1.diacetyl$y.scores
+pls.reg1.diacetyl$y.loads
+pls.reg1.diacetyl$R2
+pls.reg1.diacetyl$cor.xyt
+pls.reg1.diacetyl$R2Xy
+pls.reg1.diacetyl$raw.wgs
+pls.reg1.diacetyl$mod.wgs
+pls.reg1.diacetyl$y.pred
+pls.reg1.diacetyl$std.coefs
+pls.reg1.diacetyl$reg.coefs
+pls.reg1.diacetyl$residn
+pls.reg1.diacetyl$Q2
+
+plot(pls.reg1.diacetyl)
+```
+
+```{r plsr-diacetyl-100-iterations}
+#create empty data frame 
+cross.val <- data.frame(matrix(ncol = 5, nrow = 1))
+colnames(cross.val) <- c("CV.PRESS", "CV.RSS", "CV.Q2", "CV.LimQ2", "CV.Q2cum")
+
+#set first iteration to 1
+n = 1
+
+#create for loop to repeat plsr 100 times and output r2 and q2 to dataframe
+for (n in 1:2000) {
+   if (n %% 2 ==1) {
+      pls.reg1.diacetyl <- plsreg1(sub_diacetyl_pls2[,res.col.diacetyl], sub_diacetyl_pls2[,4], comps=2, crosval = TRUE)
+      cross.val[n:(n+1),1:5] <- pls.reg1.diacetyl$Q2
+   }
+      n = n + 1
+  }
+
+cross.val
+
+q2.scores.v <- as.vector(cross.val$CV.Q2)
+q2.scores <- matrix(q2.scores.v, nrow = 1000, byrow = TRUE)
+q2.scores.df <- as.data.frame(q2.scores)
+colnames(q2.scores.df) <- c("q2.1" , "q2.2")
+
+
+q2.scores
+
+q2.1 <- mean(as.numeric(q2.scores.df$q2.1))
+q2.2 <- mean(as.numeric(q2.scores.df$q2.2))
+
+#show averaged q2 values for 1st and 2nd component
+q2.1
+q2.2
+
+```
+## Filter to acetate and acetone flux and acetate cycling genes without time 0
+```{r}
+KO_acetate <- KO_interest_subset %>%
+  filter(VOC == "Acetate") 
+
+KO_acetate_list <- KO_acetate$KO
+flux_list <- c("log.flux.acetate", "log.flux.acetone", "Condition", "Site")
+
+idx <- match(c(KO_acetate_list,flux_list), names(merged_subet_no_0))
+idx <- idx[!is.na(idx)]
+
+sub_acetate_pls <- merged_subet_no_0[,idx]
+
+sub_acetate_pls2_no_0 <- sub_acetate_pls %>%
+  mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+sub_acetate_pls2_no_0
+```
+### acetate w/ acetate genes and acetone flux without 0
+```{r}
+res.col.acetate <- c(1:9, 11:12)
+pls.reg1.acetate <- plsreg1(sub_acetate_pls2_no_0[,res.col.acetate], sub_acetate_pls2_no_0[,10], comps=2, crosval = TRUE)
+
+pls.reg1.acetate$x.scores
+pls.reg1.acetate$x.loads
+pls.reg1.acetate$y.scores
+pls.reg1.acetate$y.loads
+pls.reg1.acetate$cor.xyt
+pls.reg1.acetate$R2Xy
+pls.reg1.acetate$raw.wgs
+pls.reg1.acetate$mod.wgs
+pls.reg1.acetate$y.pred
+pls.reg1.acetate$std.coefs
+pls.reg1.acetate$reg.coefs
+pls.reg1.acetate$residn
+pls.reg1.acetate$R2
+pls.reg1.acetate$Q2
+pls.reg1.acetate$VIP
+
+plot(pls.reg1.acetate)
+```
+
+#Plsr on acetate with 100 iterations to calculate average q2
+```{r plsr-acetate-100-iterations}
+#create empty data frame 
+cross.val <- data.frame(matrix(ncol = 5, nrow = 1))
+colnames(cross.val) <- c("CV.PRESS", "CV.RSS", "CV.Q2", "CV.LimQ2", "CV.Q2cum")
+
+#set first iteration to 1
+n = 1
+
+#create for loop to repeat plsr 100 times and output r2 and q2 to dataframe
+for (n in 1:2000) {
+   if (n %% 2 ==1) {
+      pls.reg1.acetate <- plsreg1(sub_acetate_pls2_no_0[,res.col.acetate], sub_acetate_pls2_no_0[,10], comps=2, crosval = TRUE)
+      cross.val[n:(n+1),1:5] <- pls.reg1.acetate$Q2
+   }
+      n = n + 1
+
+  }
+
+cross.val
+
+q2.scores.v <- as.vector(cross.val$CV.Q2)
+q2.scores <- matrix(q2.scores.v, nrow = 1000, byrow = TRUE)
+q2.scores.df <- as.data.frame(q2.scores)
+colnames(q2.scores.df) <- c("q2.1" , "q2.2")
+
+
+q2.scores
+
+q2.1 <- mean(as.numeric(q2.scores.df$q2.1))
+q2.2 <- mean(as.numeric(q2.scores.df$q2.2))
+
+#show averaged q2 values for 1st and 2nd component
+q2.1
+q2.2
+
+#ifelse(as.integer(rownames(q2.scores)) %% 2, )
+```
+
+## Filter to acetate and acetone flux and acetate cycling genes with soil moisture
+```{r}
+KO_acetate <- KO_interest_subset %>%
+  filter(VOC == "Acetate") 
+
+KO_acetate_list <- KO_acetate$KO
+flux_list <- c("log.flux.acetate", "log.flux.acetone", "log.SM", "Condition", "Site")
+
+idx <- match(c(KO_acetate_list,flux_list), names(merged_subet_SM))
+idx <- idx[!is.na(idx)]
+
+sub_acetate_pls <- merged_subet_SM[,idx]
+
+sub_acetate_pls2_SM <- sub_acetate_pls %>%
+  mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+sub_acetate_pls2_SM
+```
+
+### acetate w/ acetate genes and acetone flux with SM
+```{r}
+res.col.acetate <- c(1:9, 11:12)
+pls.reg1.acetate <- plsreg1(sub_acetate_pls2_SM[,res.col.acetate], sub_acetate_pls2_SM[,10], comps=2, crosval = TRUE)
+
+pls.reg1.acetate$x.scores
+pls.reg1.acetate$x.loads
+pls.reg1.acetate$y.scores
+pls.reg1.acetate$y.loads
+pls.reg1.acetate$cor.xyt
+pls.reg1.acetate$R2Xy
+pls.reg1.acetate$raw.wgs
+pls.reg1.acetate$mod.wgs
+pls.reg1.acetate$y.pred
+pls.reg1.acetate$std.coefs
+pls.reg1.acetate$reg.coefs
+pls.reg1.acetate$residn
+pls.reg1.acetate$R2
+pls.reg1.acetate$Q2
+pls.reg1.acetate$VIP
+
+plot(pls.reg1.acetate)
+```
+### acetate w/ acetate genes and acetone flux with SM without low drivers
+```{r}
+res.col.acetate <- c(1,2,3,4,6,7,8,11,12)
+pls.reg1.acetate <- plsreg1(sub_acetate_pls2_SM[,res.col.acetate], sub_acetate_pls2_SM[,10], comps=2, crosval = TRUE)
+
+pls.reg1.acetate$x.scores
+pls.reg1.acetate$x.loads
+pls.reg1.acetate$y.scores
+pls.reg1.acetate$y.loads
+pls.reg1.acetate$cor.xyt
+pls.reg1.acetate$R2Xy
+pls.reg1.acetate$raw.wgs
+pls.reg1.acetate$mod.wgs
+pls.reg1.acetate$y.pred
+pls.reg1.acetate$std.coefs
+pls.reg1.acetate$reg.coefs
+pls.reg1.acetate$residn
+pls.reg1.acetate$R2
+pls.reg1.acetate$Q2
+pls.reg1.acetate$VIP
+
+plot(pls.reg1.acetate)
+```
+
+#Plsr on acetate with 100 iterations to calculate average q2 with SM
+```{r plsr-acetate-100-iterations}
+#create empty data frame 
+cross.val <- data.frame(matrix(ncol = 5, nrow = 1))
+colnames(cross.val) <- c("CV.PRESS", "CV.RSS", "CV.Q2", "CV.LimQ2", "CV.Q2cum")
+
+#set first iteration to 1
+n = 1
+
+#create for loop to repeat plsr 100 times and output r2 and q2 to dataframe
+for (n in 1:2000) {
+   if (n %% 2 == 1) {
+      pls.reg1.acetate <- plsreg1(sub_acetate_pls2_SM[,res.col.acetate], sub_acetate_pls2_SM[,10], comps=2, crosval = TRUE)
+      cross.val[n:(n+1),1:5] <- pls.reg1.acetate$Q2
+   }
+      n = n + 1
+  }
+
+cross.val
+
+q2.scores.v <- as.vector(cross.val$CV.Q2)
+q2.scores <- matrix(q2.scores.v, nrow = 1000, byrow = TRUE)
+q2.scores.df <- as.data.frame(q2.scores)
+colnames(q2.scores.df) <- c("q2.1" , "q2.2")
+
+
+q2.scores
+
+q2.1 <- mean(as.numeric(q2.scores.df$q2.1))
+q2.2 <- mean(as.numeric(q2.scores.df$q2.2))
+
+#show averaged q2 values for 1st and 2nd component
+q2.1
+q2.2
+
+#ifelse(as.integer(rownames(q2.scores)) %% 2, )
+```
+
+### filter to acetonee cycling genes with acetate flux with soil moisture
+```{r}
+KO_acetone <- KO_interest_subset %>%
+  filter(VOC == "Acetone") 
+
+KO_acetone_list <- KO_acetone$KO
+flux_list <- c("log.flux.acetate", "log.flux.acetone", "log.SM", "Condition", "Site")
+
+idx <- match(c(KO_acetone_list,flux_list), names(merged_subet_SM))
+idx <- idx[!is.na(idx)]
+
+sub_acetone_pls <- merged_subet_SM[,idx]
+
+sub_acetone_pls2_SM <- sub_acetone_pls %>%
+  mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+sub_acetone_pls2_SM
+```
+
+### acetone w/ acetone genes and acetate flux with SM
+```{r}
+res.col.acetone <- c(1:8, 10)
+pls.reg1.acetone <- plsreg1(sub_acetone_pls2_SM[,res.col.acetone], sub_acetone_pls2_SM[,9], comps=2, crosval = TRUE)
+
+pls.reg1.acetone$x.scores
+pls.reg1.acetone$x.loads
+pls.reg1.acetone$y.scores
+pls.reg1.acetone$y.loads
+pls.reg1.acetone$cor.xyt
+pls.reg1.acetone$R2Xy
+pls.reg1.acetone$raw.wgs
+pls.reg1.acetone$mod.wgs
+pls.reg1.acetone$y.pred
+pls.reg1.acetone$std.coefs
+pls.reg1.acetone$reg.coefs
+pls.reg1.acetone$residn
+pls.reg1.acetone$R2
+pls.reg1.acetone$Q2
+pls.reg1.acetone$VIP
+
+plot(pls.reg1.acetone)
+```
+
+### acetone w/ acetone genes and acetate flux with SM - take out low drivers
+```{r}
+res.col.acetone <- c(2,3,7,8,10)
+pls.reg1.acetone <- plsreg1(sub_acetone_pls2_SM[,res.col.acetone], sub_acetone_pls2_SM[,9], comps=2, crosval = TRUE)
+
+pls.reg1.acetone$x.scores
+pls.reg1.acetone$x.loads
+pls.reg1.acetone$y.scores
+pls.reg1.acetone$y.loads
+pls.reg1.acetone$cor.xyt
+pls.reg1.acetone$R2Xy
+pls.reg1.acetone$raw.wgs
+pls.reg1.acetone$mod.wgs
+pls.reg1.acetone$y.pred
+pls.reg1.acetone$std.coefs
+pls.reg1.acetone$reg.coefs
+pls.reg1.acetone$residn
+pls.reg1.acetone$R2
+pls.reg1.acetone$Q2
+pls.reg1.acetone$VIP
+
+plot(pls.reg1.acetone)
+```
+
+#Plsr on acetone with 1000 iterations to calculate  q2 with SM
+```{r plsr-acetate-100-iterations}
+#create empty data frame 
+cross.val <- data.frame(matrix(ncol = 5, nrow = 1))
+colnames(cross.val) <- c("CV.PRESS", "CV.RSS", "CV.Q2", "CV.LimQ2", "CV.Q2cum")
+
+#set first iteration to 1
+n = 1
+
+#create for loop to repeat plsr 100 times and output r2 and q2 to dataframe
+for (n in 1:2000) {
+   if (n %% 2 == 1 ) {
+      pls.reg1.acetone <- plsreg1(sub_acetone_pls2_SM[,res.col.acetone], sub_acetone_pls2_SM[,9], comps=2, crosval = TRUE)
+      cross.val[n:(n+1),1:5] <- as.data.frame(pls.reg1.acetone$Q2)[1:2,]
+   }
+    n = n + 1
+  }
+
+cross.val
+
+q2.scores.v <- as.vector(cross.val$CV.Q2)
+q2.scores <- matrix(q2.scores.v, nrow = 1000, byrow = TRUE)
+q2.scores.df <- as.data.frame(q2.scores)
+colnames(q2.scores.df) <- c("q2.1" , "q2.2")
+
+
+q2.scores
+
+q2.1 <- mean(as.numeric(q2.scores.df$q2.1))
+q2.2 <- mean(as.numeric(q2.scores.df$q2.2))
+
+#show averaged q2 values for 1st and 2nd component
+q2.1
+q2.2
+
+#ifelse(as.integer(rownames(q2.scores)) %% 2, )
+```

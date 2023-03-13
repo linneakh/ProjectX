@@ -126,4 +126,21 @@ data.pub <- data %>%
   
 
 ```
+#get average soil moisture for sites 1 and 2 to add to plsr model
+```{r}
+#add soil moisture means
+data.sm <- data %>%
+  replace(is.na(.), 0) %>%
+  group_by(Site, Condition) %>%
+  summarize(SM = mean(SM)) %>%
+   mutate(Condition2 = case_when(
+    grepl("PreDrought", Condition) ~ "pre-drought",
+    grepl("Drought", Condition) ~ "drought")) %>%
+  select(-Condition) %>%
+  mutate(Condition = Condition2) %>%
+  select(-Condition2)
+
+data.sm
+
+```
 

@@ -26,6 +26,7 @@ library(knitr)
 library(plyr)
 library(cowplot)
 library(genefilter)
+library(nlme)
 
 #set colors
 
@@ -88,9 +89,13 @@ SP.f <- filter_taxa(SP, function(x) sum(x) > threshold, TRUE)
 #SP.f <- filter_taxa(SP, flist, TRUE)
 
 #filter to Bacteria and Archaea Kingdoms
-SPb = subset_taxa(SP.f, Kingdom == "Bacteria" |
+SPb = subset_taxa(SP.f, Kingdom == "Bacteria") |
                     Kingdom == "Archaea")
 SPb
+
+#filter to Archaea
+SPa = subset_taxa(SP.f, Kingdom == "Archaea")
+SPa
 
 #filter to leave fungi 
 SPf = subset_taxa(SP.f, Phylum == "Chytridiomycota" |
@@ -106,7 +111,11 @@ SPf
 SPe = subset_taxa(SP.f, Kingdom == "Eukaryota")
 
 SPe
+```
 
+
+##filter and psmelt data into taxonomic tables
+```{r import_data}
 #taxonomy--------------------------------------------------------
 SP.rel.abun <- transform_sample_counts(SP.f, function(x) x/sum(x)) #convert counts to relative abundances
 k.glom <- tax_glom(SP.rel.abun, taxrank = "Kingdom") #agglomerate taxa to Phylum-level
@@ -151,7 +160,7 @@ p.dat2.d.se
 #prune out phyla below 2% in each sample for all experiments (bacteria/archaea)
 SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
 P.glomb <- tax_glom(SPb.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
-P.datb <- psmelt(P.glom)
+P.datb <- psmelt(P.glomb)
 P.datb$Phylum <- as.character(P.datb$Phylum) #convert to character vector from factor
 P.datb$Phylum[P.datb$Abundance < 0.02] <- "Phylum < 2%"
 
@@ -167,12 +176,21 @@ F.dat <- psmelt(F.glom)
 F.dat$Family <- as.character(F.dat$Family) #convert to character vector from factor
 F.dat$Family[F.dat$Abundance < 0.035] <- "Family < 3.5%"
 
+#prune out phyla below 2% in each sample for archaea
+SPa.rel.abun <- transform_sample_counts(SPa, function(x) x/sum(x)) #convert counts to relative abundances
+P.gloma <- tax_glom(SPa.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
+P.dataa <- psmelt(P.gloma)
+P.data$Phylum <- as.character(P.data$Phylum) #convert to character vector from factor
+P.data$Phylum[P.data$Abundance < 0.02] <- "Phylum < 2%"
+
 #prune out phyla below 2% in each sample for all experiments for fungi
 SPf.rel.abun <- transform_sample_counts(SPf, function(x) x/sum(x)) #convert counts to relative abundances
 Pf.glom <- tax_glom(SPf.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
 Pf.dat <- psmelt(Pf.glom)
 Pf.dat$Phylum <- as.character(Pf.dat$Phylum) #convert to character vector from factor
 Pf.dat$Phylum[Pf.dat$Abundance < 0.02] <- "Phylum < 2%"
+
+
 
 SPf.rel.abun <- transform_sample_counts(SPf, function(x) x/sum(x)) #convert counts to relative abundances
 Cf.glom <- tax_glom(SPf.rel.abun, taxrank = "Class") #agglomerate taxa to Phylum-level
@@ -190,7 +208,25 @@ SPf.rel.abun <- transform_sample_counts(SPf, function(x) x/sum(x)) #convert coun
 Gf.glom <- tax_glom(SPf.rel.abun, taxrank = "Genus") #agglomerate taxa to Phylum-level
 Gf.dat <- psmelt(Gf.glom)
 Gf.dat$Genus <- as.character(Gf.dat$Genus) #convert to character vector from factor
-Gf.dat$Genus[Gf.dat$Abundance < 0.05] <- "Genus < 3.5%"
+#Gf.dat$Genus[Gf.dat$Abundance < 0.05] <- "Genus < 5%" #only include this line for plotting
+
+#calculate means and standard deviations for fusarium abundances within eukaryota
+Gf.dat.summary <- Gf.dat %>%
+  dplyr::group_by(Condition, Time, Genus) %>%
+  dplyr::summarise(avg_abundance = mean(Abundance),
+                   sd_abundance = sd(Abundance)) %>%
+  dplyr::filter(Genus == "Fusarium")
+
+Gf.dat.summary
+
+#calculate means and standard deviations for ascomycota abundances within eukaryota
+Pf.dat.summary <- Pf.dat %>%
+  dplyr::group_by(Condition, Time, Phylum) %>%
+  dplyr::summarise(avg_abundance = mean(Abundance),
+                   sd_abundance = sd(Abundance)) %>%
+  dplyr::filter(Phylum == "Ascomycota")
+
+Pf.dat.summary
 
 #prune out phyla below 2% in each sample for all experiments for eukaryota
 SPe.rel.abun <- transform_sample_counts(SPe, function(x) x/sum(x)) #convert counts to relative abundances
@@ -250,7 +286,7 @@ K_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
 filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Kingdom.png")
 ggsave(filename,width=4,height=5,dpi=1000,K_barplot)
 
-#######plot Phylum bacteria######################################
+#######plot Phylum bacteria/archaea######################################
 P.datb$Condition <- factor(P.datb$Condition, c("PreDrought", "Drought"))
 P.datb$Time <- factor(P.datb$Time, c("0hr", "6hr", "48hr"))
 
@@ -269,7 +305,7 @@ p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
 filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum.png")
 ggsave(filename,width=5,height=6,dpi=1000,p_barplot)
 
-#######plot Classes bacteria######################################
+#######plot Classes bacteria/archaea######################################
 C.dat$Condition <- factor(C.dat$Condition, c("PreDrought", "Drought"))
 C.dat$Time <- factor(C.dat$Time, c("0hr", "6hr", "48hr"))
 
@@ -286,7 +322,7 @@ c_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
 filename <- paste0("../../Figures/FigS3-Taxonomy/metaT-Class.png")
 ggsave(filename,width=10,height=5,dpi=1000,c_barplot)
 
-#######plot family bacteria######################################
+#######plot family bacteria/archaea######################################
 F.dat$Condition <- factor(F.dat$Condition, c("PreDrought", "Drought"))
 
 
@@ -299,6 +335,26 @@ f_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         axis.text.x=element_text(size=12,hjust =0.5, vjust=0.2),
         legend.text = element_text(size = 10),
   )
+
+
+#######plot Phylum Archaea######################################
+P.data$Condition <- factor(P.data$Condition, c("PreDrought", "Drought"))
+P.data$Time <- factor(P.data$Time, c("0hr", "6hr", "48hr"))
+
+
+p <- ggplot(P.data, aes(x=Time, y=Abundance, fill=Phylum)) 
+
+pa_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors_very_short) +
+  theme_bw() +
+  theme(text = element_text(size = 11),
+        axis.text.x=element_text(hjust =0.5, vjust=0.2),
+        legend.title = element_blank()
+  )
+
+filename <- paste0("../../Figures/FigS3-Taxonomy/metaT-Phylum-archaea.png")
+ggsave(filename,width=5,height=5,dpi=1000,pa_barplot)
 
 #######plot Phylum fungi######################################
 Pf.dat$Condition <- factor(Pf.dat$Condition, c("PreDrought", "Drought"))
@@ -319,7 +375,7 @@ pf_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
 filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-fingi.png")
 ggsave(filename,width=5,height=5,dpi=1000,pf_barplot)
 
-#######plot Classes eukaryota######################################
+#######plot Classes fungi######################################
 Cf.dat$Condition <- factor(Cf.dat$Condition, c("PreDrought", "Drought"))
 Cf.dat$Time <- factor(Cf.dat$Time, c("0hr", "6hr", "48hr"))
 
@@ -338,6 +394,7 @@ ggsave(filename,width=10,height=5,dpi=1000,cf_barplot)
 
 #######plot family fungi######################################
 Ff.dat$Condition <- factor(Ff.dat$Condition, c("PreDrought", "Drought"))
+Ff.dat$Time <- factor(Ff.dat$Time, c("0hr", "6hr", "48hr"))
 
 
 p <- ggplot(Ff.dat, aes(x=Time, y=Abundance, fill=Family)) 
@@ -352,6 +409,7 @@ ff_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
 
 #######plot genus fungi######################################
 Gf.dat$Condition <- factor(Gf.dat$Condition, c("PreDrought", "Drought"))
+Gf.dat$Time <- factor(Gf.dat$Time, c("0hr", "6hr", "48hr"))
 
 
 p <- ggplot(Gf.dat, aes(x=Time, y=Abundance, fill=Genus)) 
@@ -526,7 +584,7 @@ plot_grid (p1, p2,
 phyla = c("Proteobacteria", "Acidobacteria", "Actinobacteria", "Bacteroidetes",
           "Chloroflexi","Cyanobacteria",  "Firmicutes", 
           "Gemmatimonadetes",  "Planctomycetes",
-          "Thaumarchaeota", "Verrucomicrobia")
+           "Verrucomicrobia")
 for (p in phyla)
 {
 p.P.datb <- P.datb %>%
@@ -642,7 +700,7 @@ p.Pf.dat <- Pf.dat %>%
 
 lme.p.Pf.dat <- lme(Abundance ~ Time,
                  random = list(Site = ~1),
-                 data = p.Pf.datb,
+                 data = p.Pf.dat,
                  weights = varIdent(form = ~1|Time)
 )
 sum <- summary(lme.p.Pf.dat)
@@ -652,6 +710,70 @@ print(tabl)
 }
 
 ```
+# statistical analysis - phyla within archaea
+```{r}
+####phlya across all kingdoms that are in tableS4 (removed some phyla that were in only 1 or 2 samples)
+phyla = c("Crenarchaeota", "Euryarchaeota" ,"Thaumarchaeota")
+
+for (p in phyla)
+{
+p.P.data <- P.data %>%
+  dplyr::filter(Phylum == p)
+
+lme.p.P.data <- lme(Abundance ~ Condition + Time,
+                 random = list(Site = ~1),
+                 data = p.P.data,
+                 weights = varIdent(form = ~1|Condition)
+)
+
+sum <- summary(lme.p.P.data)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+# Condition - Drought
+phyla = c("Chytridiomycota", "Blastocladiomycota" ,"Ascomycota",     
+          "Basidiomycota")
+for (p in phyla)
+{
+p.Pf.dat <- Pf.dat %>%
+  dplyr::filter(Phylum == p) %>%
+  dplyr::filter(Condition == "Drought")
+
+lme.p.Pf.dat <- lme(Abundance ~ Time,
+                 random = list(Site = ~1),
+                 data = p.Pf.dat,
+                 weights = varIdent(form = ~1|Time)
+)
+sum <- summary(lme.p.Pf.dat)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+# Condition - Pre-Drought
+phyla = c("Chytridiomycota", "Blastocladiomycota" ,"Ascomycota",     
+          "Basidiomycota")
+for (p in phyla)
+{
+p.Pf.dat <- Pf.dat %>%
+  dplyr::filter(Phylum == p) %>%
+  dplyr::filter(Condition == "PreDrought")
+
+lme.p.Pf.dat <- lme(Abundance ~ Time,
+                 random = list(Site = ~1),
+                 data = p.Pf.dat,
+                 weights = varIdent(form = ~1|Time)
+)
+sum <- summary(lme.p.Pf.dat)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+```
+
 
 ## statistical analysis of taxonomy - total fungi, archaea, bacteria
 ```{r}
@@ -686,3 +808,4 @@ sum <- summary(lme.a.p.dat2)
 tabl = sum$tTable
 tabl
 
+```

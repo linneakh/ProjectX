@@ -24,7 +24,8 @@ colors_pyruv = c("blue" ,"pink")
 
 ###C1/C2 ratios, separate by site and divide C1:C2 ratios of nearby locations (paired locations)
 # modify data_sub table to add time intervals and calculate C1 and C2 ratios per site 
-ratios_per_set <- data_sub_13C_flux %>%  #data_sun_13C_flux object created in Fig2-B-G-H-I-J-cumulative_fluxes.RMD
+
+ratios_per_set <- data_sub_13C_flux %>%  #data_sub_13C_flux object created in Fig2-B-G-H-I-J-cumulative_fluxes.RMD
   mutate(label_state = ifelse(Trel >0, "post", "pre")) %>% 
   filter(label_state == "post") %>%
   filter(Pyruv != "W") %>%
@@ -71,7 +72,7 @@ ratios_per_set$Condition <- factor(ratios_per_set$Condition, c("pre_drought", "d
 ratios_per_set %>%
   ggplot(aes(x = Time, y = C1_C2_diff_fCO2_13_py, fill = Condition)) +
   geom_boxplot() +
-  labs(x = "Time post pyruvate (h)", y= expression("C allocation to biosynthesis ("*mu*"mol m"^-2*"s"^-1*")")) +
+  labs(x = "Time post pyruvate (h)", y= expression("C allocation to biosynthesis ("*mu*"mol m"^-2*"h"^-1*")")) +
   #facet_wrap(. ~ Site) + 
   scale_fill_manual(values = colors,
                     breaks = c("pre_drought", "drought"),
@@ -81,7 +82,7 @@ ratios_per_set %>%
                             color = "black"),
         legend.position = "bottom",
         legend.title = element_blank())
-#ggsave("Figures/Fig2-S1-CO2-VOCs/Fig2C-C1-C2-difference-13C-CO2-py-w-set4.png", width = 4, height = 4, dpi = 1000)
+ggsave("Figures/Fig2-S1-CO2-VOCs/Fig2C-C1-C2-difference-13C-CO2-py-w-set4.png", width = 4, height = 4.1, dpi = 1000)
 
 # graph of all ratios (flux 13C from pyruvate, C1/(C1+C2))
 ratios_per_set %>%

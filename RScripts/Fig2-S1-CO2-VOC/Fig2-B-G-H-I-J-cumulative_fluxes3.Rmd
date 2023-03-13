@@ -177,14 +177,14 @@ AUC.0 <- rbind(AUC.C1, AUC.C2)
 
 
 # calculate total mmol of C (note, AUC is in umol/m2, diameter of collar = 20 cm) 
-# mmol: multiply AUC by area of collar (314.16cm2) to get umol, then divide by 10000 to convert from cm2 to m2
-# mol: divide umol by 1000000 to convert to mol
+# mmol: multiply AUC by area of collar (314.16cm2) to get umol, then divide by 10000 to convert from cm2 to m2 (100X100)
+# mol: divide umol by 1000000 to convert to mol (10^6 umol in mol)
 AUC <- AUC.0 %>%
   mutate(umol = ((AUC * 314.16) /10000)) %>%
   mutate(mol = umol / 1000000) %>%
   mutate(mass.13C.g = mol * 13) #add column with total mass of 13C (molar mass of 13C is 13 g/mol)
 
-# calculate % of 13C pyruvate in 13C-CO2 (note, 0.10g of 13C-pyruvate added, which = 0.0011228385 mol(molar mass of 13C-pyruvate = 89.06g/mol),
+# calculate % of 13C pyruvate in 13C-CO2 (note, 0.10g of 13C-pyruvate added, which = 0.0011344894 mol(molar mass of 13C-pyruvate = 89.06g/mol),
 # Since only one carbon atom labeled, 13C is also 0.0011344894 mol, and total mass of 13C can by calculated)
 mass.13C.pyr.g = 0.0011344894 * 13
 
@@ -192,13 +192,13 @@ AUC <- AUC %>%
   mutate(perc.mass = (mass.13C.g/mass.13C.pyr.g) *100) %>%
   mutate(perc.mol = (mol/ 0.0011344894) * 100)
 
-# calculate average aucs and nmol of C
+# calculate average aucs and umol of C
 AUC_summary.CO2 <- AUC %>%
   group_by(Cond, Pyr) %>%
   summarise_at(vars(c(AUC, umol, mass.13C.g, perc.mass)), list(name = mean)) %>%
   mutate(compound = "CO2")
 
-# total C for biosynthesis during drought
+# total C for biosynthesis during drought (units in umol)
 AUC_summary_wide <- AUC_summary.CO2 %>%
   dplyr::select(-c(AUC_name, perc.mass_name,mass.13C.g_name )) %>%
   pivot_wider(names_from = c(Pyr, Cond), values_from = umol_name) %>%
@@ -207,7 +207,7 @@ AUC_summary_wide <- AUC_summary.CO2 %>%
   mutate(TCA_cycle.D = C1_Drought - Biosynthesis.D) %>%
   mutate(TCA_cycle.PD = C1_Pre_Drought - Biosynthesis.PD) 
 
-# plot mmol of 13C pyruvate
+# plot umol of 13C pyruvate (cummulative 13C-CO2)
 plot <- AUC %>%
   mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
   ggplot(aes(x= Cond, y = umol, fill = Cond)) +
@@ -462,7 +462,7 @@ df.acetone$Time <- as.numeric(df.acetone$Time)
 
 
 df.acetone.f <- df.acetone %>%
-  mutate(Time.h = Time * 48) %>%
+  mutate(Time.h = Time * 24) %>%
   dplyr::select(-Time) %>%
   filter(Time.h < 48 &
            Time.h > 0)
@@ -597,10 +597,10 @@ AUC.aton <- AUC.aton.0 %>%
 
 # calculate % of 13C pyruvate in 13C-acetone (note, 0.0011228385 mol of 13C-pyruvate added,
 # 0.0034067682 mol of C, but only one carbon atom labeled, so 0.0011344894 mol of labeled C)
-mass.13C.pyr.g = 0.0011228385 * 13
+mass.13C.pyr.g = 0.0011344894 * 13
 
 AUC.aton <- AUC.aton %>%
-  mutate(perc.mol = (mol/0.0011228385) *100) %>%
+  mutate(perc.mol = (mol/0.0011344894) *100) %>%
   mutate(perc.mass = ((mass.13C.g / mass.13C.pyr.g) * 100))
 
 # calculate average AUC.atons and umol of C
@@ -610,7 +610,7 @@ AUC_summary.acetone <- AUC.aton %>%
   mutate(compound = "Acetone")
 
 
-# plot cummalative flux of 13C pyruvate
+# plot cummalative flux of 13C pyruvate (C1 and C2)
 plot <- AUC.aton %>%
   mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
   ggplot(aes(x= Cond, y = umol, fill = Cond)) +
@@ -629,7 +629,7 @@ plot <- AUC.aton %>%
 plot
 #ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-acetone-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
 
-# plot cummalative percentage of of 13C pyruvate
+# plot cummalative percentage of of 13C pyruvate (c1 and C2)
 plot <- AUC.aton %>%
   mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
   ggplot(aes(x= Cond, y = perc.mass, fill = Cond)) +
@@ -1580,7 +1580,7 @@ pie.d <- ggplot(summary.allocation.d.t, aes(x="", y=perc.alloc, fill =cat.alloc 
   theme_void() +
   theme(legend.title = element_blank())
 pie.d
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2J-pie_d_bio_tca.png",units=c('in'),width=3, height = 3,dpi=300,pie.d)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2J-pie_d_bio_tca.png",units=c('in'),width=3, height = 3,dpi=300,pie.d)
 
 
 # pre-drought
@@ -1607,7 +1607,7 @@ pie.p <- ggplot(summary.allocation.p.t, aes(x="", y=perc.alloc, fill =cat.alloc 
   theme_void() +
   theme(legend.title = element_blank())
 pie.p
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2J-pie_p_bio_tca.png",units=c('in'),width=3, height = 3,dpi=300,pie.p)
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2J-pie_p_bio_tca.png",units=c('in'),width=3, height = 3,dpi=300,pie.p)
 
 # #####piechart showing proportion of biosynthesis that are VOCs
 #first set up data table to plot
@@ -1698,16 +1698,13 @@ pie.d
 
 ```
 
-# notes on summary table:
+# notes on summary table (haven't updated with corrected results):
 - diff in C1 - c2 for CO2 represents umol of 13C that go towards biosynthesis 
     - Pre-drought: 465.48 umol
     - Drought 196.59 umol  
 - sum of acetate, acetone, and diaceytl (c2) represent 13C from biosynthesis pathways 
-   - Pre-drought: 10.4 umol [from acetone....acetate and diacetyl are negative numbers, so consumption? didn't take it into account in 
-      the sum]  
-   - Drought: 122.68 umol)
-
-VOC biosynthesis represents 62.4 % of total biosynthesis during Drought, and only 2.2 % during Pre-drought!! Really cool. 
+   
+VOC biosynthesis represents 0.11 % of total biosynthesis during Drought, and only 0.0022 % during Pre-drought!! Really cool. 
 
 ALSO.... Comparing microbially-mediated carbon emissions... 
 - Pre-drought 465.48umol co2 + 10.4 umol voc = 475.88 umol, 
