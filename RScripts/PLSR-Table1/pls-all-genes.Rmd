@@ -670,7 +670,7 @@ pls.reg2$Q2
 plot(pls.reg2)
 ```
 
-# try r base plsr function
+# try pls package plsr function
 ```{r}
 res.col <- c(1:16, 20)
 x.matrix <- as.matrix(KO_all_genes_VOC_list2[,res.col])
@@ -799,3 +799,55 @@ defaultSummary(pls.eval)
 
 ```
 
+# try pls-package plsr function on table 1 
+```{r}
+res.col <- c(1:9, 11:12)
+x.matrix <- as.matrix(sub_acetate_pls2_SM[,res.col])
+y.matrix <- as.matrix(sub_acetate_pls2_SM[,10])
+
+even <- c(2,4,6,8,10,12,14,16,18)
+odd <- c(1,3,5,7,9,11,13,15,17)
+
+x.matrix.test <- x.matrix[even,]
+x.matrix.val <- x.matrix[odd,]
+
+y.matrix.test <- y.matrix[even,]
+y.matrix.val <- y.matrix[odd,]
+
+x.matrix.test.df <- as.data.frame(x.matrix.test)
+
+
+#PLSR on all data
+my_plsr <- plsr(y.matrix ~ x.matrix, ncomp=6, scale = TRUE, validation='LOO')
+plot(RMSEP(my_plsr))
+summary(my_plsr)
+plot(my_plsr, plottype = "coef", ncomp=c(1:6), legendpos= "bottomleft")
+plot(my_plsr, ncomp = 2, asp = 1, line = TRUE)
+
+#PLSR on train dataset to be tested on 'test' dataset
+plsr_train <- plsr(y.matrix.val ~ x.matrix.val, ncomp=6, scale = TRUE, validation='LOO')
+
+predict(plsr_train, ncomp = 2, newdata = x.matrix.test )
+
+RMSEP(plsr_train, newdata = x.matrix.test.df)
+
+# Loop through possible values for n_comp to optimize R2 on validation data
+best_r2 <- 0
+best_ncomp <- 0
+for (n_comp in c(1:7)){
+  model <- plsr(y.matrix.test ~ x.matrix.test, ncomp=n_comp, scale = TRUE, validation='LOO')
+  predictions <- as.matrix(data.frame(predict(model, ncomp=n_comp, x.matrix.val)))
+  mean_r2 <- mean(diag(cor(predictions, y.matrix.val))**2)
+
+  if (mean_r2 > best_r2){
+    best_r2 <- mean_r2
+    best_ncomp <- n_comp
+  }
+}
+
+print(best_ncomp)
+print(best_r2)
+
+#use select function to find best number of components
+ncomp.onesigma <- selectNcomp(my_plsr, method = "randomization", plot = TRUE)
+```

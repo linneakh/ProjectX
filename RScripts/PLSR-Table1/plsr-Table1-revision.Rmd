@@ -27,6 +27,7 @@ library(pls)
 library(caret)
 library(DESeq2)
 library(tibble)
+#library(metabom8)
 
 ```
 
@@ -214,6 +215,7 @@ merged_subset <- KO_VOC.t.f_new_id %>%
   
 merged_subset
 
+#merge with soil moisture data, which is loaded in the 'soil_moisture.Rmd' script
 merged_subet_SM <- merged_subset %>%
   merge(., data.sm, by = c("Condition", "Site")) %>%
   mutate(log.SM = log(SM))
@@ -303,7 +305,7 @@ pls.reg1.acetate$mod.wgs
 pls.reg1.acetate$y.pred
 pls.reg1.acetate$std.coefs
 pls.reg1.acetate$reg.coefs
-pls.reg1.acetate$residn
+pls.reg1.acetate$resid
 pls.reg1.acetate$R2
 pls.reg1.acetate$Q2
 pls.reg1.acetate$VIP
@@ -337,7 +339,7 @@ q2.scores.df <- as.data.frame(q2.scores)
 colnames(q2.scores.df) <- c("q2.1" , "q2.2")
 
 
-q2.scores
+q2.scores.df
 
 q2.1 <- mean(as.numeric(q2.scores.df$q2.1))
 q2.2 <- mean(as.numeric(q2.scores.df$q2.2))
@@ -588,10 +590,9 @@ pls.reg1.acetate$mod.wgs
 pls.reg1.acetate$y.pred
 pls.reg1.acetate$std.coefs
 pls.reg1.acetate$reg.coefs
-pls.reg1.acetate$residn
+pls.reg1.acetate$resid
 pls.reg1.acetate$R2
 pls.reg1.acetate$Q2
-pls.reg1.acetate$VIP
 
 plot(pls.reg1.acetate)
 ```
@@ -629,7 +630,7 @@ colnames(cross.val) <- c("CV.PRESS", "CV.RSS", "CV.Q2", "CV.LimQ2", "CV.Q2cum")
 n = 1
 
 #create for loop to repeat plsr 100 times and output r2 and q2 to dataframe
-for (n in 1:2000) {
+for (n in 1:36) {
    if (n %% 2 == 1) {
       pls.reg1.acetate <- plsreg1(sub_acetate_pls2_SM[,res.col.acetate], sub_acetate_pls2_SM[,10], comps=2, crosval = TRUE)
       cross.val[n:(n+1),1:5] <- pls.reg1.acetate$Q2
@@ -640,7 +641,7 @@ for (n in 1:2000) {
 cross.val
 
 q2.scores.v <- as.vector(cross.val$CV.Q2)
-q2.scores <- matrix(q2.scores.v, nrow = 1000, byrow = TRUE)
+q2.scores <- matrix(q2.scores.v, nrow = 18, byrow = TRUE)
 q2.scores.df <- as.data.frame(q2.scores)
 colnames(q2.scores.df) <- c("q2.1" , "q2.2")
 
@@ -656,7 +657,56 @@ q2.2
 
 #ifelse(as.integer(rownames(q2.scores)) %% 2, )
 ```
+#attempt anova on residuals of 18 models, each with one left out
+```{r plsr-acetate-100-iterations}
 
+#move acetate column to the end
+sub_acetate_pls2_for_anova <- sub_acetate_pls2_SM %>%
+  mutate(log.flux.acetate2 = log.flux.acetate) %>%
+  select(-log.flux.acetate, -tmt) 
+
+sub_acetate_pls2_for_anova <- as.data.frame(sub_acetate_pls2_for_anova)
+
+#create empty data frame 
+cross.val <- data.frame(matrix(ncol = 17, nrow = 18))
+#rownames(cross.val) <- c("it.1", "it.2", "it.3", "it.4", "it.5", "it.6", "it.7", "it.8", "it.9", "it.10",
+#                         "it.11", "it.12", "it.13", "it.14", "it.15", "it.16", "it.17", "it.18")
+#colnames(cross.val) <- colnames(sub_acetate_pls2_for_anova[,1:11])
+
+#set first iteration to 1
+n = 1
+
+#create for loop to repeat plsr 100 times and output r2 and q2 to dataframe
+for (n in 1:18) {
+      plsr_minus_one <- sub_acetate_pls2_for_anova[-n,]
+      pls.reg1.acetate <- plsreg1(plsr_minus_one[,1:11], plsr_minus_one[,12], comps=2, crosval = FALSE)
+      cross.val[n,] <- pls.reg1.acetate$resid
+      n = n + 1
+  }
+
+cross.val
+
+cross.val.df.t.num <- as.numeric(unlist(cross.val))
+cross.val.for.anova <- matrix(cross.val.df.t.num, nrow = 18, byrow = FALSE)
+#cross.val.for.anova.df <- as.data.frame(cross.val.for.anova)
+
+cross.val.for.anova.t <- as.data.frame(t(cross.val.for.anova))
+colnames(cross.val.for.anova.t) <- c("it.1", "it.2", "it.3", "it.4", "it.5", "it.6", "it.7", "it.8", "it.9", "it.10",
+                         "it.11", "it.12", "it.13", "it.14", "it.15", "it.16", "it.17", "it.18")
+
+cross.val.for.anova.t.long <- cross.val.for.anova.t %>%
+  gather(key = "iteration", value = "residuals")
+
+res_aov <- aov(residuals ~ iteration,
+  data = cross.val.for.anova.t.long
+)
+summary(res_aov)
+
+ggplot(res_aov) +
+  aes(x = iteration, y = residuals) +
+  geom_boxplot()
+#ifelse(as.integer(rownames(q2.scores)) %% 2, )
+```
 ### filter to acetonee cycling genes with acetate flux with soil moisture
 ```{r}
 KO_acetone <- KO_interest_subset %>%
