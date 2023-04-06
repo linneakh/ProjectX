@@ -26,3 +26,11 @@ K10856,consume,Acetone,Acetone,acxC,yes
 K00656,produce,Acetyl.CoA,Acetone,pflD,no
 K18372,produce,Acetate,Acetate,acmB,yes
 K18382,consume,Acetone,Acetone,ald1,yes
+K01034,produce,Butanoate,Butanoate,na,no
+K01034,consume,Acetate,Acetate,na,no
+K01035,produce,Butanoate,Butanoate,na,no
+K01035,consume,Acetate,Acetate,na,no
+K19709,produce,Butanoate,Butanoate,na,no
+K19709,consume,Acetate,Acetate,na,no
+K23756,consume,Butanoate,Butanoate,na,no
+K00929,consume,Butanoate,Butanoate,na,no

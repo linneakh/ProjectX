@@ -15,32 +15,33 @@ theme_set(theme_custom)
 
 colors = c("#2ECC71" ,"#F39C12")
 
-data <- read.csv("./Data/CO2-VOCs/voc_raw/acetic-acid-for-ggplot.csv") 
+data.13C.12C <- read.csv("./Output/CO2-VOCs/acetate_flux-13C-12C-all.csv")
+data.13C <- read.csv("./Output/CO2-VOCs/acetate_flux-13C-all.csv")
 
 # re order factors for condition
-data$Condition <- factor(data$Condition, c(
-  "pre-drought", "drought"))
+data.13C.12C$Condition <- factor(data.13C.12C$Condition, c("Pre-Drought", "Drought"))
+
 
 # filter out times outside of -12 hour to 48 hour
-data_sub <- data %>%
+data_sub <- data.13C.12C %>%
   filter(Time > -0.3 & Time <2 ) %>%
-  filter(Type == "sample")
+  filter(Pyr == "C1" |
+           Pyr == "C2")
 
 # Isotope Sig acetate
-filename=paste("Figures/Fig2-S1-CO2-VOCs/Fig2D-acetate.png", sep = "")
+filename=paste("./Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig.2D-acetate-time-series.png", sep = "")
 png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
-  filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
-  facet_grid(. ~ Pyruv) + 
+  facet_grid(. ~ Pyr) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
   geom_point(alpha = 0.3, size = 1) +
   geom_smooth(aes(group = Condition), span = 0.5) +
   scale_color_manual(values = colors,
-                     breaks = c("pre-drought", "drought"),
-                     labels = c("Pre Drought", "Drought")) + 
+                     breaks = c("Pre-Drought", "Drought"),
+                     labels = c("Pre-Drought", "Drought")) + 
   labs(x = "Time post pyruvate (h)", y = expression(""^13*"C/("^12*"C + "^13*"C) flux (m"^-2*" h"^-1*")")) +
   theme(text = element_text(size = 12,
                            family = "Arial",
@@ -51,33 +52,31 @@ dev.off()
 
 # Plotwise by chamber
 data_sub %>%
-  filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
-  filter(Pyruv == "C1") %>%
+  filter(Pyr == "C1") %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
-  facet_wrap(. ~ Sample, ncol = 5) + 
+  facet_wrap(. ~ Label, ncol = 5) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
   geom_point(alpha = 0.3) +
   geom_smooth(aes(group =  Condition), span = 0.5) +
   scale_color_manual(values = colors,
-                     breaks = c("pre-drought", "drought"),
-                     labels = c("Pre Drought", "Drought")) + 
+                     breaks = c("Pre-Drought", "Drought"),
+                     labels = c("Pre-Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C1 pyurvate") +
   theme(legend.position = "bottom")
 ggsave("./Figures/Fig2-S1-CO2-VOCs/01_Pyruvate_acetate_C1_Plotwise.png")
 
 data_sub %>%
-  filter(Type == "sample") %>% 
   mutate(Time_hours = Time*24) %>%
-  filter(Pyruv == "C2") %>%
+  filter(Pyr == "C2") %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
-  facet_wrap(. ~ Sample, ncol = 5) + 
+  facet_wrap(. ~ Label, ncol = 5) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
   geom_point(alpha = 0.3) +
   geom_smooth(aes(group = Condition), span = 0.5) +
   scale_color_manual(values = colors,
-                     breaks = c("pre-drought", "drought"),
-                     labels = c("Pre Drought", "Drought")) + 
+                     breaks = c("Pre-Drought", "Drought"),
+                     labels = c("Pre-Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C2 pyurvate") +
   theme(legend.position = "bottom")
 ggsave("./Figures/Fig2-S1-CO2-VOCs/01_Pyruvate_acetate_C2_Plotwise.png")
@@ -120,3 +119,38 @@ t.test(Flux ~ Condition, data = data_sub)
 #sample estimates:
 #  mean in group pre-drought     mean in group drought 
 # -1.830744                 70.676335 
+
+
+############plot 13C data############
+# re order factors for condition
+
+data.13C$Condition <- factor(data.13C$Condition, c("Pre-Drought", "Drought"))
+
+# filter out times outside of -12 hour to 48 hour
+
+data_sub <- data.13C %>%
+  filter(Time > -0.3 & Time <2 ) %>%
+  filter(Pyr == "C1" |
+           Pyr == "C2")
+
+# Isotope Sig acetate
+filename=paste("./Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/13C-acetone-time-series.png", sep = "")
+png(filename ,width=4, height=4, unit='in', res = 1000)
+
+data_sub %>%
+  mutate(Time_hours = Time*24) %>%
+  ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
+  facet_grid(. ~ Pyr, scales = "free") + 
+  scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
+  geom_point(alpha = 0.3, size = 1) +
+  geom_smooth(aes(group = Condition), span = 0.5) +
+  scale_color_manual(values = colors,
+                     breaks = c("Pre-Drought", "Drought"),
+                     labels = c("Pre-Drought", "Drought")) + 
+  labs(x = "Time post pyruvate (h)", y = expression("13C flux (m"^-2*" h"^-1*")")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        legend.title = element_blank())
+dev.off()

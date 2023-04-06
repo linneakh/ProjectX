@@ -1,0 +1,721 @@
+---
+title: "PLS"
+author: "Linnea Honeker"
+date: "11/1/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(vegan)
+library(ggplot2)
+library(rms)
+library(reshape2)
+library(coefplot)
+library(MASS)
+library(dplyr)
+library(lme4)
+library(MASS)
+library(leaps)
+library(car)
+library(relaimpo)
+library(nlme)
+library(lmerTest)
+library(plsdepot)
+library(pls)
+library(caret)
+library(DESeq2)
+library(tibble)
+library(metabom8)
+library(plsVarSel)
+
+
+#library(metabom8)
+
+```
+
+# load metaT data and do variance stabilization tranformation
+```{r load-metaT, echo = FALSE}
+#load metaT gene copy data and column metadata
+datExpr0 <-read.csv("../../Data/Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE)
+rownames(datExpr0) <- datExpr0$Feature
+datExpr0$Feature <- NULL
+
+coldata <- read.csv("../../Data/Deseq2/metaT-metadata.csv", header = TRUE)
+rownames(coldata) <- coldata$SampleID
+coldata$SampleID <- NULL
+row.names(coldata) [7] <- "X3300045460_Site1_Drought_48hr"
+
+#filter features that are not in at least 5 samples
+datExpr.f <- datExpr0 %>%
+  mutate(count = rowSums(. > 0)) %>%
+  filter(count > 5) %>%
+  subset(select = -count )
+
+#normalize filtered gene copy data using deseq2, variance stabilization transformation
+dds <- DESeqDataSetFromMatrix(countData = datExpr.f,
+                              colData = coldata,
+                              design= ~ Condition_Time)
+
+#vst transformation#
+vstcounts <- vst(dds, blind=TRUE)
+vst.export<- assay(vstcounts)
+metaT<- as.data.frame(vst.export)
+metaT$X <- rownames(metaT)
+
+#log transformed
+metaT.log <- log(datExpr.f + 1)
+```
+
+
+```{r load voc flux data, echo=FALSE}
+acetate_flux <- read.csv("../../Output/CO2-VOCs/acetate_flux-13C-12C-0-48.csv", header = TRUE)
+acetone_flux <- read.csv("../../Output/CO2-VOCs/acetone_flux-13C-12C-0-48.csv", header = TRUE)
+diacetyl_flux <- read.csv("../../Output/CO2-VOCs/diacetyl_flux-13C-12C-0-48.csv", header = TRUE)
+
+```
+
+
+```{r merge KO and metaT and flux data}
+
+KO_interest_subset <- read.csv("../../Data/Deseq2/KO_interest.csv")
+metadata <- read.csv("../../Data/Deseq2/metaT-metadata.csv")
+
+#remove "KO:" from metaT and "_C1" and "_C2" from diaceytl flux data
+metaT$KO <- rownames(metaT)
+metaT$KO <- sub("KO:", "", metaT$KO)
+#diacetyl_flux$Sample <- sub("_C1", "", diacetyl_flux$Sample)
+#diacetyl_flux$Sample <- sub("_C2", "", diacetyl_flux$Sample)
+
+
+#merge  all VOC
+KO_VOC <- KO_interest_subset %>%
+  merge(., metaT, by.x = "KO", by.y="KO", all.x = FALSE, all.y = FALSE)
+
+KO_VOC$X <- NULL
+
+#transpose for plsr
+KO_VOC.t <- t(KO_VOC)
+
+#further format KO_acetate.t for glm. Assign column headers and remove rows containing metadata
+colnames(KO_VOC.t) <- KO_VOC.t[1,]
+KO_VOC.t.f <- KO_VOC.t[-(1:6),]
+KO_VOC.t.f <- as.data.frame(KO_VOC.t.f)
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+acetate_flux_proc <- acetate_flux %>%
+    filter (Pyr == "C2") %>%
+     mutate(Site = case_when(
+    startsWith(Label, "S1") ~ "Site1",
+    startsWith(Label, "S2") ~ "Site2",
+    startsWith(Label, "S3") ~ "Site3"
+  )) %>%
+  #mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.h > 0 & Time.h < 2) ~ "0",
+    (Time.h > 5 & Time.h < 7) ~ "6",
+    (Time.h > 46 & Time.h < 48) ~ "48")) %>%
+  group_by(Condition, Site, Label, Time.d) %>%
+  summarise(mean.flux = mean(Flux)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.acetate = mean.flux) %>%
+  dplyr::select(-"mean.flux")
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+acetone_flux_proc <- acetone_flux %>%
+    filter (Pyr == "C2") %>%
+     mutate(Site = case_when(
+    startsWith(Label, "S1") ~ "Site1",
+    startsWith(Label, "S2") ~ "Site2",
+    startsWith(Label, "S3") ~ "Site3"
+  )) %>%
+  #mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.h > 0 & Time.h < 2) ~ "0",
+    (Time.h > 5 & Time.h < 7) ~ "6",
+    (Time.h > 46 & Time.h < 48) ~ "48")) %>%
+  group_by(Condition, Site, Label, Time.d) %>%
+  summarise(mean.flux = mean(Flux)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.acetone = mean.flux) %>%
+  dplyr::select(-"mean.flux")
+
+#process the voc flux data so that it is binned based on time to just 0 + 2 hours, 6 + or - 1 hour, and 48 - 2 hours.
+diacetyl_flux_proc <- diacetyl_flux %>%
+    filter (Pyr == "C2") %>%
+     mutate(Site = case_when(
+    startsWith(Label, "S1") ~ "Site1",
+    startsWith(Label, "S2") ~ "Site2",
+    startsWith(Label, "S3") ~ "Site3"
+  )) %>%
+  #mutate(Time.hr = Time * 24) %>%
+  mutate (Time.d = case_when(
+    (Time.h > 0 & Time.h < 2) ~ "0",
+    (Time.h > 5 & Time.h < 7) ~ "6",
+    (Time.h > 46 & Time.h < 48) ~ "48")) %>%
+  group_by(Condition, Site, Label, Time.d) %>%
+  summarise(mean.flux = mean(Flux)) %>%
+  filter(!is.na(Time.d)) %>%
+  mutate(flux.diacetyl = mean.flux) %>%
+  dplyr::select(-"mean.flux")
+
+#sample names are different in the flux and expression tables, so need to make them the same
+KO_VOC.t.f[,32] <- rownames(KO_VOC.t.f)
+KO_VOC.t.f_new_id_w_full_name <- KO_VOC.t.f %>%
+  mutate(Sample = case_when(
+  startsWith(V32, "X3300044942") ~ "S3P4",
+  startsWith(V32, "X3300044943") ~ "S3P4",
+  startsWith(V32, "X3300044944") ~ "S3P4",
+  startsWith(V32, "X3300044945") ~ "S3P4",
+  startsWith(V32, "X3300045458") ~ "S1P5",
+  startsWith(V32, "X3300045459") ~ "S1P5",
+  startsWith(V32, "X3300045460") ~ "S1P5",
+  startsWith(V32, "X3300045461") ~ "S2P4",
+  startsWith(V32, "X3300045462") ~ "S2P4",
+  startsWith(V32, "X3300045463") ~ "S2P4",
+  startsWith(V32, "X3300045464") ~ "S2P4",
+  startsWith(V32, "X3300045465") ~ "S2P4",
+  startsWith(V32, "X3300045466") ~ "S2P6",
+  startsWith(V32, "X3300045467") ~ "S2P6",
+  startsWith(V32, "X3300045468") ~ "S2P6",
+  startsWith(V32, "X3300045469") ~ "S2P6",
+  startsWith(V32, "X3300045470") ~ "S2P6",
+  startsWith(V32, "X3300045471") ~ "S3P5",
+  startsWith(V32, "X3300045472") ~ "S3P5",
+  startsWith(V32, "X3300045473") ~ "S2P6",
+  startsWith(V32, "X3300048051") ~ "S1P5",
+  startsWith(V32, "X3300048052") ~ "S3P5",
+  startsWith(V32, "X3300048053") ~ "S3P5",
+  startsWith(V32, "X3300048054") ~ "S3P5",
+  startsWith(V32, "X3300048092") ~ "S1P1",
+  startsWith(V32, "X3300048093") ~ "S1P1",
+  startsWith(V32, "X3300048094") ~ "S1P1",
+  startsWith(V32, "X3300048095") ~ "S1P1",
+  startsWith(V32, "X3300048096") ~ "S1P1",
+  startsWith(V32, "X3300048099") ~ "S1P5",
+  startsWith(V32, "X3300048100") ~ "S1P5",
+  startsWith(V32, "X3300049511") ~ "S2P4",
+  startsWith(V32, "X3300049512") ~ "S3P4",
+  startsWith(V32, "X3300049557") ~ "S3P4",
+  startsWith(V32, "X3300049628") ~ "S3P5"
+  )) %>%
+  mutate(Time.d = case_when(
+    endsWith(V32, "6hr") ~ "6",
+    endsWith(V32, "0hr") ~ "0",
+    endsWith(V32, "48hr") ~ "48",
+    endsWith(V32, "48_hr") ~ "48"
+  )) %>%
+  mutate(Condition = case_when(
+    grepl("PreDrought", V32) ~ "Pre-Drought",
+    grepl("Drought", V32) ~ "Drought",
+    grepl("Pre_drought", V32) ~ "Pre-Drought"
+  )) %>%
+  mutate(Site = case_when(
+    grepl("Site1", V32) ~ "Site1",
+    grepl("Site2", V32) ~ "Site2",
+    grepl("Site3", V32) ~ "Site3"
+  )) 
+
+KO_VOC.t.f_new_id <- KO_VOC.t.f_new_id_w_full_name %>%
+   dplyr::select(-V32)
+  
+#merge VOC and KO tables
+merged_subset <- KO_VOC.t.f_new_id %>%
+  merge(., acetate_flux_proc, by.x = c("Condition", "Sample", "Time.d", "Site"), by.y = c("Condition", "Label","Time.d", "Site"),all.x = FALSE, all.y = FALSE) %>%
+  mutate_at(c(5:35), as.numeric) %>%
+  mutate(flux.acetate = as.numeric(flux.acetate)) %>%
+  mutate(log.flux.acetate = log(flux.acetate+abs(min(flux.acetate))+1, base = exp(10))) %>%
+  merge(.,acetone_flux_proc, by.x = c("Condition", "Sample", "Time.d", "Site"), by.y = c("Condition", "Label", "Time.d", "Site"),all.x = FALSE, all.y = FALSE) %>%
+  mutate(flux.acetone = as.numeric(flux.acetone)) %>%
+  mutate(log.flux.acetone = log(flux.acetone+abs(min(flux.acetone))+1, base = exp(10))) %>%
+  merge(.,diacetyl_flux_proc, by.x = c("Condition", "Sample", "Time.d", "Site"), by.y = c("Condition", "Label", "Time.d", "Site"),all.x = FALSE, all.y = FALSE) %>%
+  mutate(flux.diacetyl = as.numeric(flux.diacetyl)) %>%
+  mutate(log.flux.diacetyl = log(flux.diacetyl+abs(min(flux.diacetyl))+1, base = exp(2))) 
+  
+merged_subset
+
+merged_subset_with_full_names <- KO_VOC.t.f_new_id_w_full_name %>%
+  merge(., acetate_flux_proc, by.x = c("Condition", "Sample", "Time.d", "Site"), by.y = c("Condition", "Label","Time.d", "Site"),all.x = TRUE, all.y = TRUE) %>%
+  mutate_at(c(5:35), as.numeric) %>%
+  mutate(flux.acetate = as.numeric(flux.acetate)) %>%
+  mutate(log.flux.acetate = log(flux.acetate+abs(min(flux.acetate))+1, base = exp(10))) %>%
+  merge(.,acetone_flux_proc, by.x = c("Condition", "Sample", "Time.d", "Site"), by.y = c("Condition", "Label", "Time.d", "Site"),all.x = TRUE, all.y = TRUE) %>%
+  mutate(flux.acetone = as.numeric(flux.acetone)) %>%
+  mutate(log.flux.acetone = log(flux.acetone+abs(min(flux.acetone))+1, base = exp(10))) %>%
+  merge(.,diacetyl_flux_proc, by.x = c("Condition", "Sample", "Time.d", "Site"), by.y = c("Condition", "Label", "Time.d", "Site"),all.x = TRUE, all.y = TRUE) %>%
+  mutate(flux.diacetyl = as.numeric(flux.diacetyl)) %>%
+  mutate(log.flux.diacetyl = log(flux.diacetyl+abs(min(flux.diacetyl))+1, base = exp(2))) 
+
+merged_subset_with_full_names
+
+
+#merge with soil moisture data, which is loaded in the 'soil_moisture.Rmd' script
+merged_subset_SM <- merged_subset %>%
+  merge(., data.abiotic, by.x = c("Condition", "Site"), by.y = c("Condition", "Site")) 
+
+merged_subset_physico_full_names <- merged_subset_with_full_names %>%
+  merge(., data.abiotic, by = c("Condition", "Site"))
+
+#create trait data file for WGCNA
+trait_data_for_WGCNA <- merged_subset_physico_full_names[,c(36,37,39,41, 43,44,45)]
+trait_data_for_WGCNA$SampleID <- trait_data_for_WGCNA[,1]
+trait_data_for_WGCNA$V32 <- NULL
+trait_data_for_WGCNA <- trait_data_for_WGCNA[,c(7,1,2,3, 4, 5, 6)]
+
+write.csv(trait_data_for_WGCNA, "../../Output/WGCNA/trait-data-VOC-flux-physicochemical.csv")
+
+```
+
+
+
+## Filter to acetate and acetone flux and acetate cycling genes with soil moisture
+```{r}
+KO_acetate <- KO_interest_subset %>%
+  filter(VOC == "Acetate" &
+           Priority == "yes") 
+
+KO_acetate_list <- KO_acetate$KO
+flux_list.log <- c(  "SM", "Condition", "Site", "log.flux.acetone", "log.flux.acetate")
+flux_list <- c( "SM", "Condition", "Site", "flux.acetone","flux.acetate")
+
+idx <- match(c(KO_acetate_list,flux_list), names(merged_subset_SM))
+idx <- idx[!is.na(idx)]
+
+sub_acetate_pls2_SM <- merged_subset_SM[,idx]
+
+sub_acetate_pls2_SM <- sub_acetate_pls2_SM %>%
+  #mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+
+sub_acetate_pls2_SM
+```
+
+
+#####acetate - no pH or ST#####   
+# first round:
+
+all variables
+
+p-value = 0.72
+
+total variation explained = 90.7 (5 components)
+
+
+  K00156       K00158       K01026       K01067       K18118       K01512       K01895       K00925       K18372           SM flux.acetone 
+   0.8952097    0.9217706    0.8023164    1.2356767    1.0521327    0.8440945    0.8450783    0.8103762    0.7135039    1.0181347    1.5627854
+   
+# second round
+new model set = c(1,2,3,4,5,6,7,8,10, 11,12) 
+
+p-value = 0.50
+
+total variation explained = 91.04 (6 components) ***BEST MODEL***
+   
+VIP:
+    K00156       K00158       K01026       K01067       K18118       K01512       K01895       K00925           SM flux.acetone 
+   0.8445666    0.8664567    0.8199626    1.2078264    1.0774193    0.8583763    0.8247477    0.7266882    1.0047424    1.5130575 
+   
+
+
+# third round
+new model set = c(1,2,3,4,5,6,7,10, 11,12) 
+
+total variation explained = 85.01 (4 components)
+p-value = 0.83
+
+VIP:
+ K00156       K00158       K01026       K01067       K18118       K01512       K01895           SM flux.acetone 
+   0.8955157    0.9313750    0.6754161    1.1742540    0.8588176    0.9151972    0.8467789    1.0297782    1.4638654 
+   
+
+
+set up model data frame using Johnny's scripts and the plsr function of the pls package
+```{r}
+model_data <- sub_acetate_pls2_SM[,  c(1,2,3,4,5,6,7,8,10, 11,12)    ]
+
+set.seed(123)
+m_full <- plsr(flux.acetate ~ ., data = model_data, scale = TRUE, validation = "LOO")
+summary(m_full)
+
+par(mfrow = c(3,1))
+validationplot(m_full)
+validationplot(m_full, val.type = "RMSEP")
+validationplot(m_full, val.type = "R2")
+
+```
+
+```{r}
+
+m1 <- plsr(flux.acetate ~ ., data = model_data, 
+     scale = TRUE, ncomp = 6) 
+summary(m1)
+plot(m1)
+```
+
+create a plsr and null model to compare and calculate residuals of both
+```{r}
+model_vals <- data.frame(
+  preds = numeric(length = nrow(model_data)), 
+  res0 = numeric(length = nrow(model_data)),
+  res1 = numeric(length = nrow(model_data))
+)
+
+
+for(i in 1:nrow(model_data)){
+  y <- model_data$flux.acetate
+  
+  m <- plsr(flux.acetate ~ ., data = model_data[-i,], 
+     scale = TRUE, ncomp =6)
+  model_vals$preds[i] <- predict(m, newdata = model_data[i,], 
+                                 ncomp = 6, type = "response")
+  # predicted residual of the model
+  model_vals$res1[i] <-y[i] - model_vals$preds[i]
+  
+  # predicted residual using the null model
+  y_mean = mean(y[-i])
+  model_vals$res0[i] = y[i] - y_mean
+}
+
+plot(model_data$flux.acetate, model_vals$preds)
+
+```
+Use F-Test to compare to null model
+
+This is done analogues to comparing a regression model to a null model, 
+i.e. by comparing the Residual some of squares of model and null model, calculating the F value using the respective degrees of freedom of the two models and getting the two-sided p-value via the cumulative distribution function of the F distribution. 
+
+```{r}
+RSS1 = sum((model_vals$res1)^2)
+RSS0 = sum((model_vals$res0)^2)
+
+df1 = nrow(model_data) - (ncol(model_data) - 1) - 1
+df0 = nrow(model_data) - 1
+
+F_value <- ((RSS0 - RSS1) / (df0 - df1)) / (RSS1 / df1)
+c(F = F_value, df0 = df0, df1 = df1, RSS0 = RSS0, RSS1 = RSS1)
+
+p.value <-  pf(F_value, df0, df1, lower.tail = FALSE)
+p.value
+
+```
+#use plsVarSel to slect combination of variables leading to model with lowest prediction error
+
+```{r}
+
+VIP(m1, opt.comp = 4, p =10)
+
+LW(m1, opt.comp = 6)
+
+
+```
+
+
+## Filter to acetone and acetone flux and acetone cycling genes with soil moisture
+```{r}
+KO_acetone <- KO_interest_subset %>%
+  filter(VOC == "Acetone") 
+
+KO_acetone_list <- KO_acetone$KO
+flux_list.log <- c(  "SM", "Condition", "Site", "log.flux.acetate", "log.flux.acetone")
+flux_list <- c( "SM", "Condition", "Site", "flux.acetate","flux.acetone")
+
+idx <- match(c(KO_acetone_list,flux_list), names(merged_subset_SM))
+idx <- idx[!is.na(idx)]
+
+sub_acetone_pls2_SM <- merged_subset_SM[,idx]
+
+sub_acetone_pls2_SM <- sub_acetone_pls2_SM %>%
+  #mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+
+sub_acetone_pls2_SM
+```
+`
+
+   
+###acetone - no pH or ST#######
+# first round:
+
+all variables
+
+p-value = 0.32
+
+total variation explained = 75.95 (2 components)
+
+
+
+   K01574       K18371       K18372       K10854       K10855       K10856       K18382           SM flux.acetate 
+   1.3258560    0.8373220    0.6871190    0.2334001    0.5480074    0.6658359    0.9843501    1.2183880    1.6784891 
+   
+# second round
+new model set = c(1,2,3,5,6,7,8,9, 10)
+
+p-value = 0.19
+
+total variation explained = 76.33 (2 components)
+   
+  K01574       K18371       K18372       K10855       K10856       K18382           SM flux.acetate 
+   1.2543362    0.7972028    0.6503456    0.5320875    0.6454280    0.9257862    1.1463581    1.5802682 
+
+# third round
+new model set =  c(1,2,3,6,7,8,9, 10)
+
+p-value = 0.10
+
+total variation explained = 76.25 (2 components)
+
+VIP:
+K01574       K18371       K18372       K10856       K18382           SM flux.acetate 
+   1.1888973    0.7541031    0.6384944    0.5693243    0.8849511    1.1030446    1.5120186 
+   
+# fourth round
+new model set =  c(1,2,3,7,8,9, 10)
+
+
+total variation explained = 76.15 (2 components)
+
+p-value = 0.05
+
+VIP:
+  K01574       K18371       K18372       K18382           SM           ST flux.acetate 
+   1.1297646    0.6857334    0.6067197    0.8661450    1.0527979    1.0150584    1.4129256 
+   
+# fifth round
+new model set = c(1,2,7,8,9, 10)
+
+total variation explained = 76.37(1 components) ***BEST ONE***
+
+p-value = 0.004
+
+VIP:
+     K01574       K18371       K18382           SM flux.acetate 
+   1.0483239    0.6430058    0.8000718    0.9957126    1.3623517 
+   
+# sixth round
+new model set = c(1,7,8,9, 10)
+
+total variation explained = 74.59 (2 components) 
+
+p-value = 0.008
+
+VIP:
+  K01574       K18382           SM flux.acetate 
+   0.9905808    0.7456982    0.9181682    1.2726551 
+   
+
+
+
+set up model data frame using Johnny's scripts and the plsr function of the pls package
+```{r}
+model_data <- sub_acetone_pls2_SM[, c(1,2,7,8,9, 10)]
+
+set.seed(123)
+m_full <- plsr(flux.acetone ~ ., data = model_data, scale = TRUE, validation = "LOO")
+summary(m_full)
+
+par(mfrow = c(3,1))
+validationplot(m_full)
+validationplot(m_full, val.type = "RMSEP")
+validationplot(m_full, val.type = "R2")
+
+```
+
+```{r}
+
+m1 <- plsr(flux.acetone ~ ., data = model_data, 
+     scale = TRUE, ncomp = 1) 
+summary(m1)
+plot(m1)
+```
+
+create a plsr and null model to compare and calculate residuals of both
+```{r}
+model_vals <- data.frame(
+  preds = numeric(length = nrow(model_data)), 
+  res0 = numeric(length = nrow(model_data)),
+  res1 = numeric(length = nrow(model_data))
+)
+
+
+for(i in 1:nrow(model_data)){
+  y <- model_data$flux.acetone
+  
+  m <- plsr(flux.acetone ~ ., data = model_data[-i,], 
+     scale = TRUE, ncomp = 1)
+  model_vals$preds[i] <- predict(m, newdata = model_data[i,], 
+                                 ncomp = 1, type = "response")
+  # predicted residual of the model
+  model_vals$res1[i] <-y[i] - model_vals$preds[i]
+  
+  # predicted residual using the null model
+  y_mean = mean(y[-i])
+  model_vals$res0[i] = y[i] - y_mean
+}
+
+plot(model_data$flux.acetone, model_vals$preds)
+
+```
+Use F-Test to compare to null model
+
+This is done analogues to comparing a regression model to a null model, 
+i.e. by comparing the Residual some of squares of model and null model, calculating the F value using the respective degrees of freedom of the two models and getting the two-sided p-value via the cumulative distribution function of the F distribution. 
+
+```{r}
+RSS1 = sum((model_vals$res1)^2)
+RSS0 = sum((model_vals$res0)^2)
+
+df1 = nrow(model_data) - (ncol(model_data) - 1) - 1
+df0 = nrow(model_data) - 1
+
+F_value <- ((RSS0 - RSS1) / (df0 - df1)) / (RSS1 / df1)
+c(F = F_value, df0 = df0, df1 = df1, RSS0 = RSS0, RSS1 = RSS1)
+
+p.value <-  pf(F_value, df0, df1, lower.tail = FALSE)
+p.value
+
+```
+#use plsVarSel to slect combination of variables leading to model with lowest prediction error
+
+```{r}
+
+VIP(m1, opt.comp =1, p =5)
+
+LW(m1, opt.comp = 2)
+
+
+```
+
+
+
+## Filter to acetone and acetone flux and acetone cycling genes with soil moisture
+```{r}
+KO_diacetyl <- KO_interest_subset %>%
+  filter(VOC == "Diacetyl" ) 
+
+KO_diacetyl_list <- KO_diacetyl$KO
+flux_list.log <- c(  "SM", "Condition", "Site", "log.flux.diacetyl")
+flux_list <- c( "SM", "Condition", "Site","flux.diacetyl")
+
+idx <- match(c(KO_diacetyl_list,flux_list), names(merged_subset_SM))
+idx <- idx[!is.na(idx)]
+
+sub_diacetyl_pls2_SM <- merged_subset_SM[,idx]
+
+sub_diacetyl_pls2_SM <- sub_diacetyl_pls2_SM %>%
+  #mutate(tmt = ifelse(Condition == "drought", 1, 0)) %>%
+  dplyr::select(-Condition, -Site)
+
+
+sub_diacetyl_pls2_SM
+```
+
+
+
+##without pH or ST###
+# first round:
+
+p-value = 0.99
+total variation explained = 24.39 (2 components)
+
+
+  K01652    K03366    K00004        SM 
+0.3352935 1.2300897 0.1059071 1.5372837 
+
+# second round:
+new model set = c(1,2,4,5)
+p-value = 0.99
+total variation explained = 24.23 (2 components)
+
+
+  K01652    K03366        SM 
+0.2897927 1.0640465 1.3355992 
+
+# third round:
+new model set = c(2,4,5)
+p-value = 0.93
+total variation explained = 22.82 (2 components) ***BEST MODEL***
+
+  K03366        SM 
+0.8573324 1.1247138 
+
+
+  
+
+
+```{r}
+model_data <- sub_diacetyl_pls2_SM[, c(2,4,5)]
+
+set.seed(123)
+m_full <- plsr(flux.diacetyl ~ ., data = model_data, scale = FALSE, validation = "LOO")
+summary(m_full)
+
+par(mfrow = c(3,1))
+validationplot(m_full)
+validationplot(m_full, val.type = "MSEP")
+validationplot(m_full, val.type = "R2")
+
+```
+
+```{r}
+
+m1 <- plsr(flux.diacetyl ~ ., data = model_data, 
+     scale = FALSE, ncomp = 2) 
+summary(m1)
+plot(m1)
+```
+create a plsr and null model to compare and calculate residuals of both
+```{r}
+model_vals <- data.frame(
+  preds = numeric(length = nrow(model_data)), 
+  res0 = numeric(length = nrow(model_data)),
+  res1 = numeric(length = nrow(model_data))
+)
+
+
+for(i in 1:nrow(model_data)){
+  y <- model_data$flux.diacetyl
+  
+  m <- plsr(flux.diacetyl ~ ., data = model_data[-i,], 
+     scale = FALSE, ncomp = 2)
+  model_vals$preds[i] <- predict(m, newdata = model_data[i,], 
+                                 ncomp = 2, type = "response")
+  # predicted residual of the model
+  model_vals$res1[i] <-y[i] - model_vals$preds[i]
+  
+  # predicted residual using the null model
+  y_mean = mean(y[-i])
+  model_vals$res0[i] = y[i] - y_mean
+}
+
+plot(model_data$flux.diacetyl, model_vals$preds)
+
+```
+
+```{r}
+RSS1 = sum((model_vals$res1)^2)
+RSS0 = sum((model_vals$res0)^2)
+
+df1 = nrow(model_data) - (ncol(model_data) - 1) - 1
+df0 = nrow(model_data) - 1
+
+F_value <- ((RSS0 - RSS1) / (df0 - df1)) / (RSS1 / df1)
+c(F = F_value, df0 = df0, df1 = df1, RSS0 = RSS0, RSS1 = RSS1)
+
+p.value <- pf(F_value, df0, df1, lower.tail = FALSE)
+p.value
+
+```
+
+#use plsVarSel to slect combination of variables leading to model with lowest prediction error
+
+```{r}
+
+VIP(m1, opt.comp =2, p =2)
+
+LW(m1, opt.comp = 2)
+
+#sMC(m1, opt.comp = 6, model_data[,1:11])
+
+```

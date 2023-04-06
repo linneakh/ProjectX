@@ -32,6 +32,12 @@ data <- data %>%
   rowwise() %>%
    mutate(SM = (SM.1 + SM.2 + SM.3)/3, SM.sd = sd(c(SM.1, SM.2, SM.3))) %>%
    filter(SM != 0)
+
+#load pH data
+data.pH <- read.csv("../Data/soil_moisture/pH.csv", header = TRUE)
+data.pH$Condition <- factor(data$Condition, c("PreDrought", "Drought"))
+
+
 ```
 
 ## Plot soil moisture
@@ -69,7 +75,24 @@ p2 <- ggplot(data, aes(x = Condition, y= ST)) +
   facet_grid(~Site)
 p2
 ```
+```{r plot_pH}
+#overall 
+p1 <- ggplot(data.pH, aes(x = Condition, y= pH, fill = Condition)) +
+ geom_boxplot() +
+  scale_fill_manual(values = colors) +
+  labs(y = "pH")
+  
+p1
 
+
+#by site
+p2 <- ggplot(data.pH, aes(x = Site, y= pH, fill = Site)) +
+ geom_boxplot() +
+  #facet_grid(~Site) +
+  scale_fill_manual(values = c(colors, "blue"))
+  
+p2
+```
 ## Return summary statistics for PreDrought and Drought
 ```{r}
 #soil moisture statistics
@@ -111,9 +134,11 @@ print(c("drought mean ST =",data.D.mean,"±",data.D.sd))
 ##statistical test
 
 ```{r}
-wilcox.test(SM ~ Condition, data)
+wilcox.test(SM ~  Condition, data)
 
 wilcox.test(ST ~ Condition, data)
+
+wilcox.test(pH ~ Condition, data.pH)
 
 
 ```
@@ -121,26 +146,38 @@ wilcox.test(ST ~ Condition, data)
 ```{r}
 #create table for publication
 data.pub <- data %>%
-  select(-(SM.1, SM.2,SM.3, Date )) %>%
+  dplyr::select(-c(SM.1, SM.2, SM.3, Date)) %>%
   pivot_wider(id_cols = Site, names_from = Condition)
   
 
 ```
-#get average soil moisture for sites 1 and 2 to add to plsr model
+#get average soil moisture, temp, and pH for sites 1 and 2 to add to plsr model
 ```{r}
 #add soil moisture means
 data.sm <- data %>%
   replace(is.na(.), 0) %>%
   group_by(Site, Condition) %>%
-  summarize(SM = mean(SM)) %>%
+  dplyr::summarize(SM = mean(SM), ST = mean(ST)) %>%
    mutate(Condition2 = case_when(
-    grepl("PreDrought", Condition) ~ "pre-drought",
-    grepl("Drought", Condition) ~ "drought")) %>%
-  select(-Condition) %>%
+    grepl("PreDrought", Condition) ~ "Pre-Drought",
+    grepl("Drought", Condition) ~ "Drought")) %>%
+  dplyr::select(-Condition) %>%
   mutate(Condition = Condition2) %>%
-  select(-Condition2)
+  dplyr::select(-Condition2)
 
 data.sm
 
+data.pH.summary <- data.pH %>%
+  group_by(Site, Condition) %>%
+  dplyr::summarize(pH = mean(pH)) %>%
+   mutate(Condition2 = case_when(
+    grepl("PreDrought", Condition) ~ "Pre-Drought",
+    grepl("Drought", Condition) ~ "Drought")) %>%
+  dplyr::select(-Condition) %>%
+  mutate(Condition = Condition2) %>%
+  dplyr::select(-Condition2)
+
+data.abiotic <- data.sm %>%
+  merge(.,data.pH.summary, by = c("Site", "Condition"))
 ```
 

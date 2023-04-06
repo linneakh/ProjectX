@@ -1,0 +1,1717 @@
+---
+title: "Cumulative flux"
+author: "Linnea Honeker"
+date: "6/10/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load packages
+library(plotly)
+library(tidyverse)
+library(ggthemes)
+library(patchwork)
+library(flux)
+library(dplyr)
+library(data.table)
+library(janitor)
+library(performance)
+library(lme4)
+library(MASS)
+library(leaps)
+library(car)
+library(relaimpo)
+library(nlme)
+library(lmerTest)
+library(see)
+
+theme_custom <- theme_few()
+
+theme_set(theme_custom)
+
+
+colors = c("#2ECC71" ,"#F39C12")
+
+```
+
+## Cmulative efflux: CO2
+
+```{r CO2, echo = FALSE}
+
+#load data
+data <- read.csv("../../Data/CO2-VOCs/01_raw/S3_PyruvateLabeling_qc.csv") %>% 
+  dplyr::select(-X)
+
+#add timestanp, however, this hasn't been working and not needed
+data <- data %>% 
+  mutate(Timestamp = lubridate::ymd_hms(Timestamp_MST, tz = "America/Phoenix"), 
+         Timestamp_Label_MST = lubridate::ymd_hms(Timestamp_Label_MST, tz = "America/Phoenix")) %>% 
+  dplyr::select(-Timestamp_MST)
+
+# Quickview
+data <- data %>% 
+  dplyr::select(Label, Condition, Pyruv, Trel, Flux, D13C, Qc_iso, Qc_flux, AtF)
+
+# quality control filtering, multiply Flux (which is in umol m-2 s-1) by 3600 to get units to umol m-2 h-1)
+data_sub <- data %>% 
+  filter(Qc_flux == 1, Qc_iso == 1)  %>% 
+  dplyr::select(-Qc_iso, -Qc_flux) %>% 
+  filter(Trel > -10, Trel < 50, Flux > 0, D13C > -100) %>%
+  mutate(Flux.h = Flux * 3600) 
+
+##### calculate average AtF, below are equations from Johnny
+# atF = Flux13/(flux13 + Flux12);
+# d13C = (((flux13 / flux12)/Rvpdb)-1) * 1000
+# F_13CO2 = Flux * AtF
+# F_12CO2 = Flux - F_13CO2 = Flux * (1-AtF)
+#  Rvpdb = 0.0111802 (from Werner and Brand, 2001)
+# solving for AtF, Atf = d13/11.1802
+
+# alculate AtF natural abundance for pre labeling time points
+data_sub_pre <- data_sub %>%
+  filter(Trel <= 0) 
+
+#calculate mean AtF natural abundance across all pre-labeling time points
+AtFna_mean = mean(data_sub_pre$AtF)
+
+# filter to all post-labeling time points
+data_sub_post <- data_sub %>%
+  filter(Trel > 0)
+
+# Calculate AtF, flux13, flux12 (flux units: umol m-2 s-1)
+data_sub_13C_flux <- data_sub_post %>%
+  mutate(fCO2_13 = AtF * Flux.h) %>%
+  mutate(AtFe = AtF - AtFna_mean) %>% #calculate AtF from 13C pyruvate
+  mutate(fCO2_13_py = AtFe * Flux.h) #calculate 13C flux attributed to 13C pyruvate
+
+########Calculate AUC separately for each collar, then average######################
+#separate out drought and pre-drought
+data_sub_13C_flux_drought <- data_sub_13C_flux %>%
+  filter(Condition == "drought") #%>%
+  #mutate(Trel.s = Trel * 360) %>%
+  #select(-Trel)
+
+data_sub_13C_flux_predrought <- data_sub_13C_flux %>%
+  filter(Condition == "pre_drought") #%>%
+ # mutate(Trel.s = Trel * 360) %>%
+  #select(-Trel)
+
+
+#Define samples that are either C1 or C2 labeled
+Label.C1a = c("S1.P1", "S1.P3", "S1.P5", "S2.P1", "S2.P3", "S2.P7", "S3.P1", "S3.P3", "S3.P5")
+Label.C1b = c("S1.P1", "S1.P3", "S1.P5", "S2.P1", "S2.P3", "S2.P5", "S3.P1", "S3.P3", "S3.P5")
+Label.C2a = c("S1.P2", "S1.P4", "S1.P6", "S2.P2", "S2.P4", "S2.P6", "S3.P2", "S3.P4", "S3.P6")
+Label.C2b = c("S1.P2", "S1.P4", "S1.P6",  "S2.P4", "S2.P6","S2.P8", "S3.P2", "S3.P4", "S3.P6")
+
+#create empty lists for each category
+AUC_list_PD_C1 <- list()
+AUC_list_PD_C2 <- list()
+AUC_list_D_C1 <- list()
+AUC_list_D_C2 <- list()
+
+for (i in Label.C1a) {
+  x <- data_sub_13C_flux_predrought %>%
+  filter(Label == i)
+  i.AUC <- auc(x$Trel, x$fCO2_13_py) 
+  AUC_list_PD_C1[[i]] <- i.AUC
+}
+  
+for (i in Label.C2b) {
+  x <- data_sub_13C_flux_predrought %>%
+    filter(Label == i)
+  i.AUC <- auc(x$Trel, x$fCO2_13_py) 
+  AUC_list_PD_C2[[i]] <- i.AUC
+}
+
+for (i in Label.C1b) {
+  x <- data_sub_13C_flux_drought %>%
+    filter(Label == i)
+  i.AUC <- auc(x$Trel, x$fCO2_13_py) 
+  AUC_list_D_C1[[i]] <- i.AUC
+}
+
+for (i in Label.C2a) {
+  x <- data_sub_13C_flux_drought %>%
+    filter(Label == i)
+  i.AUC <- auc(x$Trel, x$fCO2_13_py) 
+  AUC_list_D_C2[[i]] <- i.AUC
+}
+
+# Create a data frame with area under the curves for each sample for statistical analysis and plotting
+# start by converting lists to data frames, and renaming columns in order to merge
+
+AUC.D.C1 <- as.data.frame(do.call(rbind,AUC_list_D_C1))
+AUC.D.C1$Label <- rownames(AUC.D.C1)
+AUC.D.C1$AUC <- AUC.D.C1$V1
+AUC.D.C1$Pyr <- "C1"
+AUC.D.C1$Cond <- "Drought"
+AUC.D.C1$V1 <- NULL
+  
+AUC.D.C2 <- as.data.frame(do.call(rbind,AUC_list_D_C2))
+AUC.D.C2$Label <- rownames(AUC.D.C2)
+AUC.D.C2$AUC <- AUC.D.C2$V1
+AUC.D.C2$Pyr <- "C2"
+AUC.D.C2$Cond <- "Drought"
+AUC.D.C2$V1 <- NULL
+
+AUC.PD.C1 <- as.data.frame(do.call(rbind, AUC_list_PD_C1))
+AUC.PD.C1$Label <- rownames(AUC.PD.C1)
+AUC.PD.C1$AUC <- AUC.PD.C1$V1
+AUC.PD.C1$Pyr <- "C1"
+AUC.PD.C1$Cond <- "Pre_Drought"
+AUC.PD.C1$V1 <- NULL
+
+AUC.PD.C2 <- as.data.frame(do.call(rbind, AUC_list_PD_C2))
+AUC.PD.C2$Label <- rownames(AUC.PD.C2)
+AUC.PD.C2$AUC <- AUC.PD.C2$V1
+AUC.PD.C2$Pyr <- "C2"
+AUC.PD.C2$Cond <- "Pre_Drought"
+AUC.PD.C2$V1 <- NULL
+
+# merge dataframes, AUC is in umol/cm2
+AUC.C1 <- rbind(AUC.D.C1, AUC.PD.C1)
+AUC.C2 <- rbind(AUC.D.C2, AUC.PD.C2)
+AUC.0 <- rbind(AUC.C1, AUC.C2)
+
+
+# calculate total mmol of C (note, AUC is in umol/m2, diameter of collar = 20 cm) 
+# mmol: multiply AUC by area of collar (314.16cm2) to get umol, then divide by 10000 to convert from cm2 to m2 (100X100)
+# mol: divide umol by 1000000 to convert to mol (10^6 umol in mol)
+AUC <- AUC.0 %>%
+  mutate(umol = ((AUC * 314.16) /10000)) %>%
+  mutate(mol = umol / 1000000) %>%
+  mutate(mass.13C.g = mol * 13) #add column with total mass of 13C (molar mass of 13C is 13 g/mol)
+
+# calculate % of 13C pyruvate in 13C-CO2 (note, 0.10g of 13C-pyruvate added, which = 0.0011344894 mol(molar mass of 13C-pyruvate = 89.06g/mol),
+# Since only one carbon atom labeled, 13C is also 0.0011344894 mol, and total mass of 13C can by calculated)
+mass.13C.pyr.g = 0.0011344894 * 13
+
+AUC <- AUC %>%
+  mutate(perc.mass = (mass.13C.g/mass.13C.pyr.g) *100) %>%
+  mutate(perc.mol = (mol/ 0.0011344894) * 100)
+
+# calculate average aucs and umol of C
+AUC_summary.CO2 <- AUC %>%
+  group_by(Cond, Pyr) %>%
+  summarise_at(vars(c(AUC, umol, mass.13C.g, perc.mass)), list(name = mean)) %>%
+  mutate(compound = "CO2")
+
+# total C for biosynthesis during drought (units in umol)
+AUC_summary_wide <- AUC_summary.CO2 %>%
+  dplyr::select(-c(AUC_name, perc.mass_name,mass.13C.g_name )) %>%
+  pivot_wider(names_from = c(Pyr, Cond), values_from = umol_name) %>%
+  mutate(Biosynthesis.D = C1_Drought - C2_Drought) %>%
+  mutate(Biosynthesis.PD = C1_Pre_Drought - C2_Pre_Drought) %>%
+  mutate(TCA_cycle.D = C1_Drought - Biosynthesis.D) %>%
+  mutate(TCA_cycle.PD = C1_Pre_Drought - Biosynthesis.PD) 
+
+# plot umol of 13C pyruvate (cummulative 13C-CO2)
+plot <- AUC %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  ggplot(aes(x= Cond, y = umol, fill = Cond)) +
+  geom_boxplot() +
+  facet_grid(.~Pyr) +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  scale_x_discrete(labels = c("P", "D")) +
+  labs(y = expression(""^13*"C-CO"[2]*" ("*mu*"mol)")) +
+  theme(text = element_text(size = 12,
+                          family = "Arial",
+                          color = "black"),
+      legend.position = "bottom",
+      axis.title.x = element_blank(),
+      legend.title = element_blank())
+plot
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2b-total-C-CO2-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+
+# plot % of 13C pyruvate
+plot <- AUC %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  ggplot(aes(x= Cond, y = perc.mass, fill = Cond)) +
+  geom_boxplot() +
+  facet_grid(.~Pyr) +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  #labs(y = expression("% of "^13*"C-pyruvate in "^13*"C-CO"[2])) + 
+  labs(y= expression (""^13*"C-CO"[2]*"/ "^13*"C-pyruvate (%)")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-CO2-per-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
+
+
+```
+
+# CO2 cummulative efflux statistics (wilcoxon and lme)
+```{r CO2 cumulative efflux statistics, echo = FALSE}
+# data summary
+
+AUC_sumary <- AUC %>%
+  dplyr::group_by(Cond, Pyr) %>%
+  dplyr::summarize(mean_c_flux = mean(mass.13C.g),
+                   sd = sd(mass.13C.g))
+
+# statistics - Wilcoxon texts
+# C1 vs C2 during pre-drought
+AUC.PD <- AUC %>%
+  filter(Cond == "Pre_Drought")
+
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.PD, paired = TRUE) #4.11e-5, paired 0.003906
+
+# C1 vs C2 during drought
+AUC.D <- AUC %>%
+  filter(Cond == "Drought")
+
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.D, paired = TRUE) #0.00399, paired 0.007812
+
+# pre-drought vs drought (C1)
+AUC.C1 <- AUC %>%
+  filter(Pyr == "C1")
+
+wilcox.test(mass.13C.g ~ Cond, data = AUC.C1, paired = TRUE) #4.94e-4, paired .007812
+
+# pre-drought vs drought (C2)
+AUC.C2 <- AUC %>%
+  filter(Pyr == "C2")
+
+wilcox.test(mass.13C.g ~ Cond, data = AUC.C2, paired = TRUE) #2.76e-3, paired 0.02734
+
+## linear mixed effect model
+# subset to C1 and CO2.
+statdat <- AUC %>%
+  filter(Pyr == "C1") %>%
+  separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+co2.c1 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(co2.c1)
+
+# check model assumptions
+check_model(co2.c1)
+
+# subset to C2 and CO2.
+statdat <- AUC %>%
+  filter(Pyr == "C2") %>%
+   separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+co2.c2 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(co2.c2)
+
+# check model assumptions
+check_model(co2.c2)
+
+# subset to pre-drought and CO2.
+statdat <- AUC %>%
+  filter(Cond == "Pre_Drought") %>%
+   separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+co2.preD <- lme(mass.13C.g ~ Pyr,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Pyr)
+            )
+summary(co2.preD)
+
+# check model assumptions
+check_model(co2.preD)
+
+# subset to drought and CO2.
+statdat <- AUC %>%
+  filter(Cond == "Drought") %>%
+   separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+co2.D <- lme(mass.13C.g ~ Pyr,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Pyr)
+            )
+summary(co2.D)
+
+# check model assumptions
+check_model(co2.D)
+
+
+```
+
+
+## cummulative efflux: Acetone
+```{r acetone, echo=FALSE}
+#Load 13C data
+data.13.P <- read.csv("../../Data/CO2-VOCs/voc_raw/acetone-pre-drought-13C.csv") 
+data.13.D <- read.csv("../../Data/CO2-VOCs/voc_raw/acetone-drought-13C.csv") 
+
+# process pre-drought dataset
+# gather dataframe 
+
+data.13.P.long <- data.13.P %>%
+  pivot_longer(cols = contains("P"),
+              names_to = c("Label","Time"),
+              names_sep = "_",
+              values_to= "Time_Flux") %>%
+  drop_na(Time_Flux)
+  
+
+data.13.P.long$Time <- data.13.P.long$Time %>% replace_na('Flux')
+
+
+# since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
+# here we will spread each pair of rows and spread the data so flux and time become separate rows
+df.p.0 = data.frame(matrix (NA, ncol = 3, nrow = 1))
+
+for (i in 1:nrow(data.13.P.long)) {
+  if (isTRUE(data.13.P.long[i,1] == data.13.P.long[(i+1),1])) 
+  {df.p.0[i,] <- spread(data.13.P.long[i:(i+1),], Time, Time_Flux)#[1,]
+ }
+}
+
+# erase rows with NA and name columns
+df.p <- df.p.0 %>%
+  dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
+  filter(Label != "NA")
+
+#Add column for pyruvate label and add column for pre-drought
+df.p.f <- df.p %>% 
+  mutate_at("Label", str_replace, ".C", "_C") %>%
+  separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
+  mutate(Condition = "Pre-Drought")
+
+### process drought dataset
+# gather dataframe 
+data.13.D.long <- data.13.D %>%
+  pivot_longer(cols = contains("P"),
+               names_to = c("Label","Time"),
+               names_sep = "_",
+               values_to= "Time_Flux") %>%
+  drop_na(Time_Flux) 
+
+data.13.D.long$Time <- data.13.D.long$Time %>% replace_na('Flux')
+
+#write.csv(data.13.D.long, "../../Output/CO2-VOCs/data.13.D.long.acetone.csv")
+
+# since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
+# here we will spread each pair of rows and spread the data so flux and time become separate rows
+df.d.0 = data.frame(matrix (NA, ncol = 3, nrow = 1))
+
+for (i in 1:nrow(data.13.D.long)) {
+  if (isTRUE(data.13.D.long[i,1] == data.13.D.long[(i+1),1])) 
+  {df.d.0[i,] <- spread(data.13.D.long[i:(i+1),], Time, Time_Flux)#[1,]
+ }
+}
+
+#write.csv(df.d.0, "../../Output/CO2-VOCs/df.d.0.acetone.csv")
+
+# erase rows with NA and name columns
+df.d <- df.d.0 %>%
+  dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
+  filter(Label != "NA")
+
+#write.csv(df.d, "../../Output/CO2-VOCs/df.d.acetone.csv")
+
+#Add column for pyruvate label and add column for drought
+df.d.f <- df.d %>% 
+  mutate_at("Label", str_replace, ".C", "_C") %>%
+  mutate_at("Label", str_replace, ".W", "_W") %>%
+  separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
+  mutate(Condition = "Drought") 
+
+#write.csv(df.d.f, "../../Output/CO2-VOCs/df.d.f.acetone.csv")
+
+df.acetone <- rbind(df.p.f, df.d.f) %>%
+  na.omit()
+
+#write.csv(df.acetone, "../../Output/CO2-VOCs/df.acetone.csv")
+
+# calculate "pre" and "water" labeling 13C flux, so that we can calcualte 13C flux from pyruvate
+data_sub_pre.aton <- df.acetone %>%
+  filter(Time <= 0)
+
+NP_pre.aton <- mean(data_sub_pre.aton$Flux)
+
+data_sub_water.aton <- df.acetone %>%
+  filter(Pyr == "W") 
+
+NP_water.aton <- mean(data_sub_water.aton$Flux)
+
+NP.aton <- mean(NP_pre.aton, NP_water.aton)
+
+# filter time points to between 0 and 48 hrs
+df.acetone$Time <- as.numeric(df.acetone$Time)
+
+
+df.acetone.f <- df.acetone %>%
+  mutate(Time.h = Time * 24) %>%
+  dplyr::select(-Time) %>%
+  filter(Time.h < 48 &
+           Time.h > 0)
+
+df.acetone.f$Time.h
+df.acetone.f$Pyr
+df.acetone.f$Condition
+df.acetone.f$Label
+df.acetone.f$Flux
+
+
+###calculate area under the curve for C1 and C2 during pre-drought and drought
+#Calculate AUC separately for each collar
+df.acetone.f.d <- df.acetone.f %>%
+  filter(Condition == "Drought")
+df.acetone.f.p <- df.acetone.f %>%
+  filter(Condition == "Pre-Drought") 
+
+
+
+#Define samples that are either C1 or C2 labeled
+Label.C1a = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3","S2P7", "S3P1","S3P3", "S3P5")
+Label.C1b = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3", "S2P5", "S3P1", "S3P3", "S3P5")
+Label.C2a = c("S1P2", "S1P4", "S1P6", "S2P2", "S2P4", "S2P6", "S3P2", "S3P4", "S3P6")
+Label.C2b = c("S1P2", "S1P4", "S1P6", "S2P4", "S2P6", "S2P8", "S3P2", "S3P4", "S3P6")
+Label.W = c("S1P2", "S1P4")
+
+#create empty lists for each category
+AUC.aton_list_PD_C1 <- list()
+AUC.aton_list_PD_C2 <- list()
+AUC.aton_list_D_C1 <- list()
+AUC.aton_list_D_C2 <- list()
+AUC.aton_list_D_W <- list()
+
+df.acetone.f.d$Label
+
+for (i in Label.C1a) {
+  x <- df.acetone.f.p %>%
+    filter(Label == i &
+             Pyr != "W")
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
+  AUC.aton_list_PD_C1[[i]] <- i.AUC.aton
+}
+
+for (i in Label.C2b) {
+  x <- df.acetone.f.p %>%
+    filter(Label == i &
+      Pyr != "W")
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
+  AUC.aton_list_PD_C2[[i]] <- i.AUC.aton
+}
+
+
+for (i in Label.C1b) {
+  x <- df.acetone.f.d %>%
+    filter(Label == i &
+      Pyr != "W")
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
+  AUC.aton_list_D_C1[[i]] <- i.AUC.aton
+}
+
+
+for (i in Label.C2a) {
+  x <- df.acetone.f.d %>%
+    filter(Label == i &
+             Pyr != "W")
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
+  AUC.aton_list_D_C2[[i]] <- i.AUC.aton
+}
+
+for (i in Label.W) {
+  x <- df.acetone.f.d %>%
+    filter(Label == i &
+             Pyr == "W")
+  i.AUC.aton <- auc(x$Time.h, x$Flux) 
+  AUC.aton_list_D_W[[i]] <- i.AUC.aton
+}
+
+#Create a data frame with area under the curves for each sample for statistical analysis and plotting
+#start by converting lists to data frames, and renaming columns in order to merge
+
+AUC.aton.D.C1 <- as.data.frame(do.call(rbind,AUC.aton_list_D_C1))
+AUC.aton.D.C1$Label <- rownames(AUC.aton.D.C1)
+AUC.aton.D.C1$AUC <- AUC.aton.D.C1$V1
+AUC.aton.D.C1$Pyr <- "C1"
+AUC.aton.D.C1$Cond <- "Drought"
+AUC.aton.D.C1$V1 <- NULL
+
+AUC.aton.D.C2 <- as.data.frame(do.call(rbind,AUC.aton_list_D_C2))
+AUC.aton.D.C2$Label <- rownames(AUC.aton.D.C2)
+AUC.aton.D.C2$AUC <- AUC.aton.D.C2$V1
+AUC.aton.D.C2$Pyr <- "C2"
+AUC.aton.D.C2$Cond <- "Drought"
+AUC.aton.D.C2$V1 <- NULL
+
+AUC.aton.PD.C1 <- as.data.frame(do.call(rbind, AUC.aton_list_PD_C1))
+AUC.aton.PD.C1$Label <- rownames(AUC.aton.PD.C1)
+AUC.aton.PD.C1$AUC <- AUC.aton.PD.C1$V1
+AUC.aton.PD.C1$Pyr <- "C1"
+AUC.aton.PD.C1$Cond <- "Pre_Drought"
+AUC.aton.PD.C1$V1 <- NULL
+
+AUC.aton.PD.C2 <- as.data.frame(do.call(rbind, AUC.aton_list_PD_C2))
+AUC.aton.PD.C2$Label <- rownames(AUC.aton.PD.C2)
+AUC.aton.PD.C2$AUC <- AUC.aton.PD.C2$V1
+AUC.aton.PD.C2$Pyr <- "C2"
+AUC.aton.PD.C2$Cond <- "Pre_Drought"
+AUC.aton.PD.C2$V1 <- NULL
+
+AUC.aton.D.W <- as.data.frame(do.call(rbind, AUC.aton_list_D_W))
+AUC.aton.D.W$Label <- rownames(AUC.aton.D.W)
+AUC.aton.D.W$AUC <- AUC.aton.D.W$V1
+AUC.aton.D.W$Pyr <- "W"
+AUC.aton.D.W$Cond <- "Drought"
+AUC.aton.D.W$V1 <- NULL
+
+AUC.aton.W.avg <- mean(AUC.aton.D.W$AUC)
+
+# merge dataframes, AUC.aton is in umol/m2
+AUC.aton.C1 <- rbind(AUC.aton.D.C1, AUC.aton.PD.C1)
+AUC.aton.C2 <- rbind(AUC.aton.D.C2, AUC.aton.PD.C2)
+AUC.aton.0 <- rbind(AUC.aton.C1, AUC.aton.C2)
+AUC.aton.W <- rbind(AUC.aton.C1, AUC.aton.C2, AUC.aton.D.W)
+
+
+# calculate total mol of C (note, AUC.aton is in mmol/m2, diameter of collar = 20 cm which means area is 314.16 cm2) 
+AUC.aton <- AUC.aton.0 %>%
+  mutate(AUC.a = AUC) %>%
+  mutate(umol = ((AUC.a * 314.16) / 10000) ) %>% 
+  mutate(mol = umol / 1000000) %>%
+  mutate(mass.13C.g = mol * 13) #add column with total mass of 13C (molar mass of 13C is 13 g/mol)
+
+# calculate % of 13C pyruvate in 13C-acetone (note, 0.0011228385 mol of 13C-pyruvate added,
+# 0.0034067682 mol of C, but only one carbon atom labeled, so 0.0011344894 mol of labeled C)
+mass.13C.pyr.g = 0.0011344894 * 13
+
+AUC.aton <- AUC.aton %>%
+  mutate(perc.mol = (mol/0.0011344894) *100) %>%
+  mutate(perc.mass = ((mass.13C.g / mass.13C.pyr.g) * 100))
+
+# calculate average AUC.atons and umol of C
+AUC_summary.acetone <- AUC.aton %>%
+  group_by(Cond, Pyr) %>%
+  summarise_at(vars(c(AUC, umol, perc.mass)), list(name = mean)) %>%
+  mutate(compound = "Acetone")
+
+
+# plot cummalative flux of 13C pyruvate (C1 and C2)
+plot <- AUC.aton %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  ggplot(aes(x= Cond, y = umol, fill = Cond)) +
+  geom_boxplot() +
+  #facet_grid(.~Pyr) +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  labs(y = expression("Cummulative efflux of "^13*"C-acetone (umol)")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-acetone-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
+
+# plot cummalative percentage of of 13C pyruvate (c1 and C2)
+plot <- AUC.aton %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  ggplot(aes(x= Cond, y = perc.mass, fill = Cond)) +
+  geom_boxplot() +
+  facet_grid(.~Pyr) +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  labs(y = expression(""^13*"C-acetone from pyruvate (% )")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetone-perc-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
+
+# plot cummalative flux of 13C pyruvate for just C2, because only C2 showed enrichment
+plot <- AUC.aton %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  filter(Pyr == "C2") %>%
+  ggplot(aes(x= Cond, y = umol, fill = Cond)) +
+  geom_boxplot() + 
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  scale_x_discrete(labels = c("P", "D")) +
+  labs(y = expression(""^13*"C-acetone ("*mu*"mol)")) +
+  theme(text = element_text(size = 14,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2H-total-C-acetone-flux-C2.png",units=c('in'),width=2, height = 4,dpi=300,plot)
+
+# plot cummalative percentage of of 13C pyruvate
+plot <- AUC.aton %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  filter(Pyr == "C2") %>%
+  ggplot(aes(x= Cond, y = perc.mass, fill = Cond)) +
+  geom_boxplot() +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  labs(y = expression("% of "^13*"C-pyruvate in "^13*"C-acetone")) + 
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetone-perc-flux-C2.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+
+```
+
+
+```{r acetone cumulative efflux statistics, echo = FALSE}
+# data summary
+
+AUC.sumary.aton <- AUC.aton %>%
+  dplyr::group_by(Cond, Pyr) %>%
+  dplyr::summarize(mean_c_flux = mean(mass.13C.g),
+                   sd = sd(mass.13C.g))
+# statistics
+# C1 vs C2 during pre-drought
+AUC.aton.PD <- AUC.aton %>%
+  filter(Cond == "Pre_Drought")
+
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.aton.PD, paired = TRUE) #0.0002879, paired 0.007812
+
+# C1 vs C2 during drought
+AUC.aton.D <- AUC.aton %>%
+  filter(Cond == "Drought")
+
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.aton.D, paired = TRUE) #4.114e-05 paired = 0.003906
+
+# pre-drought vs drought (C1)
+AUC.aton.C1 <- AUC.aton %>%
+  filter(Pyr == "C1")
+
+wilcox.test(mass.13C.g ~ Cond, data = AUC.aton.C1, paired = TRUE) #0.5457, paired = 0.3008
+
+# pre-drought vs drought (C2)
+AUC.aton.C2 <- AUC.aton %>%
+  filter(Pyr == "C2")
+
+wilcox.test(mass.13C.g ~ Cond, data = AUC.aton.C2, paired = TRUE) #8.227e-05, paired = 0.003906
+
+## linear mixed effect model
+# subset to C1. Add column for site so we can add this as a random variable.
+statdat <- AUC.aton %>%
+  filter(Pyr == "C1") %>%
+  separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+aton.c1 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(aton.c1)
+
+# check model assumptions
+check_model(aton.c1)
+
+# subset to C2 and CO2.
+statdat <- AUC.aton %>%
+  filter(Pyr == "C2") %>%
+ separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+aton.c2 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(aton.c2)
+
+# check model assumptions
+check_model(aton.c2)
+
+
+```
+
+
+
+
+## Cummulative Efflux: Diacetyl
+
+```{r}
+########C13 data###############
+#Load 13C data
+data.13.P.diac <- read.csv("../../Data/CO2-VOCs/voc_raw/diacetyl-pre-drought-13C.csv") 
+data.13.D.diac <- read.csv("../../Data/CO2-VOCs/voc_raw/diacetyl-drought-13C.csv") 
+
+# process pre-drought dataset
+# gather dataframe 
+
+data.13.P.diac.long <- data.13.P.diac %>%
+  pivot_longer(cols = contains("P"),
+              names_to = c("Label","Time"),
+              names_sep = "_",
+              values_to= "Time_Flux") %>%
+  drop_na(Time_Flux)
+  
+
+data.13.P.diac.long$Time <- data.13.P.diac.long$Time %>% replace_na('Flux')
+
+#write.csv(data.13.P.diac.long, "../../Output/CO2-VOCs/data.13.Plong.diacetl.csv")
+
+# since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
+# here we will spread each pair of rows and spread the data so flux and time become separate rows
+df.p.0.diac = data.frame(matrix (NA, ncol = 3, nrow = 1))
+
+for (i in 1:nrow(data.13.P.diac.long)) {
+  if (isTRUE(data.13.P.diac.long[i,1] == data.13.P.diac.long[(i+1),1])) 
+  {df.p.0.diac[i,] <- spread(data.13.P.diac.long[i:(i+1),], Time, Time_Flux)#[1,]
+ }
+}
+#write.csv(df.p.0.diac, "../../Output/CO2-VOCs/df.p.0.diac.csv")
+
+# erase rows with NA and name columns
+df.p.diac <- df.p.0.diac %>%
+  dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
+  filter(Label != "NA")
+#write.csv(df.p.diac, "../../Output/CO2-VOCs/df.p.diac.csv")
+
+#Add column for pyruvate label and add column for pre-drought
+df.p.f.diac <- df.p.diac %>% 
+  mutate_at("Label", str_replace, ".C", "_C") %>%
+  separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
+  mutate(Condition = "Pre-Drought")
+#write.csv(df.p.f.diac, "../../Output/CO2-VOCs/df.p.f.diacetl.csv")
+
+### process drought dataset
+# gather dataframe 
+data.13.D.diac.long <- data.13.D.diac %>%
+  pivot_longer(cols = contains("P"),
+               names_to = c("Label","Time"),
+               names_sep = "_",
+               values_to= "Time_Flux") %>%
+  drop_na(Time_Flux) 
+
+data.13.D.diac.long$Time <- data.13.D.diac.long$Time %>% replace_na('Flux')
+
+#write.csv(data.13.D.diac.long, "../../Output/CO2-VOCs/data.13.D.long.diacetyl.csv")
+
+# since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
+# here we will spread each pair of rows and spread the data so flux and time become separate rows
+df.d.0.diac = data.frame(matrix (NA, ncol = 3, nrow = 1))
+
+for (i in 1:nrow(data.13.D.diac.long)) {
+  if (isTRUE(data.13.D.diac.long[i,1] == data.13.D.diac.long[(i+1),1])) 
+  {df.d.0.diac[i,] <- spread(data.13.D.diac.long[i:(i+1),], Time, Time_Flux)#[1,]
+ }
+}
+
+#write.csv(df.d.0.diac, "../../Output/CO2-VOCs/df.d.0.diacetyl.csv")
+
+# erase rows with NA and name columns
+df.d.diac <- df.d.0.diac %>%
+  dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
+  filter(Label != "NA")
+
+#write.csv(df.d.diac, "../../Output/CO2-VOCs/df.d.diacetyl.csv")
+
+#Add column for pyruvate label and add column for drought
+df.d.f.diac <- df.d.diac %>% 
+  mutate_at("Label", str_replace, ".C", "_C") %>%
+  mutate_at("Label", str_replace, ".W", "_W") %>%
+  separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
+  mutate(Condition = "Drought") 
+
+#write.csv(df.d.f.diac, "../../Output/CO2-VOCs/df.d.f.diacetyl.csv")
+
+df.diacetyl <- rbind(df.p.f.diac, df.d.f.diac) %>%
+  na.omit()
+
+#write.csv(df.diacetyl, "../../Output/CO2-VOCs/df.diacetyl.csv")
+
+# calculate "pre" and "water" labeling 13C flux, so that we can calcualte 13C flux from pyruvate
+data_sub_pre.diac <- df.diacetyl %>%
+  filter(Time <= 0)
+
+NP_pre.diac <- mean(data_sub_pre.diac$Flux)
+
+data_sub_water.diac <- df.diacetyl %>%
+  filter(Pyr == "W") 
+
+NP_water.diac <- mean(data_sub_water.diac$Flux)
+
+NP.diac <- mean(NP_pre.diac, NP_water.diac)
+
+# filter time points to between 0 and 48 hrs
+df.diacetyl.f <- df.diacetyl %>%
+  mutate(Time.h = Time * 24) %>%
+  dplyr::select(-Time) %>%
+  filter(Time.h < 48 &
+           Time.h > 0)
+
+df.diacetyl.f$Time.h
+df.diacetyl.f$Pyr
+df.diacetyl.f$Condition
+df.diacetyl.f$Label
+df.diacetyl.f$Flux
+
+
+###calculate area under the curve for C1 and C2 during pre-drought and drought
+#Calculate AUC separately for each collar
+df.diacetyl.f.d <- df.diacetyl.f %>%
+  filter(Condition == "Drought")
+df.diacetyl.f.p <- df.diacetyl.f %>%
+  filter(Condition == "Pre-Drought") 
+
+df.diacetyl.f.p$Label
+
+#Define samples that are either C1 or C2 labeled
+Label.C1a = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3","S2P7", "S3P1","S3P3", "S3P5")
+Label.C1b = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3", "S2P5", "S3P1", "S3P3", "S3P5")
+Label.C2a = c("S1P2", "S1P4", "S1P6", "S2P2", "S2P4", "S2P6", "S3P2", "S3P4", "S3P6")
+Label.C2b = c("S1P2", "S1P4", "S1P6", "S2P4", "S2P6", "S2P8", "S3P2", "S3P4", "S3P6")
+Label.W = c("S1P2", "S1P4")
+
+#create empty lists for each category
+AUC_list_PD_C1_Diac <- list()
+AUC_list_PD_C2_Diac <- list()
+AUC_list_D_C1_Diac <- list()
+AUC_list_D_C2_Diac <- list()
+AUC_list_D_W_Diac <- list()
+
+df.diacetyl.f.p$Label
+
+for (i in Label.C1a) {
+  x <- df.diacetyl.f.p %>%
+    filter(Label == i &
+             Pyr != "W" &
+           Flux > 0)
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC_list_PD_C1_Diac[[i]] <- i.AUC
+}
+
+
+for (i in Label.C2b) {
+  x <- df.diacetyl.f.p %>%
+    filter(Label == i &
+             Pyr != "W"&
+             Flux > 0)
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC_list_PD_C2_Diac[[i]] <- i.AUC
+}
+
+
+for (i in Label.C1b) {
+  x <- df.diacetyl.f.d %>%
+    filter(Label == i &
+             Pyr != "W" &
+             Flux > 0)
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC_list_D_C1_Diac[[i]] <- i.AUC
+}
+
+
+for (i in Label.C2a) {
+  x <- df.diacetyl.f.d %>%
+    filter(Label == i &
+             Pyr != "W"&
+             Flux > 0)
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC_list_D_C2_Diac[[i]] <- i.AUC
+}
+
+for (i in Label.W) {
+  x <- df.diacetyl.f.d %>%
+    filter(Label == i &
+             Pyr == "W"&
+             Flux > 0)
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC_list_D_W_Diac[[i]] <- i.AUC
+}
+
+#Create a data frame with area under the curves for each sample for statistical analysis and plotting
+#start by converting lists to data frames, and renaming columns in order to merge
+
+AUC.D.C1.Diac <- as.data.frame(do.call(rbind,AUC_list_D_C1_Diac))
+AUC.D.C1.Diac$Label <- rownames(AUC.D.C1.Diac)
+AUC.D.C1.Diac$AUC <- AUC.D.C1.Diac$V1
+AUC.D.C1.Diac$Pyr <- "C1"
+AUC.D.C1.Diac$Cond <- "Drought"
+AUC.D.C1.Diac$V1 <- NULL
+
+AUC.D.C2.Diac <- as.data.frame(do.call(rbind,AUC_list_D_C2_Diac))
+AUC.D.C2.Diac$Label <- rownames(AUC.D.C2.Diac)
+AUC.D.C2.Diac$AUC <- AUC.D.C2.Diac$V1
+AUC.D.C2.Diac$Pyr <- "C2"
+AUC.D.C2.Diac$Cond <- "Drought"
+AUC.D.C2.Diac$V1 <- NULL
+
+AUC.PD.C1.Diac <- as.data.frame(do.call(rbind, AUC_list_PD_C1_Diac))
+AUC.PD.C1.Diac$Label <- rownames(AUC.PD.C1.Diac)
+AUC.PD.C1.Diac$AUC <- AUC.PD.C1.Diac$V1
+AUC.PD.C1.Diac$Pyr <- "C1"
+AUC.PD.C1.Diac$Cond <- "Pre_Drought"
+AUC.PD.C1.Diac$V1 <- NULL
+
+AUC.PD.C2.Diac <- as.data.frame(do.call(rbind, AUC_list_PD_C2_Diac))
+AUC.PD.C2.Diac$Label <- rownames(AUC.PD.C2.Diac)
+AUC.PD.C2.Diac$AUC <- AUC.PD.C2.Diac$V1
+AUC.PD.C2.Diac$Pyr <- "C2"
+AUC.PD.C2.Diac$Cond <- "Pre_Drought"
+AUC.PD.C2.Diac$V1 <- NULL
+
+AUC.D.W.Diac <- as.data.frame(do.call(rbind, AUC_list_D_W_Diac))
+AUC.D.W.Diac$Label <- rownames(AUC.D.W.Diac)
+AUC.D.W.Diac$AUC <- AUC.D.W.Diac$V1
+AUC.D.W.Diac$Pyr <- "W"
+AUC.D.W.Diac$Cond <- "Drought"
+AUC.D.W.Diac$V1 <- NULL
+
+AUC.W.avg.Diac <- mean(AUC.D.W.Diac$AUC)
+
+
+# merge dataframes, AUC is in umol/m2
+AUC.C1.Diac <- rbind(AUC.D.C1.Diac, AUC.PD.C1.Diac)
+AUC.C2.Diac <- rbind(AUC.D.C2.Diac, AUC.PD.C2.Diac)
+AUC.0.Diac <- rbind(AUC.C1.Diac, AUC.C2.Diac)
+AUC.W.Diac <- rbind(AUC.C1.Diac, AUC.C2.Diac, AUC.D.W.Diac)
+
+
+# calculate total mol of C (note, AUC is in mmol/m2, diameter of collar = 20 cm which means area is 314.16 cm2) 
+AUC.Diac <- AUC.0.Diac %>%
+  mutate(AUC.a = AUC - AUC.W.avg.Diac) %>% #Subtract natural abundance of 13C
+  mutate(umol = ((AUC.a * 314.16) / 10000)) %>% 
+  mutate(mol = umol / 1000000) %>%
+  mutate(mass.13C.g = mol * 13) #add column with total mass of 13C (molar mass of 13C is 13 g/mol)
+
+# calculate % of 13C pyruvate in 13C-diacetyl (note, 0.0011228385 mol of 13C-pyruvate added,
+# 0.0034067682 mol of C, but only one carbon atom labeled, so 0.0011344894 mol of labeled C)
+mass.13C.pyr.g = 0.0011228385 * 13
+
+AUC.Diac <- AUC.Diac %>%
+  mutate(perc.mol = (mol/0.0011228385) *100) %>%
+  mutate(perc.mass = ((mass.13C.g / mass.13C.pyr.g) * 100))
+
+# calculate average aucs and nmol of C
+AUC_summary.Diac <- AUC.Diac %>%
+  group_by(Cond, Pyr) %>%
+  summarise_at(vars(c(AUC, umol, perc.mass)), list(name = mean)) %>%
+  mutate(compound = "Diacetyl")
+
+
+# plot cummalative flux of 13C 
+plot.Diac <- AUC.Diac %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  ggplot(aes(x= Cond, y = umol, fill = Cond)) +
+  geom_boxplot() +
+  facet_grid(.~Pyr) +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  labs(y = expression("Cummulative efflux of "^13*"C-diacetyl (umol)")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot.Diac
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-diacetyl-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot.Diac)
+
+# plot cummalative percentage of of 13C pyruvate
+plot.Diac <- AUC.Diac %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  ggplot(aes(x= Cond, y = perc.mass, fill = Cond)) +
+  geom_boxplot() +
+  facet_grid(.~Pyr) +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  labs(y = expression("Cummulative efflux of "^13*"C-diacetyl (% of 13C from pyruvate)")) +
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot.Diac
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-diacetyl-perc-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot.Diac)
+
+# plot cummalative flux of 13C diacetyl, only from C2 
+plot.Diac <- AUC.Diac %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  filter(Pyr == "C2") %>%
+  ggplot(aes(x= Cond, y = umol, fill = Cond)) +
+  geom_boxplot() +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  scale_x_discrete(labels = c("P", "D")) +
+  labs(y = expression(""^13*"C-diacetyl ("*mu*"mol)")) +
+  theme(text = element_text(size = 14,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.text.x = element_text(size = 12),
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot.Diac
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2I-total-C-diacetyl-flux-c2-revision.png",units=c('in'),width=2, height = 4,dpi=300,plot.Diac)
+
+# plot cummalative percentage of of 13C pyruvate
+plot.Diac <- AUC.Diac %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  filter(Pyr == "C2") %>%
+  ggplot(aes(x= Cond, y = perc.mass, fill = Cond)) +
+  geom_boxplot() +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("Pre Drought", "Drought")) +
+  labs(y = expression("% of "^13*"C-pyruvate in "^13*"C-diacetyl")) + 
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot.Diac
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-diacetyl-perc-flux-c2.png",units=c('in'),width=4, height = 4,dpi=300,plot.Diac)
+
+
+```
+
+```{r diacetyl statistics for AUC, echo = FALSE}
+# data summary
+
+AUC.sumary.diac <- AUC.Diac %>%
+  dplyr::group_by(Cond, Pyr) %>%
+  dplyr::summarize(mean_c_flux = mean(mass.13C.g),
+                   sd = sd(mass.13C.g))
+AUC.sumary.diac
+# statistics
+# C1 vs C2 during pre-drought
+AUC.Diac.PD <- AUC.Diac %>%
+  filter(Cond == "Pre_Drought")
+
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.Diac.PD, paired = TRUE) #0.2973, paired 0.25
+
+# C1 vs C2 during drought
+AUC.Diac.D <- AUC.Diac %>%
+  filter(Cond == "Drought")
+
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.Diac.D, paired = TRUE) #0.7304, paired 0.6523
+
+# pre-drought vs drought (C1)
+AUC.Diac.C1 <- AUC.Diac %>%
+  filter(Pyr == "C1")
+
+wilcox.test(mass.13C.g ~ Cond, data = AUC.Diac.C1, paired = TRUE) #0.2224, apried 0.1289
+
+# pre-drought vs drought (C2)
+AUC.Diac.C2 <- AUC.Diac %>%
+  filter(Pyr == "C2")
+
+wilcox.test(mass.13C.g ~ Cond, data = AUC.Diac.C2, paired = TRUE) #0.05031, paired 0.03906
+
+## linear mixed effect model
+# subset to C1. Add column for site so we can add this as a random variable.
+statdat <- AUC.Diac %>%
+  filter(Pyr == "C1") %>%
+  separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+diac.c1 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(diac.c1)
+
+# check model assumptions
+check_model(diac.c1)
+
+# subset to C2 and CO2.
+statdat <- AUC.Diac %>%
+  filter(Pyr == "C2") %>%
+ separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+diac.c2 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(diac.c2)
+
+# check model assumptions
+check_model(diac.c2)
+
+```
+
+
+
+
+
+## Cummulative Effluxes: Acetic acid
+```{r acetic acid, echo = FALSE}
+########C13 data###############
+#Load 13C data
+data.13.P <- read.csv("../../Data/CO2-VOCs/voc_raw/acetate-pre-drought-13C.csv") 
+data.13.D <- read.csv("../../Data/CO2-VOCs/voc_raw/acetate-drought-13C.csv") 
+
+# process pre-drought dataset
+# gather dataframe 
+data.13.P.long <- data.13.P %>%
+  pivot_longer(cols = contains("P"),
+               names_to = c("Label","Time"),
+               names_sep = "_",
+               values_to= "Time_Flux") %>%
+  drop_na(Time_Flux) %>%
+  mutate(Time = ifelse(is.na(Time), "flux", Time))
+
+# since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
+# here we will loop through each pair of rows and spread the data so flux and time become separate rows
+
+df.p.0 = data.frame(matrix (NA, ncol = 3, nrow = 1))
+
+for (i in 1:nrow(data.13.P.long)) {
+  if (isTRUE(data.13.P.long[i,1] == data.13.P.long[(i+1),1]) == TRUE) 
+  {df.p.0[i,] <- spread(data.13.P.long[i:(i+1),], Time, Time_Flux)[1,]
+  }
+}
+
+# erase rows with NA and name columns
+df.p <- df.p.0 %>%
+  dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
+  filter(Label != "NA")
+
+#Add column for pyruvate label and add column for pre-drought
+df.p.f <- df.p %>% 
+  mutate_at("Label", str_replace, ".C", "_C") %>%
+  separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
+  mutate(Condition = "Pre-Drought")
+
+### process drought dataset
+# gather dataframe 
+data.13.D.long <- data.13.D %>%
+  pivot_longer(cols = contains("P"),
+               names_to = c("Label","Time"),
+               names_sep = "_",
+               values_to= "Time_Flux") %>%
+  drop_na(Time_Flux) %>%
+  mutate(Time = ifelse(is.na(Time), "flux", Time))
+
+data.13.D.long$Label
+# since flux and time are now in single column, with each pairs of rows containing info for single sample/timepoint,
+# here we will loop through each pair of rows and spread the data so flux and time become separate rows
+df.d.0 = data.frame(matrix (NA, ncol = 3, nrow = 1))
+
+for (i in 1:nrow(data.13.D.long)) {
+  if (isTRUE(data.13.D.long[i,1] == data.13.D.long[(i+1),1]) == TRUE) 
+  {df.d.0[i,] <- spread(data.13.D.long[i:(i+1),], Time, Time_Flux)[1,]
+ }
+}
+
+# erase rows with NA and name columns
+df.d <- df.d.0 %>%
+  dplyr::rename(Label = X1, Flux = X2, Time = X3) %>%
+  filter(Label != "NA")
+
+#Add column for pyruvate label and add column for pre-drought
+df.d.f <- df.d %>% 
+  mutate_at("Label", str_replace, ".C", "_C") %>%
+  mutate_at("Label", str_replace, ".W", "_W") %>%
+  separate(Label, into = c("Label", "Pyr"), sep = "_") %>%
+  mutate(Condition = "Drought")
+
+df.acetate <- rbind(df.p.f, df.d.f)
+
+# calculate "pre" and "water" labeling 13C flux, so that we can calcualte 13C flux from pyruvate
+data_sub_pre <- df.acetate %>%
+  filter(Time <= 0)
+
+NP_pre <- mean(data_sub_pre$Flux)
+
+data_sub_water <- df.acetate %>%
+  filter(Pyr == "W")
+
+NP_water <- mean(data_sub_water$Flux)
+
+NP <- mean(NP_pre, NP_water)
+
+# filter time points to between 0 and 48 hrs
+df.acetate.f <- df.acetate %>%
+  mutate(Time.h = Time * 24) %>%
+  dplyr::select(-Time) %>%
+  filter(Time.h < 48 &
+           Time.h > 0)
+
+df.acetate.f$Time.h
+df.acetate.f$Pyr
+df.acetate.f$Condition
+df.acetate.f$Label
+
+
+###calculate area under the curve for C1 and C2 during pre-drought and drought
+#Calculate AUC separately for each collar
+df.acetate.f.d <- df.acetate.f %>%
+  filter(Condition == "Drought")
+df.acetate.f.p <- df.acetate.f %>%
+  filter(Condition == "Pre-Drought") 
+
+
+
+#Define samples that are either C1 or C2 labeled
+Label.C1a = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3", "S2P7", "S3P1", "S3P3", "S3P5")
+Label.C1b = c("S1P1", "S1P3", "S1P5", "S2P1", "S2P3", "S2P5", "S3P1", "S3P3", "S3P5")
+Label.C2a = c("S1P2", "S1P4", "S1P6", "S2P2", "S2P4", "S2P6", "S3P2", "S3P4", "S3P6")
+Label.C2b = c("S1P2", "S1P4", "S1P6", "S2P4", "S2P6", "S2P8", "S3P2", "S3P4", "S3P6")
+Label.W = c("S1P2", "S1P4")
+
+#create empty lists for each category
+AUC.acetate_list_PD_C1 <- list()
+AUC.acetate_list_PD_C2 <- list()
+AUC.acetate_list_D_C1 <- list()
+AUC.acetate_list_D_C2 <- list()
+AUC.acetate_list_D_W <- list()
+
+
+for (i in Label.C1a) {
+  x <- df.acetate.f.p %>%
+    filter(Label == i &
+             Pyr != "W")
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC.acetate_list_PD_C1[[i]] <- i.AUC
+}
+
+
+for (i in Label.C2b) {
+  x <- df.acetate.f.p %>%
+    filter(Label == i &
+             Pyr != "W")
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC.acetate_list_PD_C2[[i]] <- i.AUC
+}
+
+
+for (i in Label.C1b) {
+  x <- df.acetate.f.d %>%
+    filter(Label == i &
+             Pyr != "W")
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC.acetate_list_D_C1[[i]] <- i.AUC
+}
+
+
+for (i in Label.C2a) {
+  x <- df.acetate.f.d %>%
+    filter(Label == i &
+             Pyr != "W")
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC.acetate_list_D_C2[[i]] <- i.AUC
+}
+
+for (i in Label.W) {
+  x <- df.acetate.f.d %>%
+    filter(Label == i &
+             Pyr == "W")
+  i.AUC <- auc(x$Time.h, x$Flux) 
+  AUC.acetate_list_D_W[[i]] <- i.AUC
+}
+
+#Create a data frame with area under the curves for each sample for statistical analysis and plotting
+#start by converting lists to data frames, and renaming columns in order to merge
+
+AUC.acetate.D.C1 <- as.data.frame(do.call(rbind,AUC.acetate_list_D_C1))
+AUC.acetate.D.C1$Label <- rownames(AUC.acetate.D.C1)
+AUC.acetate.D.C1$AUC <- AUC.acetate.D.C1$V1
+AUC.acetate.D.C1$Pyr <- "C1"
+AUC.acetate.D.C1$Cond <- "Drought"
+AUC.acetate.D.C1$V1 <- NULL
+
+AUC.acetate.D.C2 <- as.data.frame(do.call(rbind,AUC.acetate_list_D_C2))
+AUC.acetate.D.C2$Label <- rownames(AUC.acetate.D.C2)
+AUC.acetate.D.C2$AUC <- AUC.acetate.D.C2$V1
+AUC.acetate.D.C2$Pyr <- "C2"
+AUC.acetate.D.C2$Cond <- "Drought"
+AUC.acetate.D.C2$V1 <- NULL
+
+AUC.acetate.PD.C1 <- as.data.frame(do.call(rbind, AUC.acetate_list_PD_C1))
+AUC.acetate.PD.C1$Label <- rownames(AUC.acetate.PD.C1)
+AUC.acetate.PD.C1$AUC <- AUC.acetate.PD.C1$V1
+AUC.acetate.PD.C1$Pyr <- "C1"
+AUC.acetate.PD.C1$Cond <- "Pre_Drought"
+AUC.acetate.PD.C1$V1 <- NULL
+
+AUC.acetate.PD.C2 <- as.data.frame(do.call(rbind, AUC.acetate_list_PD_C2))
+AUC.acetate.PD.C2$Label <- rownames(AUC.acetate.PD.C2)
+AUC.acetate.PD.C2$AUC <- AUC.acetate.PD.C2$V1
+AUC.acetate.PD.C2$Pyr <- "C2"
+AUC.acetate.PD.C2$Cond <- "Pre_Drought"
+AUC.acetate.PD.C2$V1 <- NULL
+
+AUC.acetate.D.W <- as.data.frame(do.call(rbind, AUC.acetate_list_D_W))
+AUC.acetate.D.W$Label <- rownames(AUC.acetate.D.W)
+AUC.acetate.D.W$AUC <- AUC.acetate.D.W$V1
+AUC.acetate.D.W$Pyr <- "W"
+AUC.acetate.D.W$Cond <- "Drought"
+AUC.acetate.D.W$V1 <- NULL
+
+AUC.acetate.W.avg <- mean(AUC.acetate.D.W$AUC)
+
+
+# merge dataframes, AUC is in umol/m2
+AUC.acetate.C1 <- rbind(AUC.acetate.D.C1, AUC.acetate.PD.C1)
+AUC.acetate.C2 <- rbind(AUC.acetate.D.C2, AUC.acetate.PD.C2)
+AUC.acetate.0 <- rbind(AUC.acetate.C1, AUC.acetate.C2)
+AUC.acetate.W <- rbind(AUC.acetate.C1, AUC.acetate.C2, AUC.acetate.D.W)
+
+
+# calculate total mol of C (note, AUC is in umol/m2, diameter of collar = 20 cm which means area is 314.16 cm2) 
+#add column with total mass of 13C from pyruvate in aceate (molar mass of 13C is 13 g/mol)
+AUC.acetate <- AUC.acetate.0 %>%
+  mutate(AUC.a = AUC - AUC.acetate.W.avg) %>%
+  mutate(umol = ((AUC.a * 314.16) /10000 ))  %>%
+  mutate(mol = umol / 1000000) %>%
+  mutate(mass.13C.g = (mol*13) )
+
+# calculate % of 13C pyruvate in 13C-acetate (note, 0.0011355894 mol of 13C-pyruvate added,
+# 0.0011355894 mol of 13C)
+mass.13C.pyr.g = 0.0011355894 * 13
+
+AUC.acetate <- AUC.acetate %>%
+  mutate(perc.mol = (mol/0.0011355894) *100) %>%
+  mutate(perc.mass = ((mass.13C.g / mass.13C.pyr.g) * 100))
+
+# calculate average aucs and nmol of C
+AUC_summary.acetate <- AUC.acetate %>%
+  group_by(Cond, Pyr) %>%
+  summarise_at(vars(c(AUC, umol, perc.mass)), list(name = mean)) %>%
+  mutate(compound = "acetate")
+
+
+# plot cummalative flux of 13C pyruvate
+plot <- AUC.acetate %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  ggplot(aes(x= Cond, y = umol, fill = Cond)) +
+  geom_boxplot() +
+  facet_grid(.~Pyr) +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("P", "D")) +
+  scale_x_discrete(labels = c("P", "D")) +
+  labs(y = expression(""^13*"C-acetic acid ("*mu*"mol)")) +
+  theme(text = element_text(size = 14,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2G-total-C-acetate-flux-revision.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+
+# plot cummalative percentage of of 13C pyruvate
+plot <- AUC.acetate %>%
+  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
+  ggplot(aes(x= Cond, y = perc.mass, fill = Cond)) +
+  geom_boxplot() +
+  facet_grid(.~Pyr) +
+  scale_fill_manual(values = colors,
+                    breaks = c("Pre_Drought", "Drought"),
+                    labels = c("P", "D")) +
+  labs(y = expression("% of "^13*"C-pyruvate in "^13*"C-acetone")) + 
+  theme(text = element_text(size = 12,
+                            family = "Arial",
+                            color = "black"),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+plot
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetate-perc-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
+```
+
+
+
+```{r statistics acetate for AUC, echo = FALSE}
+# data summary
+AUC.sumary.acetate<- AUC.acetate %>%
+  dplyr::group_by(Cond, Pyr) %>%
+  dplyr::summarize(mean_c_flux = mean(mass.13C.g),
+                   sd = sd(mass.13C.g))
+AUC.sumary.acetate
+
+# statistics
+# C1 vs C2 during pre-drought
+AUC.acetate.PD <- AUC.acetate %>%
+  filter(Cond == "Pre_Drought")
+
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.acetate.PD, paired = TRUE) #0.6665, paired 0.5703
+
+# C1 vs C2 during drought
+AUC.acetate.D <- AUC.acetate %>%
+  filter(Cond == "Drought")
+
+wilcox.test(mass.13C.g ~ Pyr, data = AUC.acetate.D, paired = TRUE) #0.7962, paired 0.8203
+
+# pre-drought vs drought (C1)
+AUC.acetate.C1 <- AUC.acetate %>%
+  filter(Pyr == "C1")
+
+wilcox.test(mass.13C.g ~ Cond, data = AUC.acetate.C1, paired = TRUE) #0.002756, paired = 0.007812
+
+# pre-drought vs drought (C2)
+AUC.acetate.C2 <- AUC.acetate %>%
+  filter(Pyr == "C2")
+
+wilcox.test(mass.13C.g ~ Cond, data = AUC.acetate.C2, paired = TRUE) #0.0001645, paired = 0.0039
+
+## linear mixed effect model
+# subset to C1. Add column for site so we can add this as a random variable.
+statdat <- AUC.acetate %>%
+  filter(Pyr == "C1") %>%
+  separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+acetate.c1 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(acetate.c1)
+
+# check model assumptions
+check_model(acetate.c1)
+
+# subset to C2 and CO2.
+statdat <- AUC.acetate %>%
+  filter(Pyr == "C2") %>%
+ separate(Label, into = c("Site", "ID"), sep = "P", remove = FALSE)
+
+# lme model
+acetate.c2 <- lme(mass.13C.g ~ Cond,
+            random = list(Site = ~1,
+                          ID =  ~1),
+            data = statdat,
+            weights =  varIdent(form = ~1|Cond)
+            )
+summary(acetate.c2)
+
+# check model assumptions
+check_model(acetate.c2)
+```
+
+
+## compare cummulative fluxes
+
+```{r}
+# combine summary tables to compare cummulative fluxes
+
+# create summary of umol and perc
+summary.1 <- rbind(AUC_summary.acetate, AUC_summary.acetone)
+summary.2 <- AUC_summary.CO2 %>%
+  dplyr::select(-mass.13C.g_name) %>% #remove column that doesn't match with diacetyl summary table
+  rbind(AUC_summary.Diac)
+summary.total <- rbind(summary.1, summary.2)
+summary.total
+
+# spread c1 and C2 across value columns (umol and perc)
+summary.umol <- summary.total %>%
+  dplyr::select(-c(AUC_name)) %>% #remove columns that we don't want to include in final summary table
+  pivot_wider(names_from = Pyr, values_from = c("umol_name", "perc.mass_name")) %>%
+  mutate(diff.umol = umol_name_C1 - umol_name_C2) %>% #calculate C1 - C2 so we know how much 13C within 13C-co2 goes towards biosynthesis 
+  mutate(sum.umol = umol_name_C1 + umol_name_C2) %>%
+  mutate(diff.perc = perc.mass_name_C1 - perc.mass_name_C2) %>%
+  mutate(sum.perc = perc.mass_name_C1 + perc.mass_name_C2)  # calculate C1 + C2 for a sum of total labeled acetae
+summary.umol
+
+
+# make pie charts showing biosynthesis  and tca cycle
+# drought
+summary.allocation.d <- summary.umol %>%
+  filter(compound == "CO2" &
+           Cond == "Drought") %>%
+  mutate(other = 100 - (perc.mass_name_C1)) %>%
+  dplyr::select(perc.mass_name_C2, diff.perc, other)
+
+summary.allocation.d.t <- t(summary.allocation.d)
+colnames(summary.allocation.d.t) <- summary.allocation.d.t[1,]
+summary.allocation.d.t <- summary.allocation.d.t[-1,]
+summary.allocation.d.t <- as.data.frame(summary.allocation.d.t)
+summary.allocation.d.t$perc.alloc <- summary.allocation.d.t$summary.allocation.d.t
+summary.allocation.d.t$perc.alloc <- as.numeric(summary.allocation.d.t$perc.alloc)
+summary.allocation.d.t$cat.alloc <- rownames(summary.allocation.d.t)
+
+pie.d <- ggplot(summary.allocation.d.t, aes(x="", y=perc.alloc, fill =cat.alloc )) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y" , start = 0) +
+ scale_fill_manual(breaks = c("diff.perc", "perc.mass_name_C2", "other"),
+                    labels = c("Biosynthesis", "TCA cycle","Other"),
+                    values = c("blue", "red","darkgray")) +
+  theme_void() +
+  theme(legend.title = element_blank())
+pie.d
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2J-pie_d_bio_tca.png",units=c('in'),width=3, height = 3,dpi=300,pie.d)
+
+
+# pre-drought
+summary.allocation.p <- summary.umol %>%
+  filter(compound == "CO2" &
+           Cond == "Pre_Drought") %>%
+  mutate(other = 100 - (perc.mass_name_C1)) %>%
+  dplyr::select(perc.mass_name_C2, diff.perc, other)
+
+summary.allocation.p.t <- t(summary.allocation.p)
+colnames(summary.allocation.p.t) <- summary.allocation.p.t[1,]
+summary.allocation.p.t <- summary.allocation.p.t[-1,]
+summary.allocation.p.t <- as.data.frame(summary.allocation.p.t)
+summary.allocation.p.t$perc.alloc <- summary.allocation.p.t$summary.allocation.p.t
+summary.allocation.p.t$perc.alloc <- as.numeric(summary.allocation.p.t$perc.alloc)
+summary.allocation.p.t$cat.alloc <- rownames(summary.allocation.p.t)
+
+pie.p <- ggplot(summary.allocation.p.t, aes(x="", y=perc.alloc, fill =cat.alloc )) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y" , start = 0) +
+  scale_fill_manual(breaks = c("diff.perc", "perc.mass_name_C2", "other"),
+                    labels = c("Biosynthesis", "TCA cycle","Other"),
+                    values = c("blue", "red","darkgray")) +
+  theme_void() +
+  theme(legend.title = element_blank())
+pie.p
+#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2J-pie_p_bio_tca.png",units=c('in'),width=3, height = 3,dpi=300,pie.p)
+
+# #####piechart showing proportion of biosynthesis that are VOCs
+#first set up data table to plot
+#first assign variable for biosynthesis during pre-drought
+biosynthesis.p <- summary.umol %>%
+  filter(compound == "CO2" & Cond == "Pre_Drought") %>%
+  dplyr::select(diff.umol)
+biosynthesis.p <- biosynthesis.p$diff.umol
+
+#filter table to just include VOCs and calculate percent biosynthesis of total
+summary.umol.voc.p <- summary.umol %>%
+  filter(compound != "CO2") %>%
+  filter(Cond == "Pre_Drought") %>%
+  dplyr::select(compound, umol_name_C2) %>%
+  mutate(perc.bio = (umol_name_C2/biosynthesis.p) * 100)
+
+#transpose table to calculate 'other' category
+summary.umol.voc.p.t <- t(summary.umol.voc.p)
+summary.umol.voc.p.t <- as.data.frame(summary.umol.voc.p.t)
+summary.umol.voc.p.t <- summary.umol.voc.p.t[-1,] 
+colnames(summary.umol.voc.p.t) <- summary.umol.voc.p.t[1,]
+summary.umol.voc.p.t <- summary.umol.voc.p.t[-1,]
+summary.umol.voc.p.t$acetate <- as.numeric(summary.umol.voc.p.t$acetate)
+summary.umol.voc.p.t$Acetone <- as.numeric(summary.umol.voc.p.t$Acetone)
+summary.umol.voc.p.t$Diacetyl <- as.numeric(summary.umol.voc.p.t$Diacetyl)
+
+summary.umol.voc.p.t <- summary.umol.voc.p.t %>%
+  dplyr::select(-acetate)  %>% #because negative values (consumption)
+  mutate(Other = (100 - (Acetone + Diacetyl))) 
+
+#transpose table again so easy to graph
+summary.umol.voc.p.final <- as.data.frame(t(summary.umol.voc.p.t))
+summary.umol.voc.p.final$VOC <- rownames(summary.umol.voc.p.final)
+summary.umol.voc.p.final
+
+pie.p <- ggplot(summary.umol.voc.p.final, aes(x="", y=perc.bio, fill =VOC)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y" , start = 0) +
+  scale_fill_manual(breaks = c("Acetone", "Diacetyl", "Other"),
+                    values = c("lightblue", "yellow","darkgray")) +
+  theme_void() +
+  theme(legend.title = element_blank())
+pie.p
+
+# #####piechart showing proportion of biosynthesis that are VOCs
+#first set up data table to plot
+#first assign variable for biosynthesis during drought
+biosynthesis.d <- summary.umol %>%
+  filter(compound == "CO2" & Cond == "Drought") %>%
+  dplyr::select(diff.umol)
+biosynthesis.d <- biosynthesis.d$diff.umol
+
+#filter table to just include VOCs and calculate percent biosynthesis of total
+summary.umol.voc.d <- summary.umol %>%
+  filter(compound != "CO2") %>%
+  filter(Cond == "Drought") %>%
+  dplyr::select(compound, umol_name_C2) %>%
+  mutate(perc.bio = ((umol_name_C2/biosynthesis.d) * 100))
+
+#transpose table to calculate 'other' category
+summary.umol.voc.d.t <- t(summary.umol.voc.d)
+summary.umol.voc.d.t <- as.data.frame(summary.umol.voc.d.t)
+summary.umol.voc.d.t <- summary.umol.voc.d.t[-1,] 
+colnames(summary.umol.voc.d.t) <- summary.umol.voc.d.t[1,]
+summary.umol.voc.d.t <- summary.umol.voc.d.t[-1,]
+summary.umol.voc.d.t$acetate <- as.numeric(summary.umol.voc.d.t$acetate)
+summary.umol.voc.d.t$Acetone <- as.numeric(summary.umol.voc.d.t$Acetone)
+summary.umol.voc.d.t$Diacetyl <- as.numeric(summary.umol.voc.d.t$Diacetyl)
+
+summary.umol.voc.d.t <- summary.umol.voc.d.t %>%
+  dplyr::select(-acetate)  %>% #because negative values (consumption)
+  mutate(Other = (100 - (Acetone + Diacetyl))) 
+
+#transpose table again so easy to graph
+summary.umol.voc.d.final <- as.data.frame(t(summary.umol.voc.d.t))
+summary.umol.voc.d.final$VOC <- rownames(summary.umol.voc.d.final)
+summary.umol.voc.d.final
+  
+pie.d <- ggplot(summary.umol.voc.d.final, aes(x="", y=perc.bio, fill =VOC)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y" , start = 0) +
+  scale_fill_manual(breaks = c("Acetone", "Diacetyl", "Other"),
+                    values = c("lightblue", "yellow","darkgray")) +
+  theme_void() +
+  theme(legend.title = element_blank())
+pie.d
+
+
+```
+
+# notes on summary table (haven't updated with corrected results):
+- diff in C1 - c2 for CO2 represents umol of 13C that go towards biosynthesis 
+    - Pre-drought: 465.48 umol
+    - Drought 196.59 umol  
+- sum of acetate, acetone, and diaceytl (c2) represent 13C from biosynthesis pathways 
+   
+VOC biosynthesis represents 0.11 % of total biosynthesis during Drought, and only 0.0022 % during Pre-drought!! Really cool. 
+
+ALSO.... Comparing microbially-mediated carbon emissions... 
+- Pre-drought 465.48umol co2 + 10.4 umol voc = 475.88 umol, 
+- Drought 196.59 umol co2 + 122.68 umol voc = 319.27 umol
+
+Overall distribution of 13C-pyruvate incorporation:
+- Pre-drought
+  - 
+
+```{r}

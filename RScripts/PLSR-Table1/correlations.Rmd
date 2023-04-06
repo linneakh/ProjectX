@@ -207,11 +207,11 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
 #make subset of numerical data
 merged_subset.num <- merged_subset %>%
-   dplyr::select(-c(Sample, Condition, Time.d, Site, Site.y, Site.x))
+   dplyr::select(-c(Sample, Condition, Time.d, Site))
 
-sub_col <- c(4:28, 31, 34, 37)
+sub_col <- c(5:35)
 z = merged_subset$Condition
-y = merged_subset$log.flux.acetone
+y = merged_subset$flux.acetone
 colNames <- names(merged_subset)[sub_col]
 for (i in colNames) {
   p <- ggplot(merged_subset, aes_string(x=i, y=y)) +
@@ -222,25 +222,20 @@ for (i in colNames) {
 }
 
 
-cor(merged_subset$K01574, merged_subset$log.flux.acetone)
-
-summary(lm(merged_subset$K01574 ~ merged_subset$log.flux.acetone))
-
 ```
 
 
-### correlations between each gene and acetate
-
-```{r correlation-plots-acetate, echo = FALSE}
+### correlations between each gene and acetone
+```{r correlation-plots-acetone, echo = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 
 #make subset of numerical data
 merged_subset.num <- merged_subset %>%
-   dplyr::select(-c(Sample, Condition, Time.d, Site, Site.y, Site.x))
+   dplyr::select(-c(Sample, Condition, Time.d, Site))
 
-sub_col <- c(4:28, 31, 34, 37)
+sub_col <- c(5:35)
 z = merged_subset$Condition
-y = merged_subset$log.flux.acetate
+y = merged_subset$flux.acetate
 colNames <- names(merged_subset)[sub_col]
 for (i in colNames) {
   p <- ggplot(merged_subset, aes_string(x=i, y=y)) +
@@ -251,13 +246,131 @@ for (i in colNames) {
 }
 
 
-cor(merged_subset$log.flux.acetone, merged_subset$log.flux.acetate)
-summary(lm(merged_subset$log.flux.acetone ~ merged_subset$log.flux.acetate))
+```
 
-cor(merged_subset$log.flux.acetone, merged_subset$log.flux.diacetyl)
-summary(lm(merged_subset$log.flux.acetone ~ merged_subset$log.flux.diacetyl))
+### correlations between each gene and diacetyl
+```{r correlation-plots-acetone, echo = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+#make subset of numerical data
+merged_subset.num <- merged_subset %>%
+   dplyr::select(-c(Sample, Condition, Time.d, Site))
+
+sub_col <- c(5:35)
+z = merged_subset$Condition
+y = merged_subset$flux.diacetyl
+colNames <- names(merged_subset)[sub_col]
+for (i in colNames) {
+  p <- ggplot(merged_subset, aes_string(x=i, y=y)) +
+  geom_point(aes(color=Condition, shape = Time.d)) +
+  geom_smooth(method=lm, se=TRUE)
+  ggtitle (aes_string(i))
+  print(p)
+}
+
 
 ```
 
 
+```{r test for normality in VOC flux data}
+
+hist(merged_subset$log.flux.acetate, col='steelblue', main = 'log acetate flux')
+hist(merged_subset$flux.acetate, col='steelblue', main = 'acetate flux')
+hist(merged_subset$K00158, col='steelblue', main = 'K00158')
+hist(merged_subset$K00004, col='steelblue', main = 'K00004')
+hist(merged_subset$K01067)
+hist(merged_subset$K01574)
+
+
+
+
+```
+### correlations between each acetone and physicochemical properties
+```{r correlation-plots-acetone, echo = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+#make subset of numerical data
+merged_subset.num <- merged_subset_physico_full_names %>%
+   dplyr::select(-c(Sample, Condition, Time.d, Site))
+
+sub_col <- c(39:41)
+z = merged_subset_physico_full_names$Condition
+y = merged_subset_physico_full_names$flux.acetone
+colNames <- names(merged_subset.num)[sub_col]
+for (i in colNames) {
+  p <- ggplot(merged_subset_physico_full_names, aes_string(x=i, y=y)) +
+  geom_point(aes(color=Condition, shape = Site)) +
+  geom_smooth(method=lm, se=TRUE)
+  ggtitle (aes_string(i))
+  print(p)
+}
+
+
+
+
+```
+### correlations between each acetate and physicochemical properties
+```{r correlation-plots-acetone, echo = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+#make subset of numerical data
+merged_subset.num <- merged_subset_physico_full_names %>%
+   dplyr::select(-c(Sample, Condition, Time.d, Site))
+
+sub_col <- c(39:41)
+z = merged_subset_physico_full_names$Condition
+y = merged_subset_physico_full_names$flux.acetate
+colNames <- names(merged_subset.num)[sub_col]
+for (i in colNames) {
+  p <- ggplot(merged_subset_physico_full_names, aes_string(x=i, y=y)) +
+  geom_point(aes(color=Condition, shape = Site)) +
+  geom_smooth(method=lm, se=TRUE)
+  ggtitle (aes_string(i))
+  print(p)
+}
+
+
+
+
+```
+
+### correlations between each acetate and physicochemical properties
+```{r correlation-plots-acetone, echo = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+#make subset of numerical data
+merged_subset.num <- merged_subset_physico_full_names %>%
+   dplyr::select(-c(Sample, Condition, Time.d, Site))
+
+sub_col <- c(39:41)
+z = merged_subset_physico_full_names$Condition
+y = merged_subset_physico_full_names$flux.diacetyl
+colNames <- names(merged_subset.num)[sub_col]
+for (i in colNames) {
+  p <- ggplot(merged_subset_physico_full_names, aes_string(x=i, y=y)) +
+  geom_point(aes(color=Condition, shape = Site)) +
+  geom_smooth(method=lm, se=TRUE)
+  ggtitle (aes_string(i))
+  print(p)
+}
+
+
+
+
+```
+
+
+```{r linear regression statistics}
+#cor(merged_subset$K01574, merged_subset$log.flux.acetone)
+
+summary(lm(merged_subset_physico_full_names$SM ~ merged_subset_physico_full_names$flux.acetone))
+summary(lm(merged_subset_physico_full_names$SM ~ merged_subset_physico_full_names$flux.acetate))
+summary(lm(merged_subset_physico_full_names$SM ~ merged_subset_physico_full_names$flux.diacetyl))
+summary(lm(merged_subset_physico_full_names$ST~ merged_subset_physico_full_names$flux.acetone))
+summary(lm(merged_subset_physico_full_names$ST ~ merged_subset_physico_full_names$flux.acetate))
+summary(lm(merged_subset_physico_full_names$ST ~ merged_subset_physico_full_names$flux.diacetyl))
+summary(lm(merged_subset_physico_full_names$pH ~ merged_subset_physico_full_names$flux.acetone))
+summary(lm(merged_subset_physico_full_names$pH ~ merged_subset_physico_full_names$flux.acetate))
+summary(lm(merged_subset_physico_full_names$pH ~ merged_subset_physico_full_names$flux.diacetyl))
+```
 
