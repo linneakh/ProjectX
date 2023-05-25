@@ -3,6 +3,7 @@ title: "PLS"
 author: "Linnea Honeker"
 date: "11/1/2022"
 output: html_document
+email: linneah@arizona.edu
 ---
 
 ```{r setup, include=FALSE}
@@ -332,7 +333,7 @@ VIP:
 
 set up model data frame using Johnny's scripts and the plsr function of the pls package
 ```{r}
-model_data <- sub_acetate_pls2_SM[,  c(1,2,3,4,5,6,7,8,10, 11,12)    ]
+model_data <- sub_acetate_pls2_SM[, c(1,2,3,4,5,6,7,8,10, 11,12) ]
 
 set.seed(123)
 m_full <- plsr(flux.acetate ~ ., data = model_data, scale = TRUE, validation = "LOO")
@@ -403,15 +404,18 @@ p.value
 
 ```{r}
 
-VIP(m1, opt.comp = 4, p =10)
+VIP(m1, opt.comp = 6, p =10)
 
 LW(m1, opt.comp = 6)
+
+#obtain the equation
+
 
 
 ```
 
 
-## Filter to acetone and acetone flux and acetone cycling genes with soil moisture
+## Filter to acetone and acetate flux and acetone cycling genes with soil moisture
 ```{r}
 KO_acetone <- KO_interest_subset %>%
   filter(VOC == "Acetone") 
@@ -582,7 +586,7 @@ p.value
 
 VIP(m1, opt.comp =1, p =5)
 
-LW(m1, opt.comp = 2)
+LW(m1, opt.comp = 1)
 
 
 ```

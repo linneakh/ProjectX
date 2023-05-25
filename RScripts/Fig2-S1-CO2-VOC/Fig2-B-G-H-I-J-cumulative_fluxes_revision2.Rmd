@@ -204,7 +204,7 @@ AUC_summary_wide <- AUC_summary.CO2 %>%
   pivot_wider(names_from = c(Pyr, Cond), values_from = umol_name) %>%
   mutate(Biosynthesis.D = C1_Drought - C2_Drought) %>%
   mutate(Biosynthesis.PD = C1_Pre_Drought - C2_Pre_Drought) %>%
-  mutate(TCA_cycle.D = C1_Drought - Biosynthesis.D) %>%
+  mutate(TCA_cycle.D = C1_Drought - Biosynthesis.D) %>%Donata Vercelli
   mutate(TCA_cycle.PD = C1_Pre_Drought - Biosynthesis.PD) 
 
 # plot umol of 13C pyruvate (cummulative 13C-CO2)
