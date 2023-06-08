@@ -143,14 +143,6 @@ wilcox.test(pH ~ Condition, data.pH)
 
 ```
 
-```{r}
-#create table for publication
-data.pub <- data %>%
-  dplyr::select(-c(SM.1, SM.2, SM.3, Date)) %>%
-  pivot_wider(id_cols = Site, names_from = Condition)
-  
-
-```
 #get average soil moisture, temp, and pH for sites 1 and 2 to add to plsr model
 ```{r}
 #add soil moisture means

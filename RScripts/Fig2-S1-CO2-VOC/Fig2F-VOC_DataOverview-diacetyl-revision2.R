@@ -29,7 +29,6 @@ data_sub <- data %>%
            Pyr == "C2")
 
 # Isotope Sig diacetyl
-filename=paste("./Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2F-diacetyl.png", sep = "")
 png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
@@ -45,11 +44,11 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Time post pyruvate (h)", y = expression(""^13*"C/("^12*"C + "^13*"C) flux (m"^-2*" h"^-1*")")) +
   theme(text = element_text(size = 12,
-                            family = "Arial",
                             color = "black"),
         legend.position = "bottom",
         legend.title = element_blank())
-dev.off()
+filename=paste("./Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2F-diacetyl.pdf", sep = "")
+ggsave(filename ,width=4, height=4, units='in', dpi = 300)
 
 
 

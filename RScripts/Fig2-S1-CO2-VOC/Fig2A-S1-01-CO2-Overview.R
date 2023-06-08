@@ -6,6 +6,7 @@
 
 # load packages
 library(tidyverse)
+library(dplyr)
 library(plotly)
 library(ggthemes)
 library(patchwork)
@@ -16,23 +17,23 @@ theme_set(theme_custom)
 colors = c("#2ECC71" ,"#F39C12")
 
 #load data
-data <- read.csv("./Data/CO2-VOCs/01_raw/S3_PyruvateLabeling_qc.csv") %>% 
-  select(-X)
+data <- read.csv("./Data/CO2-VOCs/01_raw/S3_PyruvateLabeling_qc.csv") 
+data$X <- NULL
 
 #add timestanp, however, this hasn't been working and not needed
 data <- data %>% 
   mutate(Timestamp = lubridate::ymd_hms(Timestamp_MST, tz = "America/Phoenix"), 
          Timestamp_Label_MST = lubridate::ymd_hms(Timestamp_Label_MST, tz = "America/Phoenix")) %>% 
-  select(-Timestamp_MST)
+  dplyr::select(-Timestamp_MST)
 
 # Quickview
 data <- data %>% 
-  select(Label, Condition, Pyruv, Trel, Flux, D13C, Qc_iso, Qc_flux)
+  dplyr::select(Label, Condition, Pyruv, Trel, Flux, D13C, Qc_iso, Qc_flux)
 
 # quality control filtering
 data_sub <- data %>% 
   filter(Qc_flux == 1, Qc_iso == 1)  %>% 
-  select(-Qc_iso, -Qc_flux) %>% 
+  dplyr::select(-Qc_iso, -Qc_flux) %>% 
   filter(Trel > -10, Trel < 50, Flux > 0, D13C > -100)
 
 # factor Condition
@@ -40,8 +41,6 @@ data$Condition <- factor(data$Condition, c(
   "pre_drought", "drought"))
 
 # Isotope Sig
-filename=paste("Figures/Fig2-S1-CO2-VOCs/Fig2A-C1_C2_delta_co2-update.png", sep = "")
-png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
@@ -58,15 +57,14 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Time post pyruvate (h)", y = expression(delta^13 *"C"[CO[2]]*" (\u2030, VPDB)")) +
   theme(text = element_text(size = 12,
-                           family = "Arial",
                            color = "black"),
     legend.position = "bottom",
     legend.title = element_blank())
-dev.off()
+filename=paste("Figures/Fig2-S1-CO2-VOCs/Fig2A-C1_C2_delta_co2-update.pdf", sep = "")
+ggsave(filename ,width=4, height=4, units='in', dpi = 300)
 
 
-filename=paste("Figures/Fig2-S1-CO2-VOCs/FigS1-C1_comb_C2_flux-update.png", sep = "")
-png(filename ,width=9, height=5, unit='in', res = 1000)
+
 
 data_sub %>% 
   gather(Variable, Value, -Label, -Condition, -Pyruv, -Trel) %>% 
@@ -82,13 +80,13 @@ data_sub %>%
                      breaks = c("pre_drought", "drought"),
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Time post pyruvate (h)", y = bquote("Soil" ~ CO[2]~"efflux (" *mu*mol ~m^-2*s^-1*")")) +
-  theme(text = element_text(size = 17,
-                            family = "Arial",
+  theme(text = element_text(size = 7,
                             color = "black"),
         legend.position = "bottom",
         legend.title = element_blank()) +
   ylim(0,6)
-dev.off()
+filename=paste("Figures/Fig2-S1-CO2-VOCs/FigS1-C1_comb_C2_flux-update.pdf", sep = "")
+ggsave(filename ,width=4, height=3, units='in', dpi = 300)
 
 
 # Plotwise

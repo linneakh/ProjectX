@@ -78,11 +78,10 @@ ratios_per_set %>%
                     breaks = c("pre_drought", "drought"),
                     labels = c("Pre Drought", "Drought")) + 
   theme(text = element_text(size = 12,
-                            family = "Arial",
                             color = "black"),
         legend.position = "bottom",
         legend.title = element_blank())
-ggsave("Figures/Fig2-S1-CO2-VOCs/Fig2C-C1-C2-difference-13C-CO2-py-w-set4.png", width = 4, height = 4.1, dpi = 1000)
+ggsave("Figures/Fig2-S1-CO2-VOCs/Fig2C-C1-C2-difference-13C-CO2-py-w-set4.pdf", width = 4, height = 4.1, units="in", dpi = 1000)
 
 # graph of all ratios (flux 13C from pyruvate, C1/(C1+C2))
 ratios_per_set %>%
@@ -95,11 +94,10 @@ ratios_per_set %>%
                     breaks = c("pre_drought", "drought"),
                     labels = c("Pre Drought", "Drought")) + 
   theme(text = element_text(size = 12,
-                            family = "Arial",
                             color = "black"),
         legend.position = "bottom",
         legend.title = element_blank())
-#ggsave("Figures/Fig2-S1-CO2-VOCs/FigS1-C1-C2-ratio-sum-13C-CO2-py-w-set4.png", width = 5, height = 4, dpi = 1000)
+ggsave("Figures/Fig2-S1-CO2-VOCs/FigS1-C1-C2-ratio-sum-13C-CO2-py-w-set4.pdf", width = 5, height = 4, units="in",dpi = 1000)
 
 ####statistical analysis
 # ratios for differences in C1 - C2 deltaC-CO2r - new calculations for 13C-CO2 from pyruvate

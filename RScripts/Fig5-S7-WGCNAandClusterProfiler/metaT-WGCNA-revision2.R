@@ -20,7 +20,7 @@ library(lmerTest)
 options(stringsAsFactors = FALSE)
 
 #load metaT gene copy data and column metadata
-datExpr0 <-read.csv("./Data/Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE)
+datExpr0 <-read.csv("./Data/Deseq2/Drought_vs_predrought_metaT_gene_copy.csv", header = TRUE)
 rownames(datExpr0) <- datExpr0$Feature
 datExpr0$Feature <- NULL
 
@@ -494,9 +494,9 @@ coldata$Time <- factor(coldata$Time, c("0hr", "6hr", "48hr"))
 
 coldata$SampleID <- rownames(coldata)
 
-###plot eigengene expression per sample, 
+###plot eigengene expression per sample,
 filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/black-EGexp.png", sep = "")
-png(filename ,width=6, height=5, unit='in', res = 1000)
+png(filename ,width=3, height=2.5, unit='in', res = 300)
 which.module="black"
 signif(cor(MEs, use="p"), 2)
 ME.black=MEs[, paste("ME",which.module, sep="")]
@@ -505,18 +505,9 @@ barplot(ME.black, col=which.module, main="", cex.main=2,
         ylab="eigengene expression",xlab="array sample")
 dev.off()
 
-filename=paste("./Figures/WGCNA/red-EGexp.png", sep = "")
-png(filename ,width=6, height=5, unit='in', res = 1000)
-which.module="red"
-signif(cor(MEs, use="p"), 2)
-ME.red=MEs[, paste("ME",which.module, sep="")]
-par(mar=c(5, 4.2, 0, 0.7))
-barplot(ME.red, col=which.module, main="", cex.main=2,
-        ylab="eigengene expression",xlab="array sample")
-dev.off()
 
 filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/magenta-EGexp.png", sep = "")
-png(filename ,width=6, height=5, unit='in', res = 1000)
+png(filename ,width=3, height=2.5, unit='in', res = 300)
 which.module="magenta"
 signif(cor(MEs, use="p"), 2)
 ME.magenta=MEs[, paste("ME",which.module, sep="")]
@@ -526,7 +517,7 @@ barplot(ME.magenta, col=which.module, main="", cex.main=2,
 dev.off()
 
 filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/blue-EGexp.png", sep = "")
-png(filename ,width=6, height=5, unit='in', res = 1000)
+png(filename ,width=3, height=2.5, unit='in', res = 300)
 which.module="blue"
 signif(cor(MEs, use="p"), 2)
 ME.blue=MEs[, paste("ME",which.module, sep="")]
@@ -536,7 +527,7 @@ barplot(ME.blue, col=which.module, main="", cex.main=2,
 dev.off()
 
 filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/yellow-EGexp.png", sep = "")
-png(filename ,width=6, height=5, unit='in', res = 1000)
+png(filename ,width=3, height=2.5, unit='in', res = 300)
 which.module="yellow"
 signif(cor(MEs, use="p"), 2)
 ME.yellow=MEs[, paste("ME",which.module, sep="")]
@@ -546,7 +537,7 @@ barplot(ME.yellow, col=which.module, main="", cex.main=2,
 dev.off()
 
 filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/brown-EGexp.png", sep = "")
-png(filename ,width=6, height=5, unit='in', res = 1000)
+png(filename ,width=3, height=2.5, unit='in', res = 300)
 which.module="brown"
 signif(cor(MEs, use="p"), 2)
 ME.brown=MEs[, paste("ME",which.module, sep="")]
@@ -556,7 +547,7 @@ barplot(ME.brown, col=which.module, main="", cex.main=2,
 dev.off()
 
 filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/turquoise-EGexp.png", sep = "")
-png(filename ,width=6, height=5, unit='in', res = 1000)
+png(filename ,width=3, height=2.5, unit='in', res = 300)
 which.module="turquoise"
 signif(cor(MEs, use="p"), 2)
 ME.turquoise=MEs[, paste("ME",which.module, sep="")]
@@ -566,7 +557,7 @@ barplot(ME.turquoise, col=which.module, main="", cex.main=2,
 dev.off()
 
 filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/pink-EGexp.png", sep = "")
-png(filename ,width=6, height=5, unit='in', res = 1000)
+png(filename ,width=3, height=2.5, unit='in', res = 300)
 which.module="pink"
 signif(cor(MEs, use="p"), 2)
 ME.pink=MEs[, paste("ME",which.module, sep="")]
@@ -576,7 +567,7 @@ barplot(ME.pink, col=which.module, main="", cex.main=2,
 dev.off()
 
 filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/green-EGexp.png", sep = "")
-png(filename ,width=6, height=5, unit='in', res = 1000)
+png(filename ,width=3, height=2.5, unit='in', res = 300)
 which.module="green"
 signif(cor(MEs, use="p"), 2)
 ME.green=MEs[, paste("ME",which.module, sep="")]
@@ -592,8 +583,7 @@ ME.black$SampleID <- rownames(ME.black)
 ME.black.m <- ME.black %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/black-EGexp-facet.png", sep = "")
-png(filename ,width=4, height=2, unit='in', res = 1000)
+
 ggplot(ME.black.m, aes(x=Time, y= ME.black)) +
   geom_point() + geom_boxplot(fill = "darkgrey") +
   facet_grid(~Condition) +
@@ -601,38 +591,15 @@ ggplot(ME.black.m, aes(x=Time, y= ME.black)) +
   scale_x_discrete(labels = c("0", "6", "48")) +
   labs(title = "black module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
-        axis.text.y = element_text(color = "black"))
-dev.off()
+  theme(
+        axis.title.x = element_text(size = 10, color = "black", face = "bold"),
+        axis.title.y = element_text(size = 10, color = "black", face = "bold"),
+        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+        axis.text.y = element_text(color = "black", size = 10))
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/black-EGexp-facet.pdf", sep = "")
+ggsave(filename,width=4,height=2,units="in",dpi=300)
 
-#red
-ME.red <- as.data.frame(ME.red)
-rownames(ME.red) <- rownames(datExpr)
-ME.red$SampleID <- rownames(ME.red)
-ME.red.m <- ME.red %>%
-  merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/red-EGexp-facet.png", sep = "")
-png(filename ,width=4, height=2, unit='in', res = 1000)
-ggplot(ME.red.m, aes(x=Time, y= ME.red)) +
-  geom_point() + geom_boxplot(fill = "red") +
-  facet_grid(~Condition) +
-  scale_x_discrete(labels = c("0", "6", "48")) +
-  labs(title = "red module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
-  theme_bw() +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
-        axis.text.y = element_text(color = "black"))
-dev.off()
 
 #magenta
 ME.magenta <- as.data.frame(ME.magenta)
@@ -641,8 +608,6 @@ ME.magenta$SampleID <- rownames(ME.magenta)
 ME.magenta.m <- ME.magenta %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-magenta-EGexp-facet.png", sep = "")
-png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.magenta.m, aes(x=Time, y= ME.magenta)) +
   geom_boxplot(fill = "magenta") + geom_point() +
   facet_grid(~Condition) +
@@ -650,14 +615,13 @@ ggplot(ME.magenta.m, aes(x=Time, y= ME.magenta)) +
   ylim(-0.3, 0.7) +
   labs(title = "magenta module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
-        axis.text.y = element_text(color = "black"))
-dev.off()
+  theme(
+    axis.title.x = element_text(size = 10, color = "black", face = "bold"),
+    axis.title.y = element_text(size = 10, color = "black", face = "bold"),
+    axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+    axis.text.y = element_text(color = "black", size = 10))
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-magenta-EGexp-facet.pdf", sep = "")
+ggsave(filename,width=4,height=2,units="in",dpi=300)
 
 #blue
 ME.blue <- as.data.frame(ME.blue)
@@ -666,22 +630,19 @@ ME.blue$SampleID <- rownames(ME.blue)
 ME.blue.m <- ME.blue %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/blue-EGexp-facet.png", sep = "")
-png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.blue.m, aes(x=Time, y= ME.blue)) +
   geom_point() + geom_boxplot(fill = "blue") +
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
   labs(title = "blue module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
-        axis.text.y = element_text(color = "black"))
-dev.off()
+  theme(
+    axis.title.x = element_text(size = 10, color = "black", face = "bold"),
+    axis.title.y = element_text(size = 10, color = "black", face = "bold"),
+    axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+    axis.text.y = element_text(color = "black", size = 10))
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/blue-EGexp-facet.pdf", sep = "")
+ggsave(filename,width=4,height=2,units="in",dpi=300)
 
 #yellow
 ME.yellow <- as.data.frame(ME.yellow)
@@ -690,8 +651,6 @@ ME.yellow$SampleID <- rownames(ME.yellow)
 ME.yellow.m <- ME.yellow %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/yellow-EGexp-facet.png", sep = "")
-png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.yellow.m, aes(x=Time, y= ME.yellow)) +
   geom_point() + geom_boxplot(fill = "yellow") +
   facet_grid(~Condition) +
@@ -699,14 +658,13 @@ ggplot(ME.yellow.m, aes(x=Time, y= ME.yellow)) +
   labs(title = "yellow module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   ylim(-0.3, 0.4) +
   theme_bw() +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
-        axis.text.y = element_text(color = "black"))
-dev.off()
+  theme(
+    axis.title.x = element_text(size = 10, color = "black", face = "bold"),
+    axis.title.y = element_text(size = 10, color = "black", face = "bold"),
+    axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+    axis.text.y = element_text(color = "black", size = 10))
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/yellow-EGexp-facet.pdf", sep = "")
+ggsave(filename,width=4,height=2,units="in",dpi=300)
 
 #brown
 ME.brown <- as.data.frame(ME.brown)
@@ -715,8 +673,6 @@ ME.brown$SampleID <- rownames(ME.brown)
 ME.brown.m <- ME.brown %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-brown-EGexp-facet.png", sep = "")
-png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.brown.m, aes(x=Time, y= ME.brown)) +
    geom_boxplot(fill = "brown") +geom_point() +
   facet_grid(~Condition) +
@@ -724,14 +680,13 @@ ggplot(ME.brown.m, aes(x=Time, y= ME.brown)) +
   ylim(-.5, .4) +
   labs(title = "brown module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
-        axis.text.y = element_text(color = "black"))
-dev.off()
+  theme(
+    axis.title.x = element_text(size = 10, color = "black", face = "bold"),
+    axis.title.y = element_text(size = 10, color = "black", face = "bold"),
+    axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+    axis.text.y = element_text(color = "black", size = 10))
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-brown-EGexp-facet.pdf", sep = "")
+ggsave(filename,width=4,height=2,units="in",dpi=300)
 
 #turquoise
 ME.turquoise <- as.data.frame(ME.turquoise)
@@ -740,22 +695,19 @@ ME.turquoise$SampleID <- rownames(ME.turquoise)
 ME.turquoise.m <- ME.turquoise %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/turquoise-EGexp-facet.png", sep = "")
-png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.turquoise.m, aes(x=Time, y= ME.turquoise)) +
   geom_point() + geom_boxplot(fill = "turquoise") +
   facet_grid(~Condition) +
   scale_x_discrete(labels = c("0", "6", "48")) +
   labs(title = "turquoise module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
-        axis.text.y = element_text(color = "black"))
-dev.off()
+  theme(
+    axis.title.x = element_text(size = 10, color = "black", face = "bold"),
+    axis.title.y = element_text(size = 10, color = "black", face = "bold"),
+    axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+    axis.text.y = element_text(color = "black", size = 10))
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/turquoise-EGexp-facet.pdf", sep = "")
+ggsave(filename,width=4,height=2,units="in",dpi=300)
 
 #pink
 ME.pink <- as.data.frame(ME.pink)
@@ -764,8 +716,6 @@ ME.pink$SampleID <- rownames(ME.pink)
 ME.pink.m <- ME.pink %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-pink-EGexp-facet.png", sep = "")
-png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.pink.m, aes(x=Time, y= ME.pink)) +
   geom_boxplot(fill = "pink") + geom_point() +
   facet_grid(~Condition) +
@@ -773,14 +723,13 @@ ggplot(ME.pink.m, aes(x=Time, y= ME.pink)) +
   ylim(-0.4, 0.4) +
   labs(title = "pink module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
-        axis.text.y = element_text(color = "black"))
-dev.off()
+  theme(
+    axis.title.x = element_text(size = 10, color = "black", face = "bold"),
+    axis.title.y = element_text(size = 10, color = "black", face = "bold"),
+    axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+    axis.text.y = element_text(color = "black", size = 10))
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-pink-EGexp-facet.pdf", sep = "")
+ggsave(filename,width=4,height=2,units="in",dpi=300)
 
 #green
 ME.green <- as.data.frame(ME.green)
@@ -789,8 +738,6 @@ ME.green$SampleID <- rownames(ME.green)
 ME.green.m <- ME.green %>%
   merge(.,coldata, by = "SampleID")
 
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-green-EGexp-facet.png", sep = "")
-png(filename ,width=4, height=2, unit='in', res = 1000)
 ggplot(ME.green.m, aes(x=Time, y= ME.green)) +
   geom_boxplot(fill = "green") + geom_point() + 
   facet_grid(~Condition) +
@@ -798,14 +745,13 @@ ggplot(ME.green.m, aes(x=Time, y= ME.green)) +
   ylim(-0.4, 0.5) +
   labs(title = "green module", y = "Eigengene Expression", x= "Time post pyruvate addition (h)") +
   theme_bw() +
-  theme(text = element_text(size = 10,
-                            family = "Arial",
-                            color = "black"),
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black"),
-        axis.text.y = element_text(color = "black"))
-dev.off()
+  theme(
+    axis.title.x = element_text(size = 10, color = "black", face = "bold"),
+    axis.title.y = element_text(size = 10, color = "black", face = "bold"),
+    axis.text.x = element_text(vjust = 1, hjust = 0.5, color = "black", size = 10),
+    axis.text.y = element_text(color = "black", size = 10))
+filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/Fig5-green-EGexp-facet.pdf", sep = "")
+ggsave(filename,width=4,height=2,units="in",dpi=300)
 
 ##statistics on eigenggene expression
 ##### linear mixed effect models############

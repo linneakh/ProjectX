@@ -404,12 +404,13 @@ p.value
 
 ```{r}
 
-VIP(m1, opt.comp = 6, p =10)
+VIP(m1, opt.comp=6, p=10)
 
-LW(m1, opt.comp = 6)
+LW(m1, 6)
 
-#obtain the equation
+RC(m1, 6)
 
+plot(m1, "loadings", comps = 1:2)
 
 
 ```

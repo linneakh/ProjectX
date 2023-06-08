@@ -89,7 +89,7 @@ SP.f <- filter_taxa(SP, function(x) sum(x) > threshold, TRUE)
 #SP.f <- filter_taxa(SP, flist, TRUE)
 
 #filter to Bacteria and Archaea Kingdoms
-SPb = subset_taxa(SP.f, Kingdom == "Bacteria") |
+SPb = subset_taxa(SP.f, Kingdom == "Bacteria" |
                     Kingdom == "Archaea")
 SPb
 
@@ -179,7 +179,7 @@ F.dat$Family[F.dat$Abundance < 0.035] <- "Family < 3.5%"
 #prune out phyla below 2% in each sample for archaea
 SPa.rel.abun <- transform_sample_counts(SPa, function(x) x/sum(x)) #convert counts to relative abundances
 P.gloma <- tax_glom(SPa.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
-P.dataa <- psmelt(P.gloma)
+P.data <- psmelt(P.gloma)
 P.data$Phylum <- as.character(P.data$Phylum) #convert to character vector from factor
 P.data$Phylum[P.data$Abundance < 0.02] <- "Phylum < 2%"
 
@@ -283,8 +283,8 @@ K_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         legend.title = element_blank()
   )
 
-filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Kingdom.png")
-ggsave(filename,width=4,height=5,dpi=1000,K_barplot)
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Kingdom.pdf")
+ggsave(filename,width=4,height=5,units = "in", dpi=300,K_barplot)
 
 #######plot Phylum bacteria/archaea######################################
 P.datb$Condition <- factor(P.datb$Condition, c("PreDrought", "Drought"))
@@ -302,8 +302,8 @@ p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         legend.title = element_blank()
   )
 
-filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum.png")
-ggsave(filename,width=5,height=6,dpi=1000,p_barplot)
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum.pdf")
+ggsave(filename,width=5,height=6,units = "in", dpi=300,p_barplot)
 
 #######plot Classes bacteria/archaea######################################
 C.dat$Condition <- factor(C.dat$Condition, c("PreDrought", "Drought"))
@@ -372,8 +372,8 @@ pf_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         legend.title = element_blank()
   )
 
-filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-fingi.png")
-ggsave(filename,width=5,height=5,dpi=1000,pf_barplot)
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-fingi.pdf")
+ggsave(filename,width=5,height=5,dpi=300, units="in",pf_barplot)
 
 #######plot Classes fungi######################################
 Cf.dat$Condition <- factor(Cf.dat$Condition, c("PreDrought", "Drought"))
@@ -417,13 +417,13 @@ p <- ggplot(Gf.dat, aes(x=Time, y=Abundance, fill=Genus))
 Gf_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
   facet_wrap(~ Condition, scales="free") +
   scale_fill_manual(values=colors) +
-  theme(text = element_text(size = 12),
+  theme(text = element_text(size = 6),
         axis.text.x=element_text(size=12,hjust =0.5, vjust=0.2),
         legend.text = element_text(size = 10),
   )
 
-filename <- paste0("../../Figures/FigS3-Taxonomy/metaT-genus-fungi.png")
-ggsave(filename,width=12,height=5,dpi=1000,Gf_barplot)
+#filename <- paste0("../../Figures/FigS3-Taxonomy/metaT-genus-fungi.pdf")
+#ggsave(filename,width=6,height=2.5,dpi=300,units="in",Gf_barplot)
 
 #######plot phyla eukaryota######################################
 Pe.dat$Condition <- factor(Pe.dat$Condition, c("PreDrought", "Drought"))
@@ -434,15 +434,15 @@ p <- ggplot(Pe.dat, aes(x=Time, y=Abundance, fill=Phylum))
 
 pf_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
   facet_wrap(~ Condition, scales="free") +
-  scale_fill_manual(values=colors_long) +
+  scale_fill_manual(values=colors) +
   theme_bw() +
   theme(text = element_text(size = 11),
         axis.text.x=element_text(hjust =0.5, vjust=0.2),
         legend.title = element_blank()
   )
 
-filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-eurkaryota.png")
-ggsave(filename,width=5,height=5,dpi=1000,pf_barplot)
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-eurkaryota.pdf")
+ggsave(filename,width=5,height=5,units="in",dpi=300,pf_barplot)
 
 #######plot fungi vs other in eukaryota######################################
 Pe.dat2$Condition <- factor(Pe.dat2$Condition, c("PreDrought", "Drought"))
@@ -460,8 +460,8 @@ pf_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         legend.title = element_blank()
   )
 
-filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-eurkaryota-fungi-other.png")
-ggsave(filename,width=2,height=2,dpi=1000,pf_barplot)
+filename <- paste0("../../Figures/FigS3-Taxonomy/FigS3-metaT-Phylum-eurkaryota-fungi-other.pdf")
+ggsave(filename,width=2,height=2,dpi=300,units="in",pf_barplot)
 ```
 
 ## Kingdom     

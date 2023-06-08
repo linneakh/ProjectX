@@ -204,7 +204,7 @@ AUC_summary_wide <- AUC_summary.CO2 %>%
   pivot_wider(names_from = c(Pyr, Cond), values_from = umol_name) %>%
   mutate(Biosynthesis.D = C1_Drought - C2_Drought) %>%
   mutate(Biosynthesis.PD = C1_Pre_Drought - C2_Pre_Drought) %>%
-  mutate(TCA_cycle.D = C1_Drought - Biosynthesis.D) %>%Donata Vercelli
+  mutate(TCA_cycle.D = C1_Drought - Biosynthesis.D) %>%
   mutate(TCA_cycle.PD = C1_Pre_Drought - Biosynthesis.PD) 
 
 # plot umol of 13C pyruvate (cummulative 13C-CO2)
@@ -219,13 +219,12 @@ plot <- AUC %>%
   scale_x_discrete(labels = c("P", "D")) +
   labs(y = expression(""^13*"C-CO"[2]*" ("*mu*"mol)")) +
   theme(text = element_text(size = 12,
-                          family = "Arial",
                           color = "black"),
       legend.position = "bottom",
       axis.title.x = element_blank(),
       legend.title = element_blank())
 plot
-#ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2b-total-C-CO2-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2b-total-C-CO2-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 # plot % of 13C pyruvate
 plot <- AUC %>%
@@ -541,13 +540,12 @@ plot <- AUC.aton %>%
                     labels = c("Pre Drought", "Drought")) +
   labs(y = expression(""^13*"C-acetone ("*mu*"mol)")) +
   theme(text = element_text(size = 14,
-                            family = "Arial",
                             color = "black"),
         legend.position = "bottom",
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2H-total-C-acetone-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2H-total-C-acetone-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate (c1 and C2)
 plot <- AUC.aton %>%
@@ -567,26 +565,6 @@ plot <- AUC.aton %>%
         legend.title = element_blank())
 plot
 #ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-acetone-perc-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
-
-# plot cummalative flux of 13C pyruvate for just C2, because only C2 showed enrichment
-plot <- AUC.aton %>%
-  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
-  filter(Pyr == "C2") %>%
-  ggplot(aes(x= Cond, y = umol, fill = Cond)) +
-  geom_boxplot() + 
-  scale_fill_manual(values = colors,
-                    breaks = c("Pre_Drought", "Drought"),
-                    labels = c("Pre Drought", "Drought")) +
-  scale_x_discrete(labels = c("P", "D")) +
-  labs(y = expression(""^13*"C-acetone ("*mu*"mol)")) +
-  theme(text = element_text(size = 14,
-                            family = "Arial",
-                            color = "black"),
-        legend.position = "bottom",
-        axis.title.x = element_blank(),
-        legend.title = element_blank())
-plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2H-total-C-acetone-flux-C2.png",units=c('in'),width=2, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate
 plot <- AUC.aton %>%
@@ -873,13 +851,13 @@ plot.Diac <- AUC.Diac %>%
   scale_x_discrete(labels = c("P", "D")) +
   labs(y = expression(""^13*"C-diacetyl+ ("*mu*"mol)")) +
   theme(text = element_text(size = 14,
-                            family = "Arial",
                             color = "black"),
         legend.position = "bottom",
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot.Diac
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2F-total-C-diacetyl-flux-c1-and-c2.png",units=c('in'),width=4, height = 4,dpi=300,plot.Diac)
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2F-total-C-diacetyl-flux-c1-and-c2.pdf",
+       units=c('in'),width=4, height =4,dpi=300,plot.Diac)
 
 # plot cummalative percentage of of 13C pyruvate
 plot.Diac <- AUC.Diac %>%
@@ -899,27 +877,6 @@ plot.Diac <- AUC.Diac %>%
         legend.title = element_blank())
 plot.Diac
 #ggsave("../../Figures/Fig2-S1-CO2-VOCs/C-diacetyl-perc-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot.Diac)
-
-# plot cummalative flux of 13C diacetyl, only from C2 
-plot.Diac <- AUC.Diac %>%
-  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
-  filter(Pyr == "C2") %>%
-  ggplot(aes(x= Cond, y = umol, fill = Cond)) +
-  geom_boxplot() +
-  scale_fill_manual(values = colors,
-                    breaks = c("Pre_Drought", "Drought"),
-                    labels = c("Pre Drought", "Drought")) +
-  scale_x_discrete(labels = c("P", "D")) +
-  labs(y = expression(""^13*"C-diacetyl ("*mu*"mol)")) +
-  theme(text = element_text(size = 14,
-                            family = "Arial",
-                            color = "black"),
-        legend.position = "bottom",
-        axis.text.x = element_text(size = 12),
-        axis.title.x = element_blank(),
-        legend.title = element_blank())
-plot.Diac
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2I-total-C-diacetyl-flux-c2.png",units=c('in'),width=2, height = 4,dpi=300,plot.Diac)
 
 # plot cummalative percentage of of 13C pyruvate
 plot.Diac <- AUC.Diac %>%
@@ -1200,13 +1157,12 @@ plot <- AUC.acetate %>%
   scale_x_discrete(labels = c("P", "D")) +
   labs(y = expression(""^13*"C-acetic acid ("*mu*"mol)")) +
   theme(text = element_text(size = 14,
-                            family = "Arial",
                             color = "black"),
         legend.position = "bottom",
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2G-total-C-acetate-flux.png",units=c('in'),width=4, height = 4,dpi=300,plot)
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2G-total-C-acetate-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate
 plot <- AUC.acetate %>%
@@ -1349,7 +1305,7 @@ pie.d <- ggplot(summary.allocation.d.t, aes(x="", y=perc.alloc, fill =cat.alloc 
   theme_void() +
   theme(legend.title = element_blank())
 pie.d
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2J-pie_d_bio_tca.png",units=c('in'),width=3, height = 3,dpi=300,pie.d)
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2J-pie_d_bio_tca.pdf",units=c('in'),width=3, height = 3,dpi=300,pie.d)
 
 
 # pre-drought
@@ -1376,7 +1332,7 @@ pie.p <- ggplot(summary.allocation.p.t, aes(x="", y=perc.alloc, fill =cat.alloc 
   theme_void() +
   theme(legend.title = element_blank())
 pie.p
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2J-pie_p_bio_tca.png",units=c('in'),width=3, height = 3,dpi=300,pie.p)
+ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2J-pie_p_bio_tca.pdf",units=c('in'),width=3, height = 3,dpi=300,pie.p)
 
 # #####piechart showing proportion of biosynthesis that are VOCs
 #first set up data table to plot

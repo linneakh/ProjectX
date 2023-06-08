@@ -158,6 +158,24 @@ Gf.dat$Genus <- as.character(Gf.dat$Genus) #convert to character vector from fac
 Gf.dat$Genus[Gf.dat$Abundance < 0.035] <- "Genus < 3.5%"
 
 #####################taxonomy plots- condition and time for eukaryota#########################
+#######plot Kingdom######################################
+k.dat$Condition <- factor(k.dat$Condition, c("PreDrought", "Drought"))
+k.dat$Time <- factor(k.dat$Time, c("0hr", "6hr", "48hr"))
+
+
+p <- ggplot(k.dat, aes(x=Time, y=Abundance, fill=Kingdom)) 
+
+k_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
+  facet_wrap(~ Condition, scales="free") +
+  scale_fill_manual(values=colors_very_short) +
+  theme_bw() +
+  theme(text = element_text(size = 11),
+        axis.text.x=element_text(hjust =0.5, vjust=0.2),
+        legend.title = element_blank()
+  )
+
+filename <- paste0("./Figures/FigS3-Taxonomy/FigS3-metaG-kingdom.pdf")
+ggsave(filename,width=5,height=5,dpi=300,units="in",k_barplot)
 
 #######plot Phylum######################################
 Pf.dat$Condition <- factor(Pf.dat$Condition, c("PreDrought", "Drought"))
@@ -175,8 +193,8 @@ p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         legend.title = element_blank()
   )
 
-filename <- paste0("./Figures/FigS3-Taxonomy/FigS3-metaG-Phylum-fungi.png")
-ggsave(filename,width=5,height=5,dpi=1000,p_barplot)
+filename <- paste0("./Figures/FigS3-Taxonomy/FigS3-metaG-Phylum-fungi.pdf")
+ggsave(filename,width=5,height=5,dpi=300,units="in",p_barplot)
 
 ###########taxonomy plots - condition and time for archaea / bacteria##############
 
@@ -196,8 +214,8 @@ p_barplot <- p + geom_bar(aes(), stat = "identity", position = "fill") +
         legend.title = element_blank()
   )
 
-filename <- paste0("./Figures/FigS3-Taxonomy/FigS3-metaG-Phylum.png")
-ggsave(filename,width=5,height=5,dpi=1000,p_barplot)
+filename <- paste0("./Figures/FigS3-Taxonomy/FigS3-metaG-Phylum.pdf")
+ggsave(filename,width=5,height=5,dpi=300, units="in",p_barplot)
 
 #######plot Classes######################################
 C.dat$Condition <- factor(C.dat$Condition, c("PreDrought", "Drought"))
