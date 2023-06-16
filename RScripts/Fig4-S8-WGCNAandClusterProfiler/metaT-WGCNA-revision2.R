@@ -205,8 +205,8 @@ sizeGrWindow(12, 9)
 mergedColors = labels2colors(net$colors)
 
 # Plot the dendrogram and the module colors underneath, save image (Fig S7a)
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/revision2/dendogram.png",sep="")
-png(filename ,width=7, height=6,unit = "in", res = 1000)
+filename=paste("./Figures/Fig4-S8-WGCNA-ClusterProfiler/WGCNA/revision2/dendogram.pdf",sep="")
+pdf(filename ,width=7, height=6)
 plotDendroAndColors(net$dendrograms[[1]], mergedColors[net$blockGenes[[1]]],
                     "Module colors",
                     dendroLabels = FALSE, hang = 0.03,
@@ -260,8 +260,8 @@ dim(textMatrix) = dim(moduleTraitCor.subset)
 par(mar = c(6, 8.5, 3, 3));
 
 #Display the correlation values within a heatmap plot
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/revision2/modules-trait-relationships_all.png",sep="")
-png(filename ,width=12, height=20,unit = "in", res = 1000)
+filename=paste("./Figures/Fig4-S8-WGCNA-ClusterProfiler/WGCNA/revision2/modules-trait-relationships_all.pdf",sep="")
+pdf(filename ,width=6, height=6)
 labeledHeatmap(Matrix = moduleTraitCor.subset,
                #xLabels = c("acetate-C2", "acetone-C2", "diacetyl-C2", "SM", "ST", "pH"),
                xLabels = colnames(moduleTraitCor.subset),
@@ -305,8 +305,8 @@ dim(textMatrix) = dim(moduleTraitCor.subset.fig)
 par(mar = c(6, 8.5, 3, 3));
 
 #Display the correlation values within a heatmap plot
-filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/revision2/modules-trait-relationships_subset_FigS7b.png",sep="")
-png(filename ,width=6, height=6,unit = "in", res = 1000)
+filename=paste("./Figures/Fig4-S8-WGCNA-ClusterProfiler/WGCNA/revision2/modules-trait-relationships_subset_FigS8b.pdf",sep="")
+pdf(filename ,width=6, height=6)
 labeledHeatmap(Matrix = moduleTraitCor.subset.fig,
                xLabels = c("Condition",  
                            "Acetate-C2", "Acetone-C2"),
@@ -317,14 +317,17 @@ labeledHeatmap(Matrix = moduleTraitCor.subset.fig,
                colors = blueWhiteRed(50),
                textMatrix = textMatrix,
                #setStdMargins = FALSE,
-               cex.text = 1,
-               cex.lab.y = 1,
-               cex.lab.x = 1,
+               cex.text = 1.0,
+               cex.lab.y = 1.0,
+               cex.lab.x = 1.0,
                xLabelsAngle = 0,
                xLabelsAdj = 0.5,
                xLabelsPosition = "bottom",
                zlim = c(-1,1))
 dev.off()
+
+
+
 
 # Plot the relationships among the eigengenes as png
 filename=paste("./Figures/Fig5-S7-WGCNA-ClusterProfiler/WGCNA/revision2/modules_eigengene3-subset.png",sep="")
@@ -769,39 +772,34 @@ tabl
 #(Intercept)      -0.137531 0.02126949 30 -6.466116 3.818768e-07
 #ConditionDrought  0.275062 0.03622325 30  7.593521 1.813810e-08
 
-# Time within pre-drought
-ME.pink.m.p <- ME.pink.m %>%
-  filter(Condition == "PreDrought")
+# Time within pre-drought,
+ME.pink.m.p.6 <- ME.pink.m %>%
+  filter(Condition == "PreDrought" )
 
-lme.pink.p <- lme(ME.pink ~ Time,
+lme.pink.p.6 <- lme(ME.pink ~ Time,
                   random = list(Site = ~1),
-                  data = ME.pink.m.p,
+                  data = ME.pink.m.p.6,
                   weights =  varIdent(form = ~1|Time)
 )
-sum <- summary(lme.pink.p)
+sum <- summary(lme.pink.p.6)
 tabl = sum$tTable
 tabl
-#Value  Std.Error DF    t-value      p-value
-#(Intercept) -0.17765563 0.01382134 12 -12.853719 2.240514e-08
-#Time6hr      0.05834992 0.02219840 12   2.628564 2.203398e-02
-#Time48hr     0.06506152 0.05829918 12   1.115994 2.862739e-01
 
-# Time within drought
-ME.pink.m.d <- ME.pink.m %>%
-  filter(Condition == "Drought")
 
-lme.pink.d <- lme(ME.pink ~ Time,
-                  random = list(Site = ~1),
-                  data = ME.pink.m.d,
-                  weights =  varIdent(form = ~1|Time)
+
+# Time within drought,
+ME.pink.m.d.6 <- ME.pink.m %>%
+  filter(Condition == "Drought" )
+
+lme.pink.d.6 <- lme(ME.pink ~ Time,
+                    random = list(Site = ~1),
+                    data = ME.pink.m.d.6,
+                    weights =  varIdent(form = ~1|Time)
 )
-sum <- summary(lme.pink.d)
+sum <- summary(lme.pink.d.6)
 tabl = sum$tTable
 tabl
-#Value  Std.Error DF   t-value      p-value
-#(Intercept)  0.22583626 0.04666067 12  4.839970 0.0004050725
-#Time6hr     -0.17759474 0.06619279 12 -2.682992 0.0199263897
-#Time48hr    -0.07260351 0.05807678 12 -1.250130 0.2350821342
+
 
 ###magenta#####
 # Condition
@@ -813,43 +811,46 @@ lme.magenta <- lme(ME.magenta ~ Condition,
 sum <- summary(lme.magenta)
 tabl = sum$tTable
 tabl
-#                       Value  Std.Error DF   t-value    p-value
-#(Intercept)      -0.05939668 0.04044224 30 -1.468679 0.15232831
-#ConditionDrought  0.11798652 0.05219967 30  2.260292 0.03122039
+#                     Value  Std.Error DF   t-value    p-value
+#(Intercept)      -0.05963747 0.03799614 29 -1.569567 0.12736418
+#ConditionDrought  0.13369675 0.05304906 29  2.520247 0.01748625
 
-# Time within pre-drought
-ME.magenta.m.p <- ME.magenta.m %>%
+# Time within pre-drought,
+ME.magenta.m.p.6 <- ME.magenta.m %>%
   filter(Condition == "PreDrought")
 
-lme.magenta.p <- lme(ME.magenta ~ Time,
-                     random = list(Site = ~1),
-                     data = ME.magenta.m.p,
-                     weights =  varIdent(form = ~1|Time)
+lme.magenta.p.6 <- lme(ME.magenta ~ Time,
+                    random = list(Site = ~1),
+                    data = ME.magenta.m.p.6,
+                    weights =  varIdent(form = ~1|Time)
 )
-sum <- summary(lme.magenta.p)
+sum <- summary(lme.magenta.p.6)
 tabl = sum$tTable
 tabl
-#                 Value  Std.Error DF    t-value    p-value
+#                Value  Std.Error DF    t-value    p-value
 #(Intercept) -0.00220941 0.05278143 12 -0.0418596 0.96729905
 #Time6hr     -0.03285108 0.02266492 12 -1.4494238 0.17284584
 #Time48hr    -0.12927503 0.04994979 12 -2.5880995 0.02374089
 
-# Time within drought
-ME.magenta.m.d <- ME.magenta.m %>%
+
+
+# Time within drought,
+ME.magenta.m.d.48 <- ME.magenta.m %>%
   filter(Condition == "Drought")
 
-lme.magenta.d <- lme(ME.magenta ~ Time,
+lme.magenta.d.48 <- lme(ME.magenta ~ Time,
                      random = list(Site = ~1),
-                     data = ME.magenta.m.d,
+                     data = ME.magenta.m.d.48,
                      weights =  varIdent(form = ~1|Time)
 )
-sum <- summary(lme.magenta.d)
+sum <- summary(lme.magenta.d.48)
 tabl = sum$tTable
 tabl
-#                 Value Std.Error DF   t-value    p-value
-#(Intercept)  0.2077480 0.1323296 12  1.569929 0.14241191
-#Time6hr     -0.1966880 0.1269300 12 -1.549578 0.14720247
-#Time48hr    -0.2330154 0.1263194 12 -1.844653 0.08990156
+
+#                Value Std.Error DF   t-value   p-value
+#(Intercept)  0.2185654 0.1255910 11  1.740295 0.1096692
+#Time6hr     -0.2075054 0.1319343 11 -1.572793 0.1440684
+#Time48hr    -0.2114322 0.1266594 11 -1.669298 0.1232385
 
 ###green###
 # Condition
@@ -861,42 +862,44 @@ lme.green <- lme(ME.green ~ Condition,
 sum <- summary(lme.green)
 tabl = sum$tTable
 tabl
-#Intercept)      -0.09539677 0.03135770 30 -3.042212 0.0048455783
-#ConditionDrought  0.19151563 0.04864278 30  3.937185 0.0004536649
+#(Intercept)      -0.09530071 0.03027621 29 -3.147709 0.003791218
+#ConditionDrought  0.17796105 0.04963319 29  3.585525 0.001216596
 
-# Time within pre-drought
-ME.green.m.p <- ME.green.m %>%
+# Time within pre-drought, 
+ME.green.m.p.6 <- ME.green.m %>%
   filter(Condition == "PreDrought")
 
-lme.green.p <- lme(ME.green ~ Time,
-                   random = list(Site = ~1),
-                   data = ME.green.m.p,
-                   weights =  varIdent(form = ~1|Time)
+lme.green.p.6 <- lme(ME.green ~ Time,
+                       random = list(Site = ~1),
+                       data = ME.green.m.p.6,
+                       weights =  varIdent(form = ~1|Time)
 )
-sum <- summary(lme.green.p)
+sum <- summary(lme.green.p.6)
 tabl = sum$tTable
 tabl
-#Value  Std.Error DF    t-value     p-value
+
+#                 Value  Std.Error DF    t-value     p-value
 #(Intercept) -0.12780851 0.03449529 12 -3.7051001 0.003007612
 #Time6hr      0.07526111 0.03155674 12  2.3849453 0.034451097
 #Time48hr     0.03105081 0.03196725 12  0.9713317 0.350555474
 
-# Time within drought
-ME.green.m.d <- ME.green.m %>%
+# Time within drought,
+ME.green.m.d.6 <- ME.green.m %>%
   filter(Condition == "Drought")
 
-lme.green.d <- lme(ME.green ~ Time,
-                   random = list(Site = ~1),
-                   data = ME.green.m.d,
-                   weights =  varIdent(form = ~1|Time)
+lme.green.d.6 <- lme(ME.green ~ Time,
+                       random = list(Site = ~1),
+                       data = ME.green.m.d.6,
+                       weights =  varIdent(form = ~1|Time)
 )
-sum <- summary(lme.green.d)
+sum <- summary(lme.green.d.6)
 tabl = sum$tTable
 tabl
-#Value  Std.Error DF    t-value    p-value
-#(Intercept)  0.01796347 0.07902374 12  0.2273173 0.82400370
-#Time6hr     -0.02433903 0.08031238 12 -0.3030545 0.76703779
-#Time48hr     0.24345809 0.11241147 12  2.1657762 0.05118007
+
+#               Value  Std.Error DF    t-value    p-value
+#(Intercept)  0.01616096 0.07690994 11  0.2101283 0.83740895
+#Time6hr     -0.02253652 0.07990887 11 -0.2820278 0.78315768
+#Time48hr     0.23177612 0.12585236 11  1.8416510 0.09262781
 
 ###brown###
 # Condition
@@ -909,43 +912,37 @@ sum <- summary(lme.brown)
 tabl = sum$tTable
 tabl
 #Value  Std.Error DF   t-value      p-value
-#(Intercept)       0.1028595 0.03595102 30  2.861100 0.0076191603
-#ConditionDrought -0.2057189 0.04851764 30 -4.240085 0.0001966395
+#(Intercept)       0.1028595 0.03595102 29  2.861100 0.0077527328
+#ConditionDrought -0.1960638 0.04888601 29 -4.010632 0.0003886758
 
 # Time within pre-drought
-ME.brown.m.p <- ME.brown.m %>%
+ME.brown.m.p.6 <- ME.brown.m %>%
   filter(Condition == "PreDrought")
 
-lme.brown.p <- lme(ME.brown ~ Time,
-                   random = list(Site = ~1),
-                   data = ME.brown.m.p,
-                   weights =  varIdent(form = ~1|Time)
+lme.brown.p.6 <- lme(ME.brown ~ Time,
+                     random = list(Site = ~1),
+                     data = ME.brown.m.p.6,
+                     weights =  varIdent(form = ~1|Time)
 )
-sum <- summary(lme.brown.p)
+sum <- summary(lme.brown.p.6)
 tabl = sum$tTable
 tabl
-#Value  Std.Error DF   t-value      p-value
-#(Intercept)  0.19515717 0.01560597 12 12.505289 3.050160e-08
-#Time6hr     -0.08772292 0.01550949 12 -5.656081 1.062520e-04
-#Time48hr    -0.18966523 0.09071219 12 -2.090846 5.848746e-02
 
-######wilcoxon tests##############
-# Time within drought
-ME.brown.m.d <- ME.brown.m %>%
+
+# Time within drought,
+ME.brown.m.d.6 <- ME.brown.m %>%
   filter(Condition == "Drought")
 
-lme.brown.d <- lme(ME.brown ~ Time,
-                   random = list(Site = ~1),
-                   data = ME.brown.m.d,
-                   weights =  varIdent(form = ~1|Time)
+lme.brown.d.6 <- lme(ME.brown ~ Time,
+                     random = list(Site = ~1),
+                     data = ME.brown.m.d.6,
+                     weights =  varIdent(form = ~1|Time)
 )
-sum <- summary(lme.brown.d)
+sum <- summary(lme.brown.d.6)
 tabl = sum$tTable
 tabl
-#Value  Std.Error DF    t-value    p-value
-#(Intercept) -0.10597692 0.05504944 12 -1.9251227 0.07824168
-#Time6hr      0.02277068 0.08498522 12  0.2679369 0.79329792
-#Time48hr    -0.01393790 0.07940523 12 -0.1755287 0.86359131
+
+
 
 
 ### red ###

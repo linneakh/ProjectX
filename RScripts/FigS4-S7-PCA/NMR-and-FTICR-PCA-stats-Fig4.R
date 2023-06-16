@@ -59,11 +59,11 @@ df.c.0 <- as.data.frame(df.c.0)
 
 df.c.0 <- df.c.0 %>%
   mutate(Ctrl_Drought_P12_Site1_0 = Soil_Drought_P12_Site1_0_CTRL) %>%
-  select(-Soil_Drought_P12_Site1_0_CTRL) %>%
+  dplyr::select(-Soil_Drought_P12_Site1_0_CTRL) %>%
   mutate(Ctrl_Drought_P12_Site1_6 = Soil_Drought_P12_Site1_6_CTRL) %>%
-  select(-Soil_Drought_P12_Site1_6_CTRL) %>%
+  dplyr::select(-Soil_Drought_P12_Site1_6_CTRL) %>%
   mutate(Ctrl_Drought_P12_Site1_48 = Soil_Drought_P12_Site1_48_CTRL) %>%
-  select(-Soil_Drought_P12_Site1_48_CTRL) %>%
+  dplyr::select(-Soil_Drought_P12_Site1_48_CTRL) %>%
   replace(is.na(.),0)
 
 df.c <- t(df.c.0)
@@ -124,7 +124,7 @@ pca_plot <-  ggplot(mapping = aes(x, y)) +
          axis.title.y = element_text(size=size+3,face="bold"),
          plot.title = element_text(size=size+3,face="bold")) 
 pca_plot
-filename <- paste0("./Figures/Fig4-S3-PCA/metabol/NMR_PCA_plot.png")
+filename <- paste0("./Figures/FigS4-S7-PCA/metabol/NMR_PCA_plot.pdf")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
 # pca biplot
@@ -137,7 +137,7 @@ pca_biplot <- pca_plot +
 
 pca_biplot 
 
-filename <- paste0("./Figures/Fig4-S3-PCA/metabol/Fig4-NMR_PCA_biplot.png")
+filename <- paste0("./Figures/FigS4-S7-PCA/metabol/FigS7-NMR_PCA_biplot.pdf")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
 
@@ -202,7 +202,7 @@ pca_plot <-  ggplot(mapping = aes(x, y)) +
          axis.title.y = element_text(size=size+3,face="bold"),
          plot.title = element_text(size=size+3,face="bold")) 
 pca_plot
-filename <- paste0("./Figures/Fig4-S3-PCA/metabol/PCA_plot_FTICR.png")
+filename <- paste0("./Figures/FigS4-S7-PCA/metabol/PCA_plot_FTICR.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
 # pca biplot
@@ -215,7 +215,7 @@ pca_biplot <- pca_plot +
 
 pca_biplot 
 
-filename <- paste0("./Figures/Fig4-S3-PCA/metabol/PCA_biplot_FTICR-top-one-perc.png")
+filename <- paste0("./Figures/FigS4-S7-PCA/metabol/PCA_biplot_FTICR-top-one-perc.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
 ########################################## PCA on FTICR classes#####################
@@ -274,7 +274,7 @@ pca_plot <-  ggplot(mapping = aes(x, y)) +
          axis.title.y = element_text(size=size+3,face="bold"),
          plot.title = element_text(size=size+3,face="bold")) 
 pca_plot
-filename <- paste0("./Figures/Fig4-S3-PCA/metabol/VOC_PCA_plot_FTICR_class.png")
+filename <- paste0("./Figures/FigS4-S7-PCA/metabol/VOC_PCA_plot_FTICR_class.png")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 
 # pca biplot
@@ -287,7 +287,7 @@ pca_biplot <- pca_plot +
 
 pca_biplot 
 
-filename <- paste0("./Figures/Fig4-S3-PCA/metabol/Fig4-PCA_biplot_FTICR_class.png")
+filename <- paste0("./Figures/FigS4-S7-PCA/metabol/FigS7-PCA_biplot_FTICR_class.pdf")
 ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_biplot)
 
 ####statistical tests#####

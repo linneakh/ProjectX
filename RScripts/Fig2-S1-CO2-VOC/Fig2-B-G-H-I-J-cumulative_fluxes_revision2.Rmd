@@ -224,7 +224,7 @@ plot <- AUC %>%
       axis.title.x = element_blank(),
       legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/Fig2b-total-C-CO2-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
+ggsave("../../Figures/Fig2-S2-CO2-VOCs/Fig2b-total-C-CO2-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 # plot % of 13C pyruvate
 plot <- AUC %>%
@@ -545,7 +545,7 @@ plot <- AUC.aton %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2H-total-C-acetone-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
+ggsave("../../Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2H-total-C-acetone-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate (c1 and C2)
 plot <- AUC.aton %>%
@@ -856,7 +856,7 @@ plot.Diac <- AUC.Diac %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot.Diac
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2F-total-C-diacetyl-flux-c1-and-c2.pdf",
+ggsave("../../Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2F-total-C-diacetyl-flux-c1-and-c2.pdf",
        units=c('in'),width=4, height =4,dpi=300,plot.Diac)
 
 # plot cummalative percentage of of 13C pyruvate
@@ -1162,7 +1162,7 @@ plot <- AUC.acetate %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2G-total-C-acetate-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
+ggsave("../../Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2G-total-C-acetate-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate
 plot <- AUC.acetate %>%

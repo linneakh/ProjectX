@@ -24,7 +24,6 @@ K10854,consume,Acetone,Acetone,acxB,yes
 K10855,consume,Acetone,Acetone,acxA,yes
 K10856,consume,Acetone,Acetone,acxC,yes
 K00656,produce,Acetyl.CoA,Acetone,pflD,no
-K18372,produce,Acetate,Acetate,acmB,yes
 K18382,consume,Acetone,Acetone,ald1,yes
 K01034,produce,Butanoate,Butanoate,na,no
 K01034,consume,Acetate,Acetate,na,no

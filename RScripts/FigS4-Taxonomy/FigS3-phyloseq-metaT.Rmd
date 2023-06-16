@@ -577,6 +577,64 @@ plot_grid (p1, p2,
 
 ```
 
+## statistical analysis of taxonomy - kingdom
+```{r}
+####pre-drought vs drought
+kingdom = c("Archaea", "Bacteria", "Eukaryota", "Viruses")
+for (p in kingdom)
+{
+
+
+lme.kdat <- lme(Abundance ~ Condition,
+                 random = list(Site = ~1),
+                 data = k.dat,
+                 weights = varIdent(form = ~1|Condition)
+)
+
+sum <- summary(lme.kdat)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+# Condition - Drought 
+
+kingdom = c("Archaea", "Bacteria", "Eukaryota", "Viruses")
+for (p in kingdom)
+{
+k.dat.d <- k.dat %>%
+  dplyr::filter(Condition == "Drought") 
+
+lme.kdat.d <- lme(Abundance ~ Time,
+                 random = list(Site = ~1),
+                 data = k.dat.d,
+                 weights = varIdent(form = ~1|Time)
+)
+sum <- summary(lme.kdat.d)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+# Condition - Pre-Drought
+kingdom = c("Archaea", "Bacteria", "Eukaryota", "Viruses")
+for (p in kingdom)
+{
+k.dat.p <- k.dat %>%
+  dplyr::filter(Condition == "PreDrought") 
+
+lme.kdat.p <- lme(Abundance ~ Time,
+                 random = list(Site = ~1),
+                 data = k.dat.p,
+                 weights = varIdent(form = ~1|Time)
+)
+sum <- summary(lme.kdat.p)
+tabl = sum$tTable
+cat("\nresults for ",p,":\n")
+print(tabl)
+}
+
+```
 
 ## statistical analysis of taxonomy - bacteria/archaea
 ```{r}
@@ -602,7 +660,8 @@ cat("\nresults for ",p,":\n")
 print(tabl)
 }
 
-# Condition - Drought
+# Condition - Drought (6 vs 0h)
+
 phyla = c("Proteobacteria", "Acidobacteria", "Actinobacteria", "Bacteroidetes",
           "Chloroflexi","Cyanobacteria",  "Firmicutes",
           "Planctomycetes",
@@ -611,7 +670,7 @@ for (p in phyla)
 {
 p.P.datb <- P.datb %>%
   dplyr::filter(Phylum == p) %>%
-  dplyr::filter(Condition == "Drought")
+  dplyr::filter(Condition == "Drought") 
 
 lme.p.P.dat <- lme(Abundance ~ Time,
                  random = list(Site = ~1),
