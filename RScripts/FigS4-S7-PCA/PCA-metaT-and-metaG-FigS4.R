@@ -45,7 +45,7 @@ df[is.na(df)] <- 0 #convert any na's to zeros
 
 #delete any columns (KOs) that sum to zero
 df <- df %>%
-  select(which(!colSums(., na.rm=TRUE) %in% 0))
+  dplyr::select(which(!colSums(., na.rm=TRUE) %in% 0))
 colSums(df)
 
 df <- df + 1 #add psuedocount
@@ -153,8 +153,8 @@ ggsave(filename,units=c('in'),width=w,height=h,dpi=res,pca_plot)
 df.dist <- vegdist(df, method="bray")
 
 adonis(df.dist ~ Condition * Time * Site, metadata, permutations = 999, method = "bray",
-       strata = NULL, contr.unordered = "contr.sum",
-       contr.ordered = "contr.poly")
+       strata = NULL)#, contr.unordered = "contr.sum",
+       #contr.ordered = "contr.poly")
 
 #Results:
 #Df SumsOfSqs  MeanSqs F.Model      R2 Pr(>F)  

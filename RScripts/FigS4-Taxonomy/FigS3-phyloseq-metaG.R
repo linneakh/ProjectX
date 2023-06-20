@@ -106,6 +106,8 @@ k.glom <- tax_glom(SP.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-
 k.dat <- psmelt(k.glom)
 k.dat$Kingdom <- as.character(k.dat$Kingdom) #convert to character vector from factor
 
+write.csv(k.dat, "./Output/Taxonomy/Kingdom-metaG.csv")
+
 
 #prune out phyla below 2% in each sample for all experiments for bacteria/archaea
 SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
@@ -113,6 +115,9 @@ P.glom <- tax_glom(SPb.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum
 P.dat <- psmelt(P.glom)
 P.dat$Phylum <- as.character(P.dat$Phylum) #convert to character vector from factor
 P.dat$Phylum[P.dat$Abundance < 0.02] <- "Phylum < 2%"
+
+write.csv(P.dat, "./Output/Taxonomy/Phylum-bac-arch-metaG.csv")
+
 
 SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
 C.glom <- tax_glom(SPb.rel.abun, taxrank = "Class") #agglomerate taxa to Phylum-level
@@ -138,6 +143,8 @@ Pf.glom <- tax_glom(SPf.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylu
 Pf.dat <- psmelt(Pf.glom)
 Pf.dat$Phylum <- as.character(Pf.dat$Phylum) #convert to character vector from factor
 Pf.dat$Phylum[Pf.dat$Abundance < 0.02] <- "Phylum < 2%"
+
+write.csv(Pf.dat, "./Output/Taxonomy/Phylum-fungi-metaG.csv")
 
 SPf.rel.abun <- transform_sample_counts(SPf, function(x) x/sum(x)) #convert counts to relative abundances
 Cf.glom <- tax_glom(SPf.rel.abun, taxrank = "Class") #agglomerate taxa to Phylum-level

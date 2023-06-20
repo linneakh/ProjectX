@@ -712,7 +712,7 @@ ggsave("../../Figures/Fig3-S5-S6-Deseq2/VOC-genes-all-times.png", dpi = 300, wid
 
 ```{r}
 #time 0
-p1 <- as.data.frame(res.T0) %>%
+p1.data <- as.data.frame(res.T0) %>%
   rownames_to_column(var = "KO") %>%
     mutate(KO = str_replace(KO, "KO:", "")) %>%
   merge(.,interest , by = "KO") %>%
@@ -721,8 +721,13 @@ p1 <- as.data.frame(res.T0) %>%
            case_when(padj < 0.05 & log2FoldChange > 0 ~ "Sig.D", 
                      padj < 0.05 & log2FoldChange < 0 ~ "Sig.PD")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
-  mutate(gene_name = fct_reorder(gene_name, log2FoldChange)) %>%
-  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  mutate(gene_name = fct_reorder(gene_name, log2FoldChange)) 
+
+write.csv(p1.data, "../../Output/Deseq2/drought0h-vs-predrought0h-fig3.csv")
+
+
+
+p1 <- ggplot(p1.data, aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
   geom_col() +
   coord_flip() +
   theme_bw() +
@@ -757,7 +762,7 @@ ordered.VOC.vector <- ordered.res.T0$gene_name
 ###Time 6 hr
 ```{r}
 #time 6
-p2 <- as.data.frame(res.T6) %>%
+p2.data <- as.data.frame(res.T6) %>%
   rownames_to_column(var = "KO") %>%
     mutate(KO = str_replace(KO, "KO:", "")) %>%
   merge(.,interest , by = "KO") %>%
@@ -765,8 +770,13 @@ p2 <- as.data.frame(res.T6) %>%
   mutate(Significance =
            case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.D", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.PD")) %>%
-  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
-  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) 
+
+write.csv(p2.data, "../../Output/Deseq2/drought6h-vs-predrought6h-fig3.csv")
+
+
+
+P2 <- ggplot(p2.data, aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
   geom_col() +
   coord_flip() +
   theme_bw() +
@@ -790,7 +800,7 @@ ggsave("../../Figures/Fig3-S5-S6-Deseq2/Fig3-VOC-genes-T6.pdf", dpi = 300, width
 ###Time 48 hr
 ```{r}
 #time 48
-p3 <- as.data.frame(res.t48) %>%
+p3.data <- as.data.frame(res.t48) %>%
   rownames_to_column(var = "KO") %>%
     mutate(KO = str_replace(KO, "KO:", "")) %>%
   merge(.,interest , by = "KO") %>%
@@ -799,8 +809,12 @@ p3 <- as.data.frame(res.t48) %>%
            case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.D", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.PD")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
-  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
-  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) 
+
+write.csv(p3.data, "../../Output/Deseq2/drought48h-vs-predrought48h-fig3.csv")
+
+
+p3 <-  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
   geom_col() +
   coord_flip() +
   theme_bw() +
@@ -832,7 +846,7 @@ plot_grid(
 ###Drought 6 vs 0hr
 ```{r}
 #time 6 vs 0 drought
-p4 <- as.data.frame(res.d.6.0) %>%
+p4.data <- as.data.frame(res.d.6.0) %>%
   rownames_to_column(var = "KO") %>%
     mutate(KO = str_replace(KO, "KO:", "")) %>%
   merge(.,interest , by = "KO") %>%
@@ -841,8 +855,13 @@ p4 <- as.data.frame(res.d.6.0) %>%
         case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.6", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.0")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
-  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
-  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) 
+
+write.csv(p4.data, "../../Output/Deseq2/drought6h-vs-drought0h-figS5.csv")
+
+
+
+p4 <- ggplot(p4.data, aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
   geom_col() +
   coord_flip() +
   theme_bw() +
@@ -865,7 +884,7 @@ ggsave("../../Figures/Fig3-S5-S6-Deseq2/FigS4-VOC-genes-dr-6-0.pdf", dpi = 300, 
 ```
 ###Drought 48 vs 0hr
 ```{r}
-p5 <- as.data.frame(res.d.48.0) %>%
+p5.data <- as.data.frame(res.d.48.0) %>%
   rownames_to_column(var = "KO") %>%
     mutate(KO = str_replace(KO, "KO:", "")) %>%
   merge(.,interest , by = "KO") %>%
@@ -874,8 +893,12 @@ p5 <- as.data.frame(res.d.48.0) %>%
            case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.48", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.0")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
-  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
-  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) 
+
+write.csv(p5.data, "../../Output/Deseq2/drought48h-vs-drought0h-figS5.csv")
+
+
+p5 <- ggplot(p5.data, aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
   geom_col() +
   coord_flip() +
   theme_bw() +
@@ -900,7 +923,7 @@ ggsave("../../Figures/Fig3-S5-S6-Deseq2/FigS4-VOC-genes-dr-48-0.pdf", dpi = 300,
 ###PreDrought 6 vs 0hr
 ```{r}
 #time 6 vs 0 drought
-p6 <- as.data.frame(res.pd.6.0) %>%
+p6.data <- as.data.frame(res.pd.6.0) %>%
   rownames_to_column(var = "KO") %>%
     mutate(KO = str_replace(KO, "KO:", "")) %>%
   merge(.,interest , by = "KO") %>%
@@ -909,8 +932,13 @@ p6 <- as.data.frame(res.pd.6.0) %>%
            case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.48", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.0")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
-  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
-  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) 
+
+write.csv(p6.data, "../../Output/Deseq2/predrought6h-vs-predrought0h-figS5.csv")
+
+
+
+p6 <- ggplot(p6.data, aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
   geom_col() +
   coord_flip() +
   theme_bw() +
@@ -933,7 +961,7 @@ ggsave("../../Figures/Fig3-S5-S6-Deseq2/FigS4-VOC-genes-pd-6-0.pdf", dpi = 300, 
 ```
 ###PreDrought 48 vs 0hr
 ```{r}
-p7 <- as.data.frame(res.pd.48.0) %>%
+p7.data <- as.data.frame(res.pd.48.0) %>%
   rownames_to_column(var = "KO") %>%
     mutate(KO = str_replace(KO, "KO:", "")) %>%
   merge(.,interest , by = "KO") %>%
@@ -942,8 +970,13 @@ p7 <- as.data.frame(res.pd.48.0) %>%
            case_when(padj < 0.1 & log2FoldChange > 0 ~ "Sig.48", 
                      padj < 0.1 & log2FoldChange < 0 ~ "Sig.0")) %>%
   mutate(datExpr = str_replace(KO, 'KO:', '')) %>%
-  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) %>%
-  ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
+  mutate(gene_name = factor(gene_name, ordered.VOC.vector)) 
+
+write.csv(p7.data, "../../Output/Deseq2/predrought48h-vs-predrought0h-figS5.csv")
+
+
+
+p7 <- ggplot(aes(x=gene_name, y=log2FoldChange, fill = Activity, color = Significance)) +
   geom_col() +
   coord_flip() +
   theme_bw() +

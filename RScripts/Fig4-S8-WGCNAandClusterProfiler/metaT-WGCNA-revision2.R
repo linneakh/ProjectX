@@ -611,6 +611,8 @@ ME.magenta$SampleID <- rownames(ME.magenta)
 ME.magenta.m <- ME.magenta %>%
   merge(.,coldata, by = "SampleID")
 
+write.csv(ME.magenta.m, "./Output/WGCNA/ME-magenta.csv")
+
 ggplot(ME.magenta.m, aes(x=Time, y= ME.magenta)) +
   geom_boxplot(fill = "magenta") + geom_point() +
   facet_grid(~Condition) +
@@ -676,6 +678,9 @@ ME.brown$SampleID <- rownames(ME.brown)
 ME.brown.m <- ME.brown %>%
   merge(.,coldata, by = "SampleID")
 
+write.csv(ME.brown.m, "./Output/WGCNA/ME-brown.csv")
+
+
 ggplot(ME.brown.m, aes(x=Time, y= ME.brown)) +
    geom_boxplot(fill = "brown") +geom_point() +
   facet_grid(~Condition) +
@@ -719,6 +724,9 @@ ME.pink$SampleID <- rownames(ME.pink)
 ME.pink.m <- ME.pink %>%
   merge(.,coldata, by = "SampleID")
 
+write.csv(ME.pink.m, "./Output/WGCNA/ME-pink.csv")
+
+
 ggplot(ME.pink.m, aes(x=Time, y= ME.pink)) +
   geom_boxplot(fill = "pink") + geom_point() +
   facet_grid(~Condition) +
@@ -740,6 +748,9 @@ rownames(ME.green) <- rownames(datExpr)
 ME.green$SampleID <- rownames(ME.green)
 ME.green.m <- ME.green %>%
   merge(.,coldata, by = "SampleID")
+
+write.csv(ME.green.m, "./Output/WGCNA/ME-green.csv")
+
 
 ggplot(ME.green.m, aes(x=Time, y= ME.green)) +
   geom_boxplot(fill = "green") + geom_point() + 

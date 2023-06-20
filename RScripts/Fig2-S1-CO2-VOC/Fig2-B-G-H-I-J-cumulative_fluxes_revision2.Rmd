@@ -192,6 +192,8 @@ AUC <- AUC %>%
   mutate(perc.mass = (mass.13C.g/mass.13C.pyr.g) *100) %>%
   mutate(perc.mol = (mol/ 0.0011344894) * 100)
 
+write.csv(AUC, "../../Output/CO2-VOCs/AUC/CO2-auc.csv")
+
 # calculate average aucs and umol of C
 AUC_summary.CO2 <- AUC %>%
   group_by(Cond, Pyr) %>%
@@ -521,6 +523,8 @@ AUC.aton <- AUC.aton %>%
   mutate(perc.mol = (mol/0.0011344894) *100) %>%
   mutate(perc.mass = ((mass.13C.g / mass.13C.pyr.g) * 100))
 
+write.csv(AUC.aton, "../../Output/CO2-VOCs/AUC/acetone-auc.csv")
+
 
 # calculate average AUC.atons and umol of C
 AUC_summary.acetone <- AUC.aton %>%
@@ -832,6 +836,9 @@ AUC.Diac <- AUC.Diac %>%
   mutate(perc.mol = (mol/0.0011228385) *100) %>%
   mutate(perc.mass = ((mass.13C.g / mass.13C.pyr.g) * 100))
 
+write.csv(AUC.Diac, "../../Output/CO2-VOCs/AUC/diacetyl-auc.csv")
+
+
 # calculate average aucs and nmol of C
 AUC_summary.Diac <- AUC.Diac %>%
   group_by(Cond, Pyr) %>%
@@ -1137,6 +1144,9 @@ mass.13C.pyr.g = 0.0011355894 * 13
 AUC.acetate <- AUC.acetate %>%
   mutate(perc.mol = (mol/0.0011355894) *100) %>%
   mutate(perc.mass = ((mass.13C.g / mass.13C.pyr.g) * 100))
+
+write.csv(AUC.acetate, "../../Output/CO2-VOCs/AUC/acetate-auc.csv")
+
 
 # calculate average aucs and nmol of C
 AUC_summary.acetate <- AUC.acetate %>%

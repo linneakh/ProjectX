@@ -68,6 +68,8 @@ ratios_per_set <- data_sub_13C_flux %>%  #data_sub_13C_flux object created in Fi
 #set Condition factor in order
 ratios_per_set$Condition <- factor(ratios_per_set$Condition, c("pre_drought", "drought"))
 
+write.csv(ratios_per_set, "./Output/CO2-VOCs/ratios-per-set.csv")
+
 # graph of all differences (flux13Conly)
 ratios_per_set %>%
   ggplot(aes(x = Time, y = C1_C2_diff_fCO2_13_py, fill = Condition)) +

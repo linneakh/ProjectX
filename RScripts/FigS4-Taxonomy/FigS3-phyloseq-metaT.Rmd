@@ -122,6 +122,8 @@ k.glom <- tax_glom(SP.rel.abun, taxrank = "Kingdom") #agglomerate taxa to Phylum
 k.dat <- psmelt(k.glom)
 k.dat$Kingdom <- as.character(k.dat$Kingdom) #convert to character vector from factor
 
+write.csv(k.dat, "../../Output/Taxonomy/Kingdom-metaT.csv")
+
 #specify fungal relative abundance from all kingdoms
 SP.rel.abun <- transform_sample_counts(SP.f, function(x) x/sum(x)) #convert counts to relative abundances
 p.glom <- tax_glom(SP.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylum-level
@@ -137,6 +139,12 @@ p.dat2 <- p.dat %>%
                     Phylum == "Ascomycota" |
                     Phylum == "Basidiomycota",
                     "fungi", "other"))
+
+p.dat2.fungi <- p.dat2 %>%
+  dplyr::filter(sub_kingdom == "fungi")
+
+write.csv(p.dat2.fungi, "../../Output/Taxonomy/Phylum-fungi-metaT.csv")
+
 #calculate means and standard deviations for fungal abundances within eukaryota
 p.dat2.p <- p.dat2 %>% 
   dplyr::filter(Condition == "PreDrought" &
@@ -163,6 +171,8 @@ P.glomb <- tax_glom(SPb.rel.abun, taxrank = "Phylum") #agglomerate taxa to Phylu
 P.datb <- psmelt(P.glomb)
 P.datb$Phylum <- as.character(P.datb$Phylum) #convert to character vector from factor
 P.datb$Phylum[P.datb$Abundance < 0.02] <- "Phylum < 2%"
+
+write.csv(P.datb, "../../Output/Taxonomy/Phylum-arch-bac-metaT.csv")
 
 SPb.rel.abun <- transform_sample_counts(SPb, function(x) x/sum(x)) #convert counts to relative abundances
 C.glom <- tax_glom(SPb.rel.abun, taxrank = "Class") #agglomerate taxa to Phylum-level
