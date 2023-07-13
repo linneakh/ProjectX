@@ -38,7 +38,7 @@ library(plsVarSel)
 # load metaT data and do variance stabilization tranformation
 ```{r load-metaT, echo = FALSE}
 #load metaT gene copy data and column metadata
-datExpr0 <-read.csv("../../Data/Deseq2/Drought_vs_predrought_metaT_missing_1_no_feature.csv", header = TRUE)
+datExpr0 <-read.csv("../../Data/Deseq2/Drought_vs_predrought_metaT_gene_copy.csv", header = TRUE)
 rownames(datExpr0) <- datExpr0$Feature
 datExpr0$Feature <- NULL
 
@@ -161,64 +161,64 @@ diacetyl_flux_proc <- diacetyl_flux %>%
   dplyr::select(-"mean.flux")
 
 #sample names are different in the flux and expression tables, so need to make them the same
-KO_VOC.t.f[,32] <- rownames(KO_VOC.t.f)
+KO_VOC.t.f[,31] <- rownames(KO_VOC.t.f)
 KO_VOC.t.f_new_id_w_full_name <- KO_VOC.t.f %>%
   mutate(Sample = case_when(
-  startsWith(V32, "X3300044942") ~ "S3P4",
-  startsWith(V32, "X3300044943") ~ "S3P4",
-  startsWith(V32, "X3300044944") ~ "S3P4",
-  startsWith(V32, "X3300044945") ~ "S3P4",
-  startsWith(V32, "X3300045458") ~ "S1P5",
-  startsWith(V32, "X3300045459") ~ "S1P5",
-  startsWith(V32, "X3300045460") ~ "S1P5",
-  startsWith(V32, "X3300045461") ~ "S2P4",
-  startsWith(V32, "X3300045462") ~ "S2P4",
-  startsWith(V32, "X3300045463") ~ "S2P4",
-  startsWith(V32, "X3300045464") ~ "S2P4",
-  startsWith(V32, "X3300045465") ~ "S2P4",
-  startsWith(V32, "X3300045466") ~ "S2P6",
-  startsWith(V32, "X3300045467") ~ "S2P6",
-  startsWith(V32, "X3300045468") ~ "S2P6",
-  startsWith(V32, "X3300045469") ~ "S2P6",
-  startsWith(V32, "X3300045470") ~ "S2P6",
-  startsWith(V32, "X3300045471") ~ "S3P5",
-  startsWith(V32, "X3300045472") ~ "S3P5",
-  startsWith(V32, "X3300045473") ~ "S2P6",
-  startsWith(V32, "X3300048051") ~ "S1P5",
-  startsWith(V32, "X3300048052") ~ "S3P5",
-  startsWith(V32, "X3300048053") ~ "S3P5",
-  startsWith(V32, "X3300048054") ~ "S3P5",
-  startsWith(V32, "X3300048092") ~ "S1P1",
-  startsWith(V32, "X3300048093") ~ "S1P1",
-  startsWith(V32, "X3300048094") ~ "S1P1",
-  startsWith(V32, "X3300048095") ~ "S1P1",
-  startsWith(V32, "X3300048096") ~ "S1P1",
-  startsWith(V32, "X3300048099") ~ "S1P5",
-  startsWith(V32, "X3300048100") ~ "S1P5",
-  startsWith(V32, "X3300049511") ~ "S2P4",
-  startsWith(V32, "X3300049512") ~ "S3P4",
-  startsWith(V32, "X3300049557") ~ "S3P4",
-  startsWith(V32, "X3300049628") ~ "S3P5"
+  startsWith(V31, "X3300044942") ~ "S3P4",
+  startsWith(V31, "X3300044943") ~ "S3P4",
+  startsWith(V31, "X3300044944") ~ "S3P4",
+  startsWith(V31, "X3300044945") ~ "S3P4",
+  startsWith(V31, "X3300045458") ~ "S1P5",
+  startsWith(V31, "X3300045459") ~ "S1P5",
+  startsWith(V31, "X3300045460") ~ "S1P5",
+  startsWith(V31, "X3300045461") ~ "S2P4",
+  startsWith(V31, "X3300045462") ~ "S2P4",
+  startsWith(V31, "X3300045463") ~ "S2P4",
+  startsWith(V31, "X3300045464") ~ "S2P4",
+  startsWith(V31, "X3300045465") ~ "S2P4",
+  startsWith(V31, "X3300045466") ~ "S2P6",
+  startsWith(V31, "X3300045467") ~ "S2P6",
+  startsWith(V31, "X3300045468") ~ "S2P6",
+  startsWith(V31, "X3300045469") ~ "S2P6",
+  startsWith(V31, "X3300045470") ~ "S2P6",
+  startsWith(V31, "X3300045471") ~ "S3P5",
+  startsWith(V31, "X3300045472") ~ "S3P5",
+  startsWith(V31, "X3300045473") ~ "S2P6",
+  startsWith(V31, "X3300048051") ~ "S1P5",
+  startsWith(V31, "X3300048052") ~ "S3P5",
+  startsWith(V31, "X3300048053") ~ "S3P5",
+  startsWith(V31, "X3300048054") ~ "S3P5",
+  startsWith(V31, "X3300048092") ~ "S1P1",
+  startsWith(V31, "X3300048093") ~ "S1P1",
+  startsWith(V31, "X3300048094") ~ "S1P1",
+  startsWith(V31, "X3300048095") ~ "S1P1",
+  startsWith(V31, "X3300048096") ~ "S1P1",
+  startsWith(V31, "X3300048099") ~ "S1P5",
+  startsWith(V31, "X3300048100") ~ "S1P5",
+  startsWith(V31, "X3300049511") ~ "S2P4",
+  startsWith(V31, "X3300049512") ~ "S3P4",
+  startsWith(V31, "X3300049557") ~ "S3P4",
+  startsWith(V31, "X3300049628") ~ "S3P5"
   )) %>%
   mutate(Time.d = case_when(
-    endsWith(V32, "6hr") ~ "6",
-    endsWith(V32, "0hr") ~ "0",
-    endsWith(V32, "48hr") ~ "48",
-    endsWith(V32, "48_hr") ~ "48"
+    endsWith(V31, "6hr") ~ "6",
+    endsWith(V31, "0hr") ~ "0",
+    endsWith(V31, "48hr") ~ "48",
+    endsWith(V31, "48_hr") ~ "48"
   )) %>%
   mutate(Condition = case_when(
-    grepl("PreDrought", V32) ~ "Pre-Drought",
-    grepl("Drought", V32) ~ "Drought",
-    grepl("Pre_drought", V32) ~ "Pre-Drought"
+    grepl("PreDrought", V31) ~ "Pre-Drought",
+    grepl("Drought", V31) ~ "Drought",
+    grepl("Pre_drought", V31) ~ "Pre-Drought"
   )) %>%
   mutate(Site = case_when(
-    grepl("Site1", V32) ~ "Site1",
-    grepl("Site2", V32) ~ "Site2",
-    grepl("Site3", V32) ~ "Site3"
+    grepl("Site1", V31) ~ "Site1",
+    grepl("Site2", V31) ~ "Site2",
+    grepl("Site3", V31) ~ "Site3"
   )) 
 
 KO_VOC.t.f_new_id <- KO_VOC.t.f_new_id_w_full_name %>%
-   dplyr::select(-V32)
+   dplyr::select(-V31)
   
 #merge VOC and KO tables
 merged_subset <- KO_VOC.t.f_new_id %>%
@@ -258,9 +258,9 @@ merged_subset_physico_full_names <- merged_subset_with_full_names %>%
   merge(., data.abiotic, by = c("Condition", "Site"))
 
 #create trait data file for WGCNA
-trait_data_for_WGCNA <- merged_subset_physico_full_names[,c(36,37,39,41, 43,44,45)]
+trait_data_for_WGCNA <- merged_subset_physico_full_names[,c(36,37,39,41, 42,43,44)]
 trait_data_for_WGCNA$SampleID <- trait_data_for_WGCNA[,1]
-trait_data_for_WGCNA$V32 <- NULL
+trait_data_for_WGCNA$V31 <- NULL
 trait_data_for_WGCNA <- trait_data_for_WGCNA[,c(7,1,2,3, 4, 5, 6)]
 
 write.csv(trait_data_for_WGCNA, "../../Output/WGCNA/trait-data-VOC-flux-physicochemical.csv")
@@ -333,7 +333,7 @@ VIP:
 
 set up model data frame using Johnny's scripts and the plsr function of the pls package
 ```{r}
-model_data <- sub_acetate_pls2_SM[, c(1,2,3,4,5,6,7,8,10, 11,12) ]
+model_data <- sub_acetate_pls2_SM[, c(1,2,3,4,5,6,7,8,9,10, 11) ]
 
 set.seed(123)
 m_full <- plsr(flux.acetate ~ ., data = model_data, scale = TRUE, validation = "LOO")
