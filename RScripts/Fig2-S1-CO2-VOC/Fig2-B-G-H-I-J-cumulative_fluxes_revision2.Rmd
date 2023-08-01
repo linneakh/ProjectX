@@ -246,7 +246,7 @@ plot <- AUC %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-#ggsave("../../Figures/Fig2-S1-CO2-VOCs/total-C-CO2-per-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
+#ggsave("../../Figures/Fig2-S2-CO2-VOCs/total-C-CO2-per-flux.png",units=c('in'),width=6, height = 4,dpi=300,plot)
 
 
 ```
@@ -846,8 +846,9 @@ AUC_summary.Diac <- AUC.Diac %>%
   mutate(compound = "Diacetyl")
 
 
-# plot cummalative flux of 13C 
+# plot cummalative flux of 13C for C2 only
 plot.Diac <- AUC.Diac %>%
+  filter(Pyr == "C2") %>%
  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
   ggplot(aes(x= Cond, y = umol, fill = Cond)) +
   geom_boxplot() +
@@ -863,7 +864,7 @@ plot.Diac <- AUC.Diac %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot.Diac
-ggsave("../../Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2F-total-C-diacetyl-flux-c1-and-c2.pdf",
+ggsave("../../Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2F-total-C-diacetyl-flux-c2.pdf",
        units=c('in'),width=4, height =4,dpi=300,plot.Diac)
 
 # plot cummalative percentage of of 13C pyruvate
@@ -1433,20 +1434,6 @@ pie.d
 
 ```
 
-# notes on summary table (haven't updated with corrected results):
-- diff in C1 - c2 for CO2 represents umol of 13C that go towards biosynthesis 
-    - Pre-drought: 465.48 umol
-    - Drought 196.59 umol  
-- sum of acetate, acetone, and diaceytl (c2) represent 13C from biosynthesis pathways 
-   
-VOC biosynthesis represents 0.11 % of total biosynthesis during Drought, and only 0.0022 % during Pre-drought!! Really cool. 
 
-ALSO.... Comparing microbially-mediated carbon emissions... 
-- Pre-drought 465.48umol co2 + 10.4 umol voc = 475.88 umol, 
-- Drought 196.59 umol co2 + 122.68 umol voc = 319.27 umol
-
-Overall distribution of 13C-pyruvate incorporation:
-- Pre-drought
-  - 
 
 ```{r}
