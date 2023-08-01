@@ -1,7 +1,7 @@
 
-# Visualize Pyruvate Co2 Fluxes
+# Visualize Pyruvate Co2 Flux ratios
 
-# Johannes Ingrisch, modified by Linnea Honeker
+# Linnea Honeker
 # 2021-08-26
 
 # load packages
