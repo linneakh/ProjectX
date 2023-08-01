@@ -2,8 +2,8 @@
 
 # Visualize Pyruvate voc Fluxes
 
-# Johannes Ingrisch, modified by Linnea Honeker
-# 2021-08-26, modified 4/1/22
+# Linnea Honeker
+#  4/1/22
 
 # load packages
 library(tidyverse)
