@@ -533,12 +533,12 @@ AUC_summary.acetone <- AUC.aton %>%
   mutate(compound = "Acetone")
 
 
-# plot cummalative flux of 13C pyruvate (C1 and C2)
+# plot cummalative flux of 13C pyruvate (C2 only because only C2 showed enrichment)
 plot <- AUC.aton %>%
+  filter(Pyr == "C2") %>%
   mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
   ggplot(aes(x= Cond, y = umol, fill = Cond)) +
   geom_boxplot() +
-  facet_grid(.~Pyr) +
   scale_fill_manual(values = colors,
                     breaks = c("Pre_Drought", "Drought"),
                     labels = c("Pre Drought", "Drought")) +
@@ -549,7 +549,7 @@ plot <- AUC.aton %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot
-ggsave("../../Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2H-total-C-acetone-flux.pdf",units=c('in'),width=4, height = 4,dpi=300,plot)
+ggsave("../../Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2H-total-C-acetone-flux.pdf",units=c('in'),width=2, height = 4,dpi=300,plot)
 
 # plot cummalative percentage of of 13C pyruvate (c1 and C2)
 plot <- AUC.aton %>%
@@ -846,13 +846,12 @@ AUC_summary.Diac <- AUC.Diac %>%
   mutate(compound = "Diacetyl")
 
 
-# plot cummalative flux of 13C for C2 only
+# plot cummalative flux of 13C for C2 only (because only C2 showed enrichment)
 plot.Diac <- AUC.Diac %>%
   filter(Pyr == "C2") %>%
  mutate(Cond=factor(Cond, levels = c("Pre_Drought", "Drought"))) %>%
   ggplot(aes(x= Cond, y = umol, fill = Cond)) +
   geom_boxplot() +
-  facet_grid(.~Pyr) +
   scale_fill_manual(values = colors,
                     breaks = c("Pre_Drought", "Drought"),
                     labels = c("P", "D")) +
@@ -864,8 +863,8 @@ plot.Diac <- AUC.Diac %>%
         axis.title.x = element_blank(),
         legend.title = element_blank())
 plot.Diac
-ggsave("../../Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2F-total-C-diacetyl-flux-c2.pdf",
-       units=c('in'),width=4, height =4,dpi=300,plot.Diac)
+ggsave("../../Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2I-total-C-diacetyl-flux-c2.pdf",
+       units=c('in'),width=2, height =4,dpi=300,plot.Diac)
 
 # plot cummalative percentage of of 13C pyruvate
 plot.Diac <- AUC.Diac %>%

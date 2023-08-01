@@ -16,14 +16,15 @@ theme_set(theme_custom)
 
 colors = c("#2ECC71" ,"#F39C12")
 
-data <- read.csv("./Output/CO2-VOCs/diacetyl_flux-13C-all.csv") 
+data.13C <- read.csv("./Output/CO2-VOCs/diacetyl_flux-13C-all.csv") 
+data.13C.12C <- read.csv("./Output/CO2-VOCs/diacetyl_flux-13C-12C-all.csv")
 
 # re order factors for condition
-data$Condition <- factor(data$Condition, c(
+data.13C.12C$Condition <- factor(data.13C.12C$Condition, c(
   "Pre-Drought", "Drought"))
 
 # filter out times outside of -12 hour to 48 hour and water samples
-data_sub <- data %>%
+data_sub <- data.13C.12C %>%
   filter(Time > -0.3 & Time <2 ) %>%
   filter(Pyr == "C1" |
            Pyr == "C2")
@@ -36,7 +37,7 @@ data_sub %>%
   ggplot(aes(x = Time_hours, y = Flux, color = Condition)) +
   facet_grid(. ~ Pyr) + 
   scale_x_continuous(breaks = c(-12, 0, 12, 24, 36, 48)) +
-  ylim(-0.03, 0.12) +
+  #ylim(-0.03, 0.12) +
   geom_point(alpha = 0.3, size = 1) +
   geom_smooth(aes(group = Condition), span = 0.5) +
   scale_color_manual(values = colors,
@@ -47,7 +48,7 @@ data_sub %>%
                             color = "black"),
         legend.position = "bottom",
         legend.title = element_blank())
-filename=paste("./Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/Fig2F-diacetyl.pdf", sep = "")
+filename=paste("./Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/Fig2F-diacetyl-corrected-13C-12C.pdf", sep = "")
 ggsave(filename ,width=4, height=4, units='in', dpi = 300)
 
 
@@ -66,7 +67,7 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C1 pyurvate") +
   theme(legend.position = "bottom")
-ggsave("./Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/01_pyruvate-diacetyl_C1_Plotwise.png")
+ggsave("./Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/01_pyruvate-diacetyl_C1_Plotwise.png")
 
 data_sub %>%
   mutate(Time_hours = Time*24) %>%
@@ -81,17 +82,17 @@ data_sub %>%
                      labels = c("Pre Drought", "Drought")) + 
   labs(x = "Hours after labeling", y = "13C/(12C + 13C) flux", subtitle = "C2 pyurvate") +
   theme(legend.position = "bottom")
-ggsave("./Figures/Fig2-S1-CO2-VOCs/corrected_voc_data/01_Pyruvate_diacetyl_C2_Plotwise.png")
+ggsave("./Figures/Fig2-S2-CO2-VOCs/corrected_voc_data/01_Pyruvate_diacetyl_C2_Plotwise.png")
 
 
 ####statistical analysis, comparing differences in treatments based on mean flux data
 #Flux - Condition, in C1 and C2 separated
 data_c1 <- data_sub %>%
- filter(Pyruv == "C1") %>%
+ filter(Pyr == "C1") %>%
   filter(Time > 0)
 
 data_c2 <- data_sub %>%
-  filter(Pyruv == "C2") %>%
+  filter(Pyr == "C2") %>%
   filter(Time > 0) 
 
 wilcox.test(Flux ~ Condition, data = data_c1, paired = FALSE) #there are an uneven number of samples so paired = TRUE returns an error
