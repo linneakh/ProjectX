@@ -16,7 +16,6 @@ theme_set(theme_custom)
 
 colors = c("#2ECC71" ,"#F39C12")
 
-data.13C <- read.csv("./Output/CO2-VOCs/diacetyl_flux-13C-all.csv") 
 data.13C.12C <- read.csv("./Output/CO2-VOCs/diacetyl_flux-13C-12C-all.csv")
 
 # re order factors for condition
@@ -30,7 +29,6 @@ data_sub <- data.13C.12C %>%
            Pyr == "C2")
 
 # Isotope Sig diacetyl
-png(filename ,width=4, height=4, unit='in', res = 1000)
 
 data_sub %>%
   mutate(Time_hours = Time*24) %>%
